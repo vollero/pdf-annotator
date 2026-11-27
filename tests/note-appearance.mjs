@@ -56,7 +56,11 @@ export async function checkNoteAppearance(page) {
   assert.deepEqual(await fontOf(tooltip),await fontOf(card))
   assert.equal((await fontOf(tooltip))[0],'24px')
   assert.match((await fontOf(tooltip))[1],/Georgia/)
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('ArrowRight')
+  await page.locator('.paper.current[data-page="2"][data-ready="true"]').waitFor()
+  await tooltip.waitFor({state:'hidden'})
+  await page.keyboard.press('ArrowLeft')
+  await marker.waitFor()
 
   await page.setViewportSize({width:360,height:510})
   await sidebar.getByRole('button',appearanceButton).click()

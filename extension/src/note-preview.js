@@ -1,10 +1,15 @@
 // Listen on the page stack because scrolling and zooming replace its SVG markers.
 export function bindNotePreview(stack, preview, findNote, edit) {
   let marker, closeTimer
+  const redraws = new MutationObserver(() => {
+    if (!marker?.isConnected) hide()
+  })
 
   function hide() {
     clearTimeout(closeTimer)
-    marker?.removeAttribute('aria-describedby')
+    if (!marker) return
+    redraws.disconnect()
+    marker.removeAttribute('aria-describedby')
     marker = null
     preview.hidden = true
     preview.textContent = ''
@@ -19,6 +24,7 @@ export function bindNotePreview(stack, preview, findNote, edit) {
     const note = findNote(next.dataset.id)
     if (!note) return
     marker = next
+    redraws.observe(stack, {childList:true, subtree:true})
     preview.textContent = note.text
     preview.hidden = false
     preview.scrollTop = 0
