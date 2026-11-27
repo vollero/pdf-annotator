@@ -1,6 +1,6 @@
 # Margin – PDF Annotator
 
-Highlight text, draw on a scan, or leave a note on a PDF. Margin works in **desktop Chrome or Chromium 141 or later**. It saves drafts in your browser and exports annotated PDFs you can share.
+Highlight text, draw on a scan, or leave a note on a PDF. Margin works in **desktop Chrome or Chromium 141 or later**. Share a marked-up PDF, or move just your annotations to another copy of the same document.
 
 ## Install Margin
 
@@ -31,9 +31,17 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Reading controls in the release candidate
+## Move annotations to another copy of the same PDF
 
-The bottom bar lets you change how you read the PDF. To try these controls, download the [Margin 0.1.1-rc.4 extension ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.1.1-rc.4/margin-pdf-annotator.zip) and follow the installation steps above.
+1. Open the PDF you annotated. In the **Annotations** panel, click **Export annotations**. Margin downloads a file such as `Field notes.margin-annotations.json` with your highlights, drawings, notes, and the PDF’s SHA-256 fingerprint. All pages are included, even when the list is filtered. If the panel is hidden, click **Show workspace** or **Toggle annotations** to bring it back.
+2. On the other computer, or in a later session, open the **exact same PDF** in Margin 0.2.0 or later. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
+3. Click **Import annotations** and select the JSON file. Margin checks the fingerprint before applying changes. It adds new marks, updates matching marks, and keeps other local annotations. Importing an identical file twice adds no duplicates. **Undo** reverses the import in one step.
+
+If Margin reports a fingerprint mismatch, locate the copy that was open when you exported the annotations. A matching filename or page count is insufficient. The JSON contains readable note text and selected highlight text. [Annotation file format and worked example](docs/annotation-migration.md)
+
+## Reading controls
+
+The controls at the bottom of the editor change how you read the PDF.
 
 - Choose **Continuous scrolling** in the **Single page** menu to scroll from one page straight into the next. The page counter follows your reading position. Choose **Single page** to switch back.
 - Click **Hide workspace** to give the PDF more room. The page, zoom, and scrolling controls stay at the bottom. Click **Show workspace** or press **Esc** to bring the editor back.

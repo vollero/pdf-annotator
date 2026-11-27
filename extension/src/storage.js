@@ -1,3 +1,5 @@
+import { checkMarkBudget } from './mark-data.js'
+
 let connection
 function database() {
   if (!connection) connection = new Promise((resolve, reject) => {
@@ -62,7 +64,11 @@ export async function writeChanges(id, before, after) {
       const merged = new Map((lookup.result ?? before).map(mark => [mark.id,mark]))
       for (const mark of removed) merged.delete(mark.id)
       for (const mark of changed) merged.set(mark.id,mark)
-      store.put([...merged.values()], id)
+      const result = [...merged.values()]
+      // Concurrent imports can each fit the limit on their own.
+      try { checkMarkBudget(result) }
+      catch (error) { tx.abort(); reject(error); return }
+      store.put(result, id)
     }
     tx.oncomplete = resolve
     tx.onabort = () => reject(tx.error)

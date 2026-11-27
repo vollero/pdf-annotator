@@ -9,6 +9,7 @@ await cp(path.join(root, 'extension'), out, { recursive: true })
 for (const name of ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'licenses']) {
   await cp(path.join(root, name), path.join(out, name), { recursive: true })
 }
+await cp(path.join(root, 'docs/annotation-migration.md'), path.join(out, 'ANNOTATIONS.md'))
 const vendor = path.join(out, 'vendor')
 await mkdir(vendor)
 const pdfjs = path.join(root, 'node_modules/pdfjs-dist')

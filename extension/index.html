@@ -52,6 +52,11 @@
         <select id="filter"><option value="all">All pages</option><option value="current">Current page</option></select><span data-icon="down"></span>
       </div>
       <div id="cards"></div>
+      <div class="annotation-files" role="group" aria-label="Annotation files">
+        <button id="import-annotations" class="button" disabled>Import annotations</button>
+        <button id="export-annotations" class="button" disabled>Export annotations</button>
+        <input id="annotation-file" type="file" accept=".json,application/json" hidden>
+      </div>
     </aside>
   </main>
   <footer>

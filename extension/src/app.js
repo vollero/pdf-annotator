@@ -1,5 +1,6 @@
 import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
 import { checkMarkBudget, readDraft } from './mark-data.js'
+import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
 import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
 import { colors,anchor } from './annotations.js'
@@ -171,7 +172,7 @@ async function load(file,initial=[],ticket=beginImport()) {
   signal.addEventListener('abort',cancel,{once:true})
   try {
     checkFileSize(file.bytes.byteLength)
-    file.id??=await digest(file.bytes)
+    file.id=await digest(file.bytes)
     let base=file.bytes
     pdf=await readPDF(base, signal)
     const metadata=await pdf.getMetadata()
@@ -199,6 +200,8 @@ async function load(file,initial=[],ticket=beginImport()) {
     state(privateWindow ? privateStatus : remembered ? 'Saved locally' : 'Local save failed',privateWindow || remembered ? 'saved' : 'error')
     if(!privateWindow && !remembered) toast('Local storage is unavailable. Export your PDF to keep your work.')
     $('export').disabled=exporting
+    $('export-annotations').disabled=false
+    $('import-annotations').disabled=false
     $('filter').value='all'
     viewer.setDocument(pdf,marks)
     selectTool('select');refresh()
@@ -230,6 +233,43 @@ document.addEventListener('drop',e=>{
   if(e.dataTransfer.files.length) openFile(e.dataTransfer.files[0])
 })
 
+function downloadFile(blob, filename) {
+  const url=URL.createObjectURL(blob)
+  const link=document.createElement('a')
+  link.href=url;link.download=filename
+  document.body.append(link);link.click();link.remove()
+  setTimeout(()=>URL.revokeObjectURL(url),60000)
+}
+
+$('export-annotations').onclick=()=>{
+  if (!session) return
+  try {
+    const blob = exportAnnotations(session.file.id, session.pages, marks)
+    downloadFile(blob, session.file.name.replace(/\.pdf$/i,'') + '.margin-annotations.json')
+  } catch (error) { toast(error.message) }
+}
+
+$('import-annotations').onclick=()=>$('annotation-file').click()
+$('annotation-file').onchange=async event=>{
+  const file = event.target.files[0], doc = session, signal = activeImport.signal
+  event.target.value = ''
+  if (!file || !doc || $('import-annotations').disabled) return
+  $('import-annotations').disabled = true
+  try {
+    const incoming = await runPdfJob({operation:'read-annotations', file, documentSha256:doc.file.id, pages:doc.pages}, signal)
+    if (doc !== session || signal.aborted) return
+    const result = mergeAnnotations(marks, incoming)
+    if (result.added || result.updated) {
+      change(result.marks)
+      toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.')
+    } else toast(incoming.length ? 'These annotations are already in this document.' : 'The file contains no annotations.')
+  } catch (error) {
+    if (doc === session && !signal.aborted) toast(error.message)
+  } finally {
+    if (doc === session) $('import-annotations').disabled = false
+  }
+}
+
 async function download() {
   if(!session || exporting) return
   exporting=true;$('export').disabled=true
@@ -241,11 +281,7 @@ async function download() {
       views.set(number,{width,height,userUnit,transform})
     }
     const bytes=await runPdfJob({operation:'export',bytes:base,marks:snapshot,views})
-    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))
-    const link=document.createElement('a')
-    link.href=url;link.download=file.name.replace(/(?:-annotated)?\.pdf$/i,'')+'-annotated.pdf'
-    document.body.append(link);link.click();link.remove()
-    setTimeout(()=>URL.revokeObjectURL(url),60000)
+    downloadFile(new Blob([bytes],{type:'application/pdf'}), file.name.replace(/(?:-annotated)?\.pdf$/i,'')+'-annotated.pdf')
   } catch {toast('This PDF could not be exported. Try an unlocked copy of the original file.')}
   finally {exporting=false;$('export').disabled=!session}
 }

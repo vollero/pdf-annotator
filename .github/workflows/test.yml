@@ -60,8 +60,10 @@ jobs:
           release_flags=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then
             release_flags+=(--prerelease --latest=false)
+          else
+            release_flags+=(--latest)
           fi
           gh release create "$GITHUB_REF_NAME" margin-pdf-annotator.zip "${release_flags[@]}" \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "Margin ${GITHUB_REF_NAME#v}" \
-            --notes "Download **margin-pdf-annotator.zip** under **Assets**, extract it, and load the **Margin** folder. [Install Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#install-margin) · [Update an existing installation]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#update-margin). For PDFs with previously deleted or replaced Margin notes, see the [security review and re-export instructions]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/security-review.md)."
+            --notes "Download **margin-pdf-annotator.zip** under **Assets**, extract it, and load the **Margin** folder. Use **Export annotations** and **Import annotations** to move editable marks between byte-identical PDFs. [Annotation migration guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/annotation-migration.md) · [Install Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#install-margin) · [Update an existing installation]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#update-margin)."

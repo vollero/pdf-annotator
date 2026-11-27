@@ -1,5 +1,7 @@
 import { DocumentLimitError } from './input.js'
 
+export const maxMarkCount = 2000
+
 const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
 const rect = r => Array.isArray(r) && r.length === 4 && r.every(unit)
 function unit(v) { return Number.isFinite(v) && v >= 0 && v <= 1 }
@@ -28,13 +30,13 @@ export function checkMarkBudget(marks) {
     if (size > 8 * 1024 * 1024) throw new DocumentLimitError('This annotation exceeds the editable size limit.')
     encoded += size
   }
-  if (marks.length > 2000 || geometry > 100000 || characters > 2000000 || encoded > 32 * 1024 * 1024) {
+  if (marks.length > maxMarkCount || geometry > 100000 || characters > 2000000 || encoded > 32 * 1024 * 1024) {
     throw new DocumentLimitError('This document exceeds the editable annotation limit.')
   }
 }
 
 export function readDraft(raw, pages) {
-  if (!Array.isArray(raw) || raw.length > 2000) throw new DocumentLimitError('This draft exceeds the editable annotation limit.')
+  if (!Array.isArray(raw) || raw.length > maxMarkCount) throw new DocumentLimitError('This draft exceeds the editable annotation limit.')
   const marks = []
   const ids = new Set()
   for (const entry of raw) {

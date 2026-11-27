@@ -1,7 +1,13 @@
-import { exportDocument, unpack } from './pdf-annotations.js'
+import { readAnnotations } from './annotation-file.js'
 
 self.onmessage = async ({data}) => {
   try {
+    if (data.operation === 'read-annotations') {
+      const result = await readAnnotations(data.file, data.documentSha256, data.pages)
+      self.postMessage({result})
+      return
+    }
+    const {exportDocument, unpack} = await import('./pdf-annotations.js')
     if (data.operation === 'unpack') {
       const result = await unpack(data.bytes)
       self.postMessage({result}, [result.bytes.buffer])

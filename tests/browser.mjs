@@ -1,11 +1,29 @@
 import { chromium } from 'playwright-core'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdtemp,rm,readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 import { checkReadingControls } from './reading-controls.mjs'
+
+async function downloadAnnotations(page) {
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button',{name:'Export annotations',exact:true}).click()
+  ])
+  return {name:download.suggestedFilename(),mimeType:'application/json',buffer:await readFile(await download.path())}
+}
+
+async function importAnnotations(page, file, message) {
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.getByRole('button',{name:'Import annotations',exact:true}).click()
+  ])
+  await chooser.setFiles(file)
+  await page.locator('#toast').filter({hasText:message}).waitFor()
+}
 
 const dir=path.resolve(process.env.MARGIN_EXTENSION_DIR || 'dist'), profile=await mkdtemp(path.join(tmpdir(),'margin-browser-'))
 const launch = () => chromium.launchPersistentContext(profile,{
@@ -60,6 +78,22 @@ try {
   await page.locator('#zoom-in').click();await ready()
   await page.locator('#fit').click();await ready()
 
+  const original = await readFile(path.join(dir,'assets/reading-the-alps.pdf'))
+  const fingerprint = bytes => createHash('sha256').update(bytes).digest('hex')
+  const migration = await downloadAnnotations(page)
+  const exportedMarks = JSON.parse(migration.buffer)
+  assert.equal(migration.name,'Reading the Alps.margin-annotations.json')
+  assert.equal(exportedMarks.documentSha256,fingerprint(original))
+  assert.equal(exportedMarks.annotations.length,6,'The current-page filter does not limit the export')
+  await page.locator('.card .more').first().click()
+  await page.getByRole('button',{name:'Delete',exact:true}).click()
+  await count(5)
+  await importAnnotations(page,migration,'1 added, 0 updated')
+  await count(6)
+  await page.locator('#undo').click();await count(5)
+  await page.locator('#redo').click();await count(6);await saved()
+  await page.reload();await ready();await count(6)
+
   const downloadPromise=page.waitForEvent('download')
   await page.locator('#export').click()
   const download=await downloadPromise
@@ -71,6 +105,8 @@ try {
   await page.locator('#file').setInputFiles({name:'Reopened.pdf',mimeType:'application/pdf',buffer:data})
   await page.waitForFunction(()=>document.querySelector('#filename').textContent==='Reopened.pdf')
   await ready();await count(6)
+  assert.equal(JSON.parse((await downloadAnnotations(page)).buffer).documentSha256,fingerprint(data),
+    'A reopened annotated PDF is identified by its actual input bytes')
   const card=page.locator('.card').filter({hasText:'Reviewed in Chromium'})
   await card.locator('.more').click()
   await card.getByRole('button',{name:'Edit note'}).click()
@@ -145,6 +181,17 @@ try {
   assert.equal(await privatePage.evaluate(()=>chrome.extension.inIncognitoContext),true)
   await privatePage.locator('#file').setInputFiles({name:'Private review.pdf',mimeType:'application/pdf',buffer:remoteBytes})
   await privatePage.locator('#filename').filter({hasText:'Private review.pdf'}).waitFor()
+  await privatePage.locator('#file').setInputFiles({name:'Reading the Alps.pdf',mimeType:'application/pdf',
+    buffer:Buffer.concat([original,Buffer.from('\n')])})
+  await privatePage.locator('#filename').filter({hasText:'Reading the Alps.pdf'}).waitFor()
+  await importAnnotations(privatePage,migration,'fingerprint does not match')
+  assert.equal(await privatePage.locator('#annotation-count').textContent(),'0')
+  await privatePage.locator('#file').setInputFiles({name:'Renamed copy.pdf',mimeType:'application/pdf',buffer:original})
+  await privatePage.locator('#filename').filter({hasText:'Renamed copy.pdf'}).waitFor()
+  await importAnnotations(privatePage,migration,'6 added, 0 updated')
+  await importAnnotations(privatePage,migration,'already in this document')
+  assert.equal(await privatePage.locator('#annotation-count').textContent(),'6')
+  assert.deepEqual(JSON.parse((await downloadAnnotations(privatePage)).buffer),exportedMarks)
   assert.deepEqual(await privatePage.evaluate(()=>indexedDB.databases()),[])
   await privatePage.reload()
   await privatePage.locator('#filename').filter({hasText:'Reading the Alps.pdf'}).waitFor()

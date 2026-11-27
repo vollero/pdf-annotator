@@ -1,4 +1,4 @@
-import { readMark, readDraft } from './mark-data.js'
+import { readMark, readDraft, maxMarkCount } from './mark-data.js'
 import { DocumentLimitError } from './input.js'
 import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
 
@@ -84,7 +84,7 @@ export async function unpack(bytes) {
       }
       if (mark) {
         marks.push(mark)
-        if (marks.length > 2000) throw new DocumentLimitError('This PDF exceeds the editable annotation limit.')
+        if (marks.length > maxMarkCount) throw new DocumentLimitError('This PDF exceeds the editable annotation limit.')
         detached.add(dict)
       } else kept.push(annotations.get(j))
     }
