@@ -1,3 +1,6 @@
+import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
+import { checkMarkBudget, readDraft } from './mark-data.js'
+import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
 import { colors,anchor } from './annotations.js'
 import { Viewer,readPDF } from './viewer.js'
@@ -8,7 +11,15 @@ import { lastDocument,remember,readMarks,writeChanges } from './storage.js'
 const $=id=>document.getElementById(id)
 decorate()
 let session, marks=[], undo=[], redo=[], selected=null, tool='select', color=colors[0][1]
+let activeImport = new AbortController()
+function beginImport() {
+  activeImport.abort()
+  activeImport = new AbortController()
+  return ++opening
+}
 let opening=0, editNumber=0, writes=Promise.resolve(), noteDraft, toastTimer, exporting=false
+const privateWindow = chrome.extension.inIncognitoContext
+const privateStatus = 'Private session · export to keep'
 const channel=new BroadcastChannel('margin-draft-changes')
 
 function toast(message) {
@@ -37,6 +48,7 @@ function refresh() {
   cards()
 }
 function persist(next) {
+  if (privateWindow) { state(privateStatus); return }
   const doc=session, number=++editNumber
   state('Saving…','pending')
   writes=writes.then(async()=>{
@@ -65,6 +77,7 @@ function apply(next) {
 }
 function change(next) {
   if(!session) return
+  try { checkMarkBudget(next) } catch (error) { toast(error.message); return }
   undo.push(marks)
   if(undo.length>100) undo.shift()
   redo=[]
@@ -77,11 +90,12 @@ function historyMove(from,to) {
 }
 channel.onmessage=async event=>{
   const doc=session
-  if(!doc || event.data!==doc.file.id) return
+  if(privateWindow || !doc || event.data!==doc.file.id) return
   await writes
   const number=editNumber
   try {
-    const merged=await readMarks(doc.file.id)
+    const stored=await readMarks(doc.file.id)
+    const merged=stored && readDraft(stored,doc.pages)
     if(doc===session && number===editNumber && merged && JSON.stringify(merged)!==JSON.stringify(marks)) {
       undo=[];redo=[];doc.saved=marks=merged;refresh()
     }
@@ -147,34 +161,41 @@ async function digest(bytes) {
   const d=await crypto.subtle.digest('SHA-256',bytes)
   return [...new Uint8Array(d)].map(n=>n.toString(16).padStart(2,'0')).join('')
 }
-async function load(file,initial=[],ticket=++opening) {
+async function load(file,initial=[],ticket=beginImport()) {
   if(ticket!==opening) return
+  const signal = AbortSignal.any([activeImport.signal, AbortSignal.timeout(90000)])
   let pdf
+  const cancel = () => { if (pdf && pdf !== viewer.pdf) pdf.destroy().catch(() => {}) }
+  signal.addEventListener('abort',cancel,{once:true})
   try {
+    checkFileSize(file.bytes.byteLength)
     file.id??=await digest(file.bytes)
     let base=file.bytes
-    pdf=await readPDF(base)
+    pdf=await readPDF(base, signal)
     const metadata=await pdf.getMetadata()
     if(metadata.info.Custom?.MarginEditor==='1') {
-      const {unpack}=await import('./pdf-annotations.js')
-      const restored=await unpack(base)
+      const restored=await runPdfJob({operation:'unpack',bytes:base},signal)
       await pdf.destroy()
       base=restored.bytes; initial=restored.marks
-      pdf=await readPDF(base)
+      pdf=await readPDF(base, signal)
     }
     if(ticket!==opening) {await pdf.destroy();return}
     await writes
     if(ticket!==opening) {await pdf.destroy();return}
     let saved=initial,remembered=false
-    try { saved=await remember(file,initial);remembered=true } catch { /* A storage failure still permits export. */ }
+    if (!privateWindow) {
+      try { saved=await remember(file,initial);remembered=true } catch { /* A storage failure still permits export. */ }
+    }
     if(ticket!==opening) {await pdf.destroy();return}
+    signal.throwIfAborted()
+    saved=readDraft(saved,pdf.numPages)
     selected=null;undo=[];redo=[];marks=saved
-    session={file,base,saved,remembered}
+    session={file,base,saved,remembered,pages:pdf.numPages}
     $('filename').textContent=file.name
     $('filename').title=file.name
     document.title=file.name+' · Margin'
-    state(remembered?'Saved locally':'Local save failed',remembered?'saved':'error')
-    if(!remembered) toast('Local storage is unavailable. Export your PDF to keep your work.')
+    state(privateWindow ? privateStatus : remembered ? 'Saved locally' : 'Local save failed',privateWindow || remembered ? 'saved' : 'error')
+    if(!privateWindow && !remembered) toast('Local storage is unavailable. Export your PDF to keep your work.')
     $('export').disabled=exporting
     $('filter').value='all'
     viewer.setDocument(pdf,marks)
@@ -184,17 +205,17 @@ async function load(file,initial=[],ticket=++opening) {
     if(pdf && pdf!==viewer.pdf) await pdf.destroy().catch(()=>{})
     if(ticket===opening) {
       const locked=error.name==='PasswordException' || error.message?.includes('encrypted')
-      toast(locked?'Open an unlocked copy of this PDF to annotate it.':'This file could not be opened as a PDF.')
+      toast(error.name === 'DocumentLimitError' ? error.message : locked?'Open an unlocked copy of this PDF to annotate it.':'This file could not be opened as a PDF.')
       if(!session) state('Open a PDF to begin','error')
     }
     return false
-  }
+  } finally { signal.removeEventListener('abort',cancel) }
 }
 async function openFile(file) {
   if(!file) return
-  const ticket=++opening
-  try { await load({bytes:new Uint8Array(await file.arrayBuffer()),name:file.name},[],ticket) }
-  catch { toast('The selected file could not be read.') }
+  const ticket=beginImport()
+  try { checkFileSize(file.size); await load({bytes:new Uint8Array(await file.arrayBuffer()),name:file.name},[],ticket) }
+  catch (error) { if (ticket===opening) toast(error instanceof DocumentLimitError ? error.message : 'The selected file could not be read.') }
 }
 $('open').onclick=()=>$('file').click()
 $('file').onchange=()=>{openFile($('file').files[0]);$('file').value=''}
@@ -212,8 +233,12 @@ async function download() {
   exporting=true;$('export').disabled=true
   const {file,base}=session, pdf=viewer.pdf, snapshot=marks
   try {
-    const {exportDocument}=await import('./pdf-annotations.js')
-    const bytes=await exportDocument(base,snapshot,async number=>(await pdf.getPage(number)).getViewport({scale:1}))
+    const views = new Map()
+    for (const number of new Set(snapshot.map(mark => mark.page))) {
+      const {width,height,userUnit,transform} = (await pdf.getPage(number)).getViewport({scale:1})
+      views.set(number,{width,height,userUnit,transform})
+    }
+    const bytes=await runPdfJob({operation:'export',bytes:base,marks:snapshot,views})
     const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}))
     const link=document.createElement('a')
     link.href=url;link.download=file.name.replace(/(?:-annotated)?\.pdf$/i,'')+'-annotated.pdf'
@@ -266,29 +291,36 @@ document.addEventListener('keydown',e=>{
 })
 
 async function start() {
-  const ticket=++opening
-  const source=new URLSearchParams(location.hash.slice(1)).get('source')
-  let sourceError
-  if(source) {
-    history.replaceState(null,'',location.pathname)
+  const ticket=beginImport()
+  const signal = activeImport.signal
+  if (location.hash) {
+    const clicked = location.hash === '#open'
     try {
-      const url=new URL(source)
-      if(!['http:','https:','file:'].includes(url.protocol)) throw Error()
-      const response=await fetch(url,{credentials:'include'})
-      if(!response.ok && url.protocol!=='file:') throw Error()
+      const source = clicked ? await chrome.runtime.sendMessage('open-clicked-pdf') : null
+      history.replaceState(null,'',location.pathname)
+      if (!source) throw Error()
+      const url = new URL(source)
+      const response = await fetch(url, {credentials:'omit', redirect:'error', referrerPolicy:'no-referrer',
+        cache:'no-store', signal:AbortSignal.any([signal, AbortSignal.timeout(30000)])})
+      if (!response.ok && !(url.protocol === 'file:' && response.status === 0)) throw Error()
       let name=url.pathname.split('/').pop() || 'Document.pdf'
       try {name=decodeURIComponent(name)} catch { /* Preserve the original filename. */ }
-      if(await load({name,bytes:new Uint8Array(await response.arrayBuffer())},[],ticket)) return
-      sourceError='Use Open PDF to choose an unlocked copy of this document.'
-    } catch {sourceError='This tab’s PDF could not be read. Use Open PDF to choose a local copy.'}
+      await load({name, bytes:await readResponse(response)},[],ticket)
+    } catch (error) {
+      history.replaceState(null,'',location.pathname)
+      if (ticket===opening) {
+        state('Open a PDF to begin','error')
+        toast(error instanceof DocumentLimitError ? error.message : 'This tab’s PDF could not be read. Use Open PDF to choose a local copy.')
+      }
+    }
+    return
   }
   try {
-    const last=await lastDocument().catch(()=>null)
+    const last=privateWindow ? null : await lastDocument().catch(()=>null)
     if(!last || !await load(last,[],ticket)) {
       const [pdf,annotations]=await Promise.all([fetch('assets/reading-the-alps.pdf'),fetch('assets/sample-annotations.json')])
       await load({bytes:new Uint8Array(await pdf.arrayBuffer()),name:'Reading the Alps.pdf'},await annotations.json(),ticket)
     }
-    if(sourceError && ticket===opening) toast(sourceError)
   } catch {if(ticket===opening) {state('Open a PDF to begin','error');toast('Choose a PDF to open your workspace.')}}
 }
 start()

@@ -84,7 +84,9 @@ try {
   const remote=await PDFDocument.create()
   remote.addPage([360,480])
   const remoteBytes=Buffer.from(await remote.save())
-  const server=createServer((_request,response)=>{
+  const requests=[]
+  const server=createServer((request,response)=>{
+    if (request.url==='/Field-study.pdf') requests.push(request.headers)
     response.writeHead(200,{'Content-Type':'application/pdf','Content-Length':remoteBytes.length})
     response.end(remoteBytes)
   })
@@ -95,6 +97,7 @@ try {
       const {targetInfos}=await browserCDP.send('Target.getTargets',{filter:[{type:'tab'}]})
       return targetInfos.map(info=>info.targetId)
     }
+    await context.addCookies([{url:'http://127.0.0.1:'+server.address().port,name:'review_session',value:'test'}])
     const previous=new Set(await tabIds())
     const tab=await context.newPage()
     await tab.goto('http://127.0.0.1:'+server.address().port+'/Field-study.pdf',{waitUntil:'commit'})
@@ -107,6 +110,13 @@ try {
     await editor.locator('#filename').filter({hasText:'Field-study.pdf'}).waitFor({timeout:12000})
     await editor.locator('#paper[data-ready="true"]').waitFor()
     assert.equal(await editor.locator('#total').textContent(),'1')
+    const navigation=requests.find(h=>h['sec-fetch-mode']==='navigate')
+    const imported=requests.find(h=>h['sec-fetch-mode']==='cors')
+    assert.match(navigation?.cookie ?? '',/review_session=test/)
+    assert.ok(imported,'The extension downloaded the selected PDF')
+    assert.equal(imported.cookie,undefined)
+    assert.equal(imported.referer,undefined)
+    assert.equal(new URL(editor.url()).hash,'')
   } finally {
     server.closeAllConnections()
     await new Promise(resolve=>server.close(resolve))

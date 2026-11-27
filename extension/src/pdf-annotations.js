@@ -1,4 +1,6 @@
-import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString } from '../vendor/pdf-lib.mjs'
+import { readMark, readDraft } from './mark-data.js'
+import { DocumentLimitError } from './input.js'
+import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
 
 const N = PDFName.of
 const S = PDFHexString.fromText
@@ -12,38 +14,63 @@ function infoDict(doc) {
   }
   return info
 }
-function portable(mark) {
-  const point = p => Array.isArray(p) && p.length === 2 && p.every(v => Number.isFinite(v) && v >= 0 && v <= 1)
-  const rect = r => Array.isArray(r) && r.length === 4 && r.every(v => Number.isFinite(v) && v >= 0 && v <= 1)
-  return mark && typeof mark.id === 'string' && typeof mark.text === 'string' && /^#[a-f0-9]{6}$/i.test(mark.color) && (
-    (mark.type === 'note' && point(mark.point)) ||
-    (mark.type === 'draw' && Array.isArray(mark.points) && mark.points.length > 1 && mark.points.every(point)) ||
-    (mark.type === 'highlight' && Array.isArray(mark.rects) && mark.rects.length && mark.rects.every(rect))
-  )
+// pdf-lib serializes every registered object, including objects detached from pages.
+// Follow trailer roots so shared resources, forms and ordinary annotations survive.
+function removeUnreachable(context) {
+  const pending = Object.values(context.trailerInfo), seen = new Set()
+  while (pending.length) {
+    const object = pending.pop()
+    if (!object || seen.has(object)) continue
+    seen.add(object)
+    if (object instanceof PDFRef) pending.push(context.lookup(object))
+    else if (object instanceof PDFStream) pending.push(object.dict)
+    else if (object instanceof PDFDict) {
+      for (const value of object.values()) pending.push(value)
+    } else if (object instanceof PDFArray) {
+      for (let i = 0; i < object.size(); i++) pending.push(object.get(i))
+    }
+  }
+  let removed = false
+  for (const [ref] of context.enumerateIndirectObjects()) {
+    if (!seen.has(ref)) { context.delete(ref); removed = true }
+  }
+  return removed
 }
 
-// Reconstruct the editable overlay from our own native annotations when an export is reopened.
 export async function unpack(bytes) {
   const doc = await PDFDocument.load(bytes,{updateMetadata:false})
-  const marks=[]
+  const marks = []
+  let encodedSize = 0
   for (const [i,page] of doc.getPages().entries()) {
     const annotations = page.node.Annots()
     if (!annotations) continue
-    for (let j=0;j<annotations.size();) {
-      const dict=annotations.lookup(j)
-      const data=dict instanceof PDFDict && dict.lookup(N('MarginData'))
+    const kept = []
+    for (let j = 0; j < annotations.size(); j++) {
+      const dict = annotations.lookup(j)
+      const data = dict instanceof PDFDict && dict.lookup(N('MarginData'))
       let mark
       if (data instanceof PDFHexString || data instanceof PDFString) {
-        try { mark=JSON.parse(data.decodeText()) } catch { /* Keep unrecognized PDF annotations in place. */ }
+        encodedSize += data.sizeInBytes()
+        if (encodedSize > 32 * 1024 * 1024 || data.sizeInBytes() > 8 * 1024 * 1024) {
+          throw new DocumentLimitError('This PDF exceeds the editable annotation data limit.')
+        }
+        let raw
+        try { raw = JSON.parse(data.decodeText()) } catch { /* Preserve unrecognized native annotations. */ }
+        mark = readMark(raw, i + 1)
       }
-      if (portable(mark)) {
-        marks.push({...mark,page:i+1})
-        annotations.remove(j)
-      } else j++
+      if (mark) {
+        marks.push(mark)
+        if (marks.length > 2000) throw new DocumentLimitError('This PDF exceeds the editable annotation limit.')
+        // A third-party reply can still reference this dictionary after detachment.
+        for (const field of ['Contents','MarginData','AP','RC']) dict.delete(N(field))
+      } else kept.push(annotations.get(j))
     }
+    if (kept.length !== annotations.size()) page.node.set(N('Annots'), doc.context.obj(kept))
   }
+  const draft = readDraft(marks, doc.getPageCount())
   infoDict(doc).delete(N('MarginEditor'))
-  return {bytes:await doc.save({updateFieldAppearances:false}),marks}
+  removeUnreachable(doc.context)
+  return {bytes:await doc.save({updateFieldAppearances:false}), marks:draft}
 }
 
 function appearance(doc, mark, viewport) {
@@ -92,9 +119,14 @@ function appearance(doc, mark, viewport) {
 }
 
 export async function exportDocument(bytes, marks, getViewport) {
-  if (!marks.length) return bytes
   const doc=await PDFDocument.load(bytes,{updateMetadata:false})
   if (doc.isEncrypted) throw new Error('Encrypted PDFs cannot be exported by Margin.')
+  // Earlier releases could leave detached Margin notes even in a file with no
+  // live annotations or MarginEditor flag. Clean those on a fresh export too.
+  const hasOldMarks = doc.context.enumerateIndirectObjects().some(([,object]) =>
+    object instanceof PDFDict && object.has(N('MarginData')))
+  const cleaned = hasOldMarks && removeUnreachable(doc.context)
+  if (!marks.length) return cleaned ? doc.save({updateFieldAppearances:false}) : bytes
   const pages=doc.getPages(), views=new Map()
   for (const mark of marks) {
     if (!views.has(mark.page)) views.set(mark.page,await getViewport(mark.page))
