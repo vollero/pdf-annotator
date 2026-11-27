@@ -64,7 +64,7 @@ export async function checkNoteAppearance(page) {
   await settings.getByLabel('Text size').selectOption('32')
   for (const el of [settings, sidebar, settings.locator('#appearance-example')]) {
     const bounds = await el.boundingBox()
-    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 360,'Reading boxes fit a narrow window')
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 360,'Reading box ' + await el.getAttribute('id') + ' exceeds 360 px: ' + JSON.stringify(bounds))
     assert.ok(await el.evaluate(node => node.scrollWidth <= node.clientWidth),'Text wraps inside the box')
   }
   assert.match((await fontOf(card))[1],/monospace/)

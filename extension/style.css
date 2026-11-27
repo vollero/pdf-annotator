@@ -11,7 +11,7 @@
 :root[data-note-box="compact"] { --note-panel: 280px; --note-editor: 450px; --note-lines: 6 }
 :root[data-note-box="spacious"] { --note-panel: 450px; --note-editor: 800px; --note-lines: 16 }
 * { box-sizing: border-box }
-body { margin: 0; height: 100dvh; overflow: hidden; display: grid; grid-template-rows: 72px 52px minmax(0,1fr) auto; background: #fff }
+body { margin: 0; height: 100dvh; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: 72px 52px minmax(0,1fr) auto; background: #fff }
 button,select,textarea { font: inherit; color: inherit }
 button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: none; border: 0; border-radius: 6px }
 button:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible { outline: 2px solid #a75230; outline-offset: 2px }
@@ -140,7 +140,7 @@ body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 [hidden] { display: none !important }.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
 @media(max-width: 1050px) { #pages-panel { width: 126px }.thumbnail .sheet { width: 83px }#scroller { padding: 22px 18px } }
 @media(max-width: 850px) { #annotations-panel { width: min(var(--note-panel), 100%); position: absolute; right: 0; height: 100%; z-index: 4; box-shadow: -4px 0 18px #2221 }.toolbar { gap: 10px; padding: 0 14px } }
-@media(max-width: 650px) { body { grid-template-rows: 60px 50px minmax(0,1fr) auto }.topbar { gap: 10px; padding: 0 10px }.brand span { display: none }.brand img { width: 29px; height: 29px }.file-info { padding-left: 9px; gap: 3px }.file-info strong { font-size: 12px }.file-info small { font-size: 10px }.button { padding: 0 8px; font-size: 11px; gap: 4px }.button .icon { width: 14px }.file-actions { gap: 5px }.toolbar { padding: 0 6px; gap: 5px }.tool { font-size: 0; gap: 0; padding: 0 6px }.tool-group,.toolbar-end { gap: 0 }.palette { gap: 3px }.swatch { width: 17px; height: 17px; border-width: 2px }.toolbar-end .divider { margin: 0 3px }.toolbar .icon-button { width: 25px }.toolbar .divider { height: 15px }#pages-panel { position: absolute; height: 100%; z-index: 4; box-shadow: 4px 0 18px #2221 }#scroller { padding: 15px 10px }footer { padding: 0 8px; gap: 5px }.local-status { font-size: 10px }.page-nav { gap: 3px } }
+@media(max-width: 650px) { body { grid-template-rows: 60px 50px minmax(0,1fr) auto }.topbar { gap: 10px; padding: 0 10px }.brand span { display: none }.brand img { width: 29px; height: 29px }.file-info { padding-left: 9px; gap: 3px }.file-info strong { font-size: 12px }.file-info small { font-size: 10px }.button { padding: 0 8px; font-size: 11px; gap: 4px }.button .icon { width: 14px }.file-actions { gap: 5px }.toolbar { padding: 0 6px; gap: 5px; overflow-x: auto }.tool { font-size: 0; gap: 0; padding: 0 6px }.tool-group,.toolbar-end { gap: 0 }.palette { gap: 3px }.swatch { width: 17px; height: 17px; border-width: 2px }.toolbar-end .divider { margin: 0 3px }.toolbar .icon-button { width: 25px }.toolbar .divider { height: 15px }#pages-panel { position: absolute; height: 100%; z-index: 4; box-shadow: 4px 0 18px #2221 }#scroller { padding: 15px 10px }footer { padding: 0 8px; gap: 5px }.local-status { font-size: 10px }.page-nav { gap: 3px } }
 .thumbnail .sheet svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
 
 @media (max-width: 950px) {
