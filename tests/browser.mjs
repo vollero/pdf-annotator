@@ -125,14 +125,16 @@ try {
   const extensionId = new URL(sw.url()).hostname
   const details = await context.newPage()
   await details.goto('chrome://extensions/?id=' + extensionId)
-  await details.locator('#allow-incognito cr-toggle').click()
+  // Changing Incognito access reloads the extension and invalidates its old worker.
+  const [reloaded] = await Promise.all([
+    context.waitForEvent('serviceworker',{predicate:w=>new URL(w.url()).hostname===extensionId,timeout:20000}),
+    details.locator('#allow-incognito cr-toggle').click()
+  ])
   await details.locator('#allow-incognito[checked]').waitFor()
-  const launcher = await context.newPage()
   const editorUrl = new URL('index.html',sw.url()).href
-  await launcher.goto(editorUrl)
   const [privatePage] = await Promise.all([
     context.waitForEvent('page',{timeout:15000}),
-    launcher.evaluate(url=>chrome.windows.create({incognito:true,url}),editorUrl)
+    reloaded.evaluate(url=>chrome.windows.create({incognito:true,url}),editorUrl)
   ])
   await privatePage.locator('#save-state').filter({hasText:'Private session'}).waitFor()
   assert.equal(await privatePage.evaluate(()=>chrome.extension.inIncognitoContext),true)
