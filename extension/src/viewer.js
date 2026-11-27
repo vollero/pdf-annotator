@@ -158,7 +158,11 @@ export class Viewer {
   }
 
   activate(number) {
-    this.currentSheet?.element.classList.remove('current')
+    const previous = this.currentSheet
+    previous?.element.classList.remove('current')
+    if (previous && previous.number !== number && (!this.continuous || !this.nearby.has(previous))) {
+      this.release(previous)
+    }
     this.page = number
     this.currentSheet.element.classList.add('current')
     $('current').textContent = number
@@ -205,6 +209,8 @@ export class Viewer {
 
   // Retain the point being read when the page stack, available width, or zoom changes.
   preservePosition(change) {
+    // A wheel event can precede the next animation frame or a page-size measurement.
+    this.trackPage()
     const paper = this.currentSheet?.element
     const before = paper?.getBoundingClientRect()
     const view = this.scroller.getBoundingClientRect()

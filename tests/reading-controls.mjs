@@ -62,12 +62,13 @@ export async function checkReadingControls(page) {
   await ready(3)
   await page.locator('#zoom-out').click()
   await ready(3)
-  await page.evaluate(() => {
+  const showPageBreak = () => page.evaluate(() => {
     const scroller = document.querySelector('#scroller')
     const pageFour = document.querySelector('.paper[data-page="4"]')
     const offset = pageFour.getBoundingClientRect().top - scroller.getBoundingClientRect().top
     scroller.scrollBy(0, offset - scroller.clientHeight * .64)
   })
+  await showPageBreak()
   await ready(3)
   await page.locator('.paper[data-page="4"][data-ready="true"]').waitFor()
   await page.locator('.tool[data-tool="note"]').click()
@@ -89,6 +90,22 @@ export async function checkReadingControls(page) {
   const exported = await PDFDocument.load(await readFile(await downloaded.path()))
   assert.equal(exported.getPage(3).node.Annots().size(), 1)
   assert.equal(exported.getPage(2).node.Annots()?.size() ?? 0, 0)
+
+  await showPageBreak()
+  await ready(3)
+  await page.locator('.tool[data-tool="highlight"]').click()
+  const endOfThird = await sheet(3).locator('.textLayer span').filter({hasText: 'End of page 3'}).boundingBox()
+  const startOfFourth = await sheet(4).locator('.textLayer span').filter({hasText: 'Start of page 4'}).boundingBox()
+  await page.mouse.move(endOfThird.x + 1, endOfThird.y + endOfThird.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(startOfFourth.x + startOfFourth.width - 1, startOfFourth.y + startOfFourth.height / 2, {steps: 12})
+  await page.mouse.up()
+  await page.waitForFunction(() => document.querySelector('#annotation-count').textContent === '3')
+  assert.ok(await sheet(3).locator('.ink rect').count() > 0)
+  assert.ok(await sheet(4).locator('.ink rect').count() > 0)
+  await page.locator('#undo').click()
+  assert.equal(await sheet(3).locator('.ink rect').count(), 0)
+  assert.equal(await sheet(4).locator('.ink rect').count(), 0)
 
   await page.locator('#pages-toggle').click()
   await page.getByRole('button', {name: 'Go to page 17', exact: true}).click()
