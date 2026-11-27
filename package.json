@@ -15,5 +15,6 @@
   },
   "devDependencies": {
     "playwright-core": "1.62.1"
-  }
+  },
+  "license": "Apache-2.0"
 }
