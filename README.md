@@ -19,7 +19,7 @@ On your first launch from a new tab, Margin opens *Reading the Alps*. It already
 2. Click **Note**, click a spot on the page, type a comment, and click **Save note**. To edit it later, click **Select**, then the note marker.
 3. Click **Export PDF**. Your browser downloads **Reading the Alps-annotated.pdf**. Open that file in your PDF reader to see the marks, or reopen it in Margin to keep editing.
 
-![Margin showing Reading the Alps, with the Highlight and Note tools above the page and the annotations list on the right.](docs/margin-editor.png)
+![Margin showing Reading the Alps, with Import annotations and Export annotations at the bottom of the right-hand Annotations panel.](docs/margin-editor.png)
 
 ## Open your own PDF
 
