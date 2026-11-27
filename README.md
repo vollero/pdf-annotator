@@ -31,7 +31,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Reading controls in the release candidate
 
-The bottom bar lets you change how you read the PDF. These controls are available in [Margin 0.1.1-rc.2](https://github.com/vollero/pdf-annotator/releases/tag/v0.1.1-rc.2).
+The bottom bar lets you change how you read the PDF. To try these controls, download the [Margin 0.1.1-rc.3 extension ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.1.1-rc.3/margin-pdf-annotator.zip) and follow the installation steps above.
 
 - Choose **Continuous scrolling** in the **Single page** menu to scroll from one page straight into the next. The page counter follows your reading position. Choose **Single page** to switch back.
 - Click **Hide workspace** to give the PDF more room. The page, zoom, and scrolling controls stay at the bottom. Click **Show workspace** or press **Esc** to bring the editor back.
