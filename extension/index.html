@@ -97,9 +97,9 @@
     <form id="appearance-form" method="dialog">
       <div class="dialog-head"><h2 id="appearance-title">Note appearance</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
       <div class="appearance-controls">
-        <label>Font<select id="note-font"><option value="sans" selected>Sans serif</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></label>
-        <label>Text size<select id="note-size"><option value="14">14 px</option><option value="16">16 px</option><option value="18" selected>18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option></select></label>
-        <label>Box size<select id="note-box"><option value="compact">Compact</option><option value="comfortable" selected>Comfortable</option><option value="spacious">Spacious</option></select></label>
+        <div><label for="note-font">Font</label><select id="note-font"><option value="sans" selected>Sans serif</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></div>
+        <div><label for="note-size">Text size</label><select id="note-size"><option value="14">14 px</option><option value="16">16 px</option><option value="18" selected>18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option></select></div>
+        <div><label for="note-box">Box size</label><select id="note-box"><option value="compact">Compact</option><option value="comfortable" selected>Comfortable</option><option value="spacious">Spacious</option></select></div>
       </div>
       <p id="appearance-example" aria-label="Note preview"></p>
       <div class="dialog-actions"><button id="reset-appearance" type="button" class="button">Restore defaults</button><button class="button primary">Done</button></div>

@@ -321,6 +321,7 @@ function savePreference(key, value) {
 }
 const appearanceControls = [...$('appearance-form').querySelectorAll('select')]
 function applyAppearance() {
+  hideNotePreview()
   const root = document.documentElement
   root.dataset.noteFont = $('note-font').value
   root.style.setProperty('--note-size', $('note-size').value + 'px')

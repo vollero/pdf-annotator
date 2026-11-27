@@ -129,7 +129,8 @@ dialog::backdrop { background: #26272050 }.dialog-head,.dialog-actions { display
 #sheets .note-marker:focus-visible { outline: 2px solid var(--accent) }
 #appearance-dialog { width: min(520px, calc(100vw - 20px)); max-height: calc(100dvh - 20px); overflow: auto }
 .appearance-controls { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(112px,100%),1fr)); gap: 10px }
-.appearance-controls label { display: grid; gap: 5px; font-size: 14px }
+.appearance-controls > div { display: grid; gap: 5px }
+.appearance-controls label { font-size: 14px }
 .appearance-controls select { font-weight: 400; min-width: 0; padding: 7px; border: 1px solid #c5c7be; border-radius: 5px; background: white }
 #appearance-example { margin: 16px 0 0 }
 #appearance-form .dialog-actions { justify-content: space-between }
