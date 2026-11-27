@@ -86,14 +86,19 @@ try {
   })
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
   try {
+    const browserCDP=await context.browser().newBrowserCDPSession()
+    const tabIds=async()=>{
+      const {targetInfos}=await browserCDP.send('Target.getTargets',{filter:[{type:'tab'}]})
+      return targetInfos.map(info=>info.targetId)
+    }
+    const previous=new Set(await tabIds())
     const tab=await context.newPage()
     await tab.goto('http://127.0.0.1:'+server.address().port+'/Field-study.pdf',{waitUntil:'commit'})
-    const cdp=await context.newCDPSession(tab)
-    const {targetInfo}=await cdp.send('Target.getTargetInfo')
-    const browserCDP=await context.browser().newBrowserCDPSession()
+    const [targetId]=(await tabIds()).filter(id=>!previous.has(id))
+    assert.ok(targetId,'The PDF has a top-level tab target')
     const [editor]=await Promise.all([
       context.waitForEvent('page',{timeout:12000}),
-      browserCDP.send('Extensions.triggerAction',{id:new URL(sw.url()).hostname,targetId:targetInfo.targetId})
+      browserCDP.send('Extensions.triggerAction',{id:new URL(sw.url()).hostname,targetId})
     ])
     await editor.locator('#filename').filter({hasText:'Field-study.pdf'}).waitFor({timeout:12000})
     await editor.locator('#paper[data-ready="true"]').waitFor()
