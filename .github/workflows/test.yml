@@ -16,4 +16,43 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npx playwright-core install --with-deps chromium
+      - name: Prepare the installable ZIP for a version tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(node -p "require('./dist/manifest.json').version")
+          test "$GITHUB_REF_NAME" = "v$version"
+          mkdir -p "$RUNNER_TEMP/package"
+          cp -R dist "$RUNNER_TEMP/package/Margin"
+          cd "$RUNNER_TEMP/package"
+          zip -qr "$GITHUB_WORKSPACE/margin-pdf-annotator.zip" Margin
+          unzip -q "$GITHUB_WORKSPACE/margin-pdf-annotator.zip" -d "$RUNNER_TEMP/install-check"
+          echo "MARGIN_EXTENSION_DIR=$RUNNER_TEMP/install-check/Margin" >> "$GITHUB_ENV"
+          echo "MARGIN_PREVIEW_PATH=$GITHUB_WORKSPACE/margin-editor.png" >> "$GITHUB_ENV"
       - run: npm run test:browser
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: tested-release
+          path: |
+            margin-pdf-annotator.zip
+            margin-editor.png
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: tested-release
+      - name: Publish the tested ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" margin-pdf-annotator.zip \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "Margin ${GITHUB_REF_NAME#v}" \
+            --notes "Download **margin-pdf-annotator.zip** under **Assets** and extract it. The **Margin** folder inside is ready to load in desktop Chrome or Chromium. [Follow the installation guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#install-margin)."

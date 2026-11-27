@@ -6,7 +6,7 @@ import { createServer } from 'node:http'
 import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 
-const dir=path.resolve('dist'), profile=await mkdtemp(path.join(tmpdir(),'margin-browser-'))
+const dir=path.resolve(process.env.MARGIN_EXTENSION_DIR || 'dist'), profile=await mkdtemp(path.join(tmpdir(),'margin-browser-'))
 const context=await chromium.launchPersistentContext(profile,{
   channel:'chromium',executablePath:process.env.CHROMIUM_PATH || undefined,
   headless:true,ignoreDefaultArgs:['--disable-extensions'],
@@ -26,6 +26,10 @@ try {
   assert.equal(await page.locator('.thumbnail').count(),3)
   const sampleText=page.locator('#text-layer span').filter({hasText:'Every ridge holds'})
   await sampleText.first().waitFor()
+  if (process.env.MARGIN_PREVIEW_PATH) {
+    await page.locator('.thumbnail canvas').nth(2).waitFor()
+    await page.screenshot({path:process.env.MARGIN_PREVIEW_PATH,animations:'disabled'})
+  }
   // Check the text layer aligns with the rendered PDF at ordinary zoom.
   const line=await sampleText.first().boundingBox(), sheet=await page.locator('#paper').boundingBox()
   assert.ok(Math.abs((line.x-sheet.x)/sheet.width-46/612)<.012)
