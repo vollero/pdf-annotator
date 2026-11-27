@@ -36,7 +36,8 @@ function state(label,kind='saved') {
 }
 function cards() {
   renderCards({marks,page:viewer.page,currentOnly:$('filter').value==='current',selected,
-    jump:jumpTo,edit:openNote,remove:mark=>change(marks.filter(m=>m.id!==mark.id))})
+    jump:jumpTo,edit:openNote,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
+    setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m))})
 }
 const viewer=new Viewer({onPage:cards,onError:toast})
 const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
@@ -144,20 +145,39 @@ async function jumpTo(mark) {
 function openNote(mark) {
   if(!mark || !session) return
   hideNotePreview()
-  noteDraft={mark,session}
-  $('note-title').textContent=marks.some(m=>m.id===mark.id)?'Edit note':'Add a note'
+  const existing=marks.some(m=>m.id===mark.id)
+  noteDraft={mark,session,existing}
+  $('note-title').textContent=existing?'Edit note':'Add a note'
   $('note-text').value=mark.text
+  $('track-note').checked = mark.done !== undefined
+  $('note-done').checked = mark.done === true
+  $('note-done-label').hidden = !$('track-note').checked
   $('note-dialog').showModal()
   $('note-text').focus()
 }
+$('track-note').onchange = () => { $('note-done-label').hidden = !$('track-note').checked }
 $('note-form').addEventListener('submit',e=>{
   e.preventDefault()
   const text=$('note-text').value.trim()
   if(!text) { $('note-text').focus();return }
   if(noteDraft?.session===session) {
-    const mark={...noteDraft.mark,text}
-    selected=mark.id
-    change(marks.some(m=>m.id===mark.id)?marks.map(m=>m.id===mark.id?mark:m):[...marks,mark])
+    const original = noteDraft.mark
+    const current = marks.find(m => m.id === original.id)
+    if (noteDraft.existing && current?.type !== 'note') {
+      toast('This note is no longer in the document.')
+    } else {
+      const mark = {...(current ?? original)}
+      if (text !== original.text) mark.text = text
+      const done = $('track-note').checked ? $('note-done').checked : undefined
+      if (done !== original.done) {
+        if (done === undefined) delete mark.done
+        else mark.done = done
+      }
+      selected = mark.id
+      if (!current || current.text !== mark.text || current.done !== mark.done) {
+        change(current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark])
+      }
+    }
   }
   $('note-dialog').close()
 })
@@ -208,6 +228,7 @@ async function load(file,initial=[],ticket=beginImport()) {
     $('export-annotations').disabled=false
     $('import-annotations').disabled=false
     $('filter').value='all'
+    $('action-filter').value='all'
     viewer.setDocument(pdf,marks)
     selectTool('select');refresh()
     return true
@@ -300,6 +321,7 @@ $('zoom-in').onclick=()=>viewer.changeZoom(1)
 $('zoom-out').onclick=()=>viewer.changeZoom(-1)
 $('fit').onclick=()=>viewer.changeZoom(0)
 $('filter').onchange=cards
+$('action-filter').onchange=cards
 function panel(name,visible) {
   $(name+'-panel').hidden=!visible
   $(name+'-toggle').setAttribute('aria-expanded',visible)
@@ -394,7 +416,7 @@ for(const [action,key] of [['Select','V'],['Highlight','H'],['Draw','D'],['Note'
 }
 $('shortcuts').onclick=()=>$('keys-dialog').showModal()
 document.addEventListener('keydown',e=>{
-  if(document.querySelector('dialog[open]') || e.target.closest('textarea,input,select,[contenteditable="true"]')) return
+  if(document.querySelector('dialog[open]') || e.target.closest('textarea,input:not([type="checkbox"]),select,[contenteditable="true"]')) return
   const key=e.key.toLowerCase(), ctrl=e.ctrlKey||e.metaKey
   if(e.altKey) return
   if(ctrl) {

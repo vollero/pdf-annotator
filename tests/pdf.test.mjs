@@ -22,12 +22,15 @@ test('native comments round-trip with crop, rotation, Unicode and existing annot
     {id:'d',type:'draw',color:'#9abd9e',points:[[.12,.3],[.22,.35]],text:'Freehand drawing',page:1},
     {id:'n',type:'note',color:'#91b9dd',point:[.4,.5],text:'Caffè — 注釈',page:1}
   ]
+  marks.push({...marks[2],id:'a',done:false}, {...marks[2],id:'b',done:true})
   assert.equal(viewport.userUnit,2)
   const bytes=await exportDocument(source,marks,()=>viewport)
   const reopened=await getDocument({...opts,data:bytes.slice()}).promise
   const annotations=await (await reopened.getPage(1)).getAnnotations()
-  assert.deepEqual(annotations.map(a=>a.subtype),['Text','Highlight','Ink','Text'])
+  assert.deepEqual(annotations.map(a=>a.subtype),['Text','Highlight','Ink','Text','Text','Text'])
   assert.equal(annotations[3].contentsObj.str,marks[2].text)
+  assert.equal(annotations[4].contentsObj.str,'To do: ' + marks[2].text)
+  assert.equal(annotations[5].contentsObj.str,'Done: ' + marks[2].text)
   assert.equal((await reopened.getMetadata()).info.Custom.MarginEditor,'1')
   const raw=await PDFDocument.load(bytes)
   const dicts=raw.getPage(0).node.Annots()

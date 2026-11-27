@@ -1,3 +1,5 @@
+import { noteStatus } from './mark-data.js'
+
 export const colors = [
   ['Amber','#efc650'], ['Sage','#9abd9e'], ['Sky','#91b9dd'], ['Rose','#e5a4ae'], ['Lavender','#b3a1d4']
 ]
@@ -25,11 +27,15 @@ export function paintMark(mark, width, height, interactive = false) {
     group.setAttribute('transform','translate('+x+' '+y+')')
     group.setAttribute('class','note-marker')
     group.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
-    group.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
+    const status = noteStatus(mark)
+    if (status) {
+      group.append(shape('rect',{x:5,y:2.5,width:8,height:8,rx:1,fill:'white',stroke:'#353a32','stroke-width':1}))
+      if (mark.done) group.append(shape('path',{d:'m6.5 6.5 1.8 1.8 3.3-3.8',fill:'none',stroke:'#353a32','stroke-width':1.5}))
+    } else group.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
     if (interactive) {
       group.setAttribute('tabindex','0')
       group.setAttribute('role','button')
-      group.setAttribute('aria-label','Edit note on page ' + mark.page)
+      group.setAttribute('aria-label','Edit note on page ' + mark.page + (status ? ' (' + status + ')' : ''))
       group.setAttribute('aria-haspopup','dialog')
     }
   }

@@ -34,7 +34,7 @@ test('the migration file contains only versioned annotation data and the exact P
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:2}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:3}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
@@ -44,6 +44,27 @@ test('invalid or oversized packages are rejected as a whole', async () => {
   }
   await assert.rejects(readAnnotations(new Blob(['{']),hash,3),/JSON file/)
   await assert.rejects(readAnnotations({size:16*1024*1024+1},hash,3),/16 MiB/)
+})
+
+test('action checkboxes round-trip, update and clear through versioned migrations', async () => {
+  const note = sample.find(mark => mark.type === 'note')
+  const plain = JSON.parse(await file(note).text())
+  assert.equal(plain.version,1)
+  for (const done of [false,true]) {
+    const tracked = {...note,done}
+    const encoded = file(tracked)
+    assert.equal(JSON.parse(await encoded.text()).version,2)
+    const imported = await readAnnotations(encoded,hash,3)
+    assert.deepEqual(imported,[tracked])
+    assert.equal(mergeAnnotations([note],imported).updated,1)
+    assert.equal(mergeAnnotations([tracked],imported).updated,0)
+    assert.deepEqual(mergeAnnotations([tracked],await readAnnotations(file(note),hash,3)).marks,[note])
+  }
+  for (const [version,mark] of [[1,{...note,done:false}],[2,{...note,done:'false'}],
+    [2,{...note,done:null}],[2,{...drawing,done:true}]]) {
+    const blob = new Blob([JSON.stringify({...plain,version,annotations:[mark]})])
+    await assert.rejects(readAnnotations(blob,hash,3),/Invalid/)
+  }
 })
 
 test('merging updates by ID, keeps unrelated marks, and is idempotent', async () => {

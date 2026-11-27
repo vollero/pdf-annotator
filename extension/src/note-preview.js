@@ -1,3 +1,5 @@
+import { noteStatus } from './mark-data.js'
+
 // Listen on the page stack because scrolling and zooming replace its SVG markers.
 export function bindNotePreview(stack, preview, findNote, edit) {
   let marker, closeTimer
@@ -25,7 +27,8 @@ export function bindNotePreview(stack, preview, findNote, edit) {
     if (!note) return
     marker = next
     redraws.observe(stack, {childList:true, subtree:true})
-    preview.textContent = note.text
+    const status = noteStatus(note)
+    preview.textContent = status ? status + ' · ' + note.text : note.text
     preview.hidden = false
     preview.scrollTop = 0
     const box = next.getBoundingClientRect()

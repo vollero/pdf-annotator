@@ -1,11 +1,10 @@
 import { checkMarkBudget, maxMarkCount, readMark } from './mark-data.js'
 
 const format = 'margin-annotations'
-const version = 1
 const maxFileBytes = 16 * 1024 * 1024
 const hashPattern = /^[0-9a-f]{64}$/
 
-function portableMarks(entries, pages) {
+function portableMarks(entries, pages, version) {
   if (!Array.isArray(entries) || entries.length > maxMarkCount) {
     throw new Error('Invalid annotation list or too many annotations in this file.')
   }
@@ -13,7 +12,8 @@ function portableMarks(entries, pages) {
   const marks = entries.map((entry, index) => {
     const page = entry?.page
     const mark = Number.isInteger(page) && page >= 1 && page <= pages && readMark(entry, page)
-    if (!mark || ids.has(mark.id) || Object.keys(entry).some(key => !Object.hasOwn(mark, key))) {
+    if (!mark || (version === 1 && Object.hasOwn(mark, 'done')) ||
+        ids.has(mark.id) || Object.keys(entry).some(key => !Object.hasOwn(mark, key))) {
       throw new Error('Invalid or duplicate annotation at position ' + (index + 1) + '.')
     }
     ids.add(mark.id)
@@ -25,7 +25,8 @@ function portableMarks(entries, pages) {
 
 export function exportAnnotations(documentSha256, pages, marks) {
   if (!hashPattern.test(documentSha256)) throw new Error('The PDF fingerprint is unavailable.')
-  const annotations = portableMarks(marks, pages)
+  const annotations = portableMarks(marks, pages, 2)
+  const version = annotations.some(mark => mark.done !== undefined) ? 2 : 1
   return new Blob([JSON.stringify({format, version, documentSha256, annotations})], {type:'application/json'})
 }
 
@@ -35,7 +36,7 @@ export async function readAnnotations(file, documentSha256, pages) {
   try { data = JSON.parse(await file.text()) }
   catch { throw new Error('Choose a Margin annotations JSON file.') }
   if (data?.format !== format) throw new Error('Choose a Margin annotations JSON file.')
-  if (data.version !== version) throw new Error('This annotation file version is unsupported.')
+  if (data.version !== 1 && data.version !== 2) throw new Error('This annotation file version is unsupported.')
   if (typeof data.documentSha256 !== 'string' || !hashPattern.test(data.documentSha256) ||
       Object.keys(data).some(key => !['format','version','documentSha256','annotations'].includes(key))) {
     throw new Error('Invalid Margin annotation file.')
@@ -43,7 +44,7 @@ export async function readAnnotations(file, documentSha256, pages) {
   if (data.documentSha256 !== documentSha256) {
     throw new Error('The PDF fingerprint does not match. Open the exact PDF used for this annotation export.')
   }
-  return portableMarks(data.annotations, pages)
+  return portableMarks(data.annotations, pages, data.version)
 }
 
 // Keep local-only marks and preserve object identities for unchanged entries.

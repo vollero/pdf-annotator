@@ -8,6 +8,7 @@ import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 import { checkReadingControls } from './reading-controls.mjs'
 import { checkNoteAppearance } from './note-appearance.mjs'
+import { checkActionNotes } from './action-notes.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -85,11 +86,13 @@ try {
   await page.locator('.tool[data-tool="note"]').click()
   await page.mouse.click(sheet.x+90,sheet.y+100)
   await page.locator('#note-text').fill('Reviewed in Chromium — 注釈')
+  await page.getByLabel('Track as action').check()
   await page.getByRole('button',{name:'Save note',exact:true}).click()
   await count(6)
   await page.locator('#undo').click();await count(5)
   await page.locator('#redo').click();await count(6);await saved()
   await page.reload();await ready();await count(6)
+  await checkActionNotes(page)
   await page.locator('#next').click();await ready()
   assert.equal(await page.locator('#current').textContent(),'2')
   await page.locator('#filter').selectOption('current')
@@ -101,6 +104,8 @@ try {
   const fingerprint = bytes => createHash('sha256').update(bytes).digest('hex')
   const migration = await downloadAnnotations(page)
   const exportedMarks = JSON.parse(migration.buffer)
+  assert.equal(exportedMarks.version,2)
+  assert.equal(exportedMarks.annotations.find(m=>m.text.includes('Reviewed in Chromium')).done,true)
   assert.equal(migration.name,'Reading the Alps.margin-annotations.json')
   assert.equal(exportedMarks.documentSha256,fingerprint(original))
   assert.equal(exportedMarks.annotations.length,6,'The current-page filter does not limit the export')
@@ -127,10 +132,20 @@ try {
   assert.equal(JSON.parse((await downloadAnnotations(page)).buffer).documentSha256,fingerprint(data),
     'A reopened annotated PDF is identified by its actual input bytes')
   const card=page.locator('.card').filter({hasText:'Reviewed in Chromium'})
+  assert.ok(await card.getByRole('checkbox').isChecked())
   await card.locator('.more').click()
   await card.getByRole('button',{name:'Edit note'}).click()
+  assert.ok(await page.locator('#note-done').isChecked())
+  await page.getByLabel('Track as action').uncheck()
+  await page.getByRole('button',{name:'Cancel',exact:true}).click()
+  assert.ok(await card.getByRole('checkbox').isChecked())
+  await card.locator('.more').click()
+  await card.getByRole('button',{name:'Edit note'}).click()
+  await page.getByLabel('Track as action').uncheck()
   await page.locator('#note-text').fill('Updated comment')
   await page.getByRole('button',{name:'Save note',exact:true}).click()
+  assert.equal(await page.locator('.card-check').count(),0)
+  assert.ok(await page.locator('#action-filter').isHidden())
   await page.locator('.card').filter({hasText:'Updated comment'}).locator('.more').click()
   await page.getByRole('button',{name:'Delete',exact:true}).click()
   await count(5);await saved()

@@ -11,9 +11,16 @@ export function readMark(raw, page) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
-  if (type === 'note' && point(raw.point)) return {...mark, point:raw.point}
+  if (type === 'note' && point(raw.point)) {
+    if (!Object.hasOwn(raw, 'done')) return {...mark, point:raw.point}
+    if (typeof raw.done === 'boolean') return {...mark, point:raw.point, done:raw.done}
+  }
   if (type === 'draw' && Array.isArray(raw.points) && raw.points.length > 1 && raw.points.every(point)) return {...mark, points:raw.points}
   if (type === 'highlight' && Array.isArray(raw.rects) && raw.rects.length && raw.rects.every(rect)) return {...mark, rects:raw.rects}
+}
+
+export function noteStatus(mark) {
+  return mark.done === undefined ? '' : mark.done ? 'Done' : 'To do'
 }
 
 const encodedSizes = new WeakMap()

@@ -1,4 +1,4 @@
-import { readMark, readDraft, maxMarkCount } from './mark-data.js'
+import { readMark, readDraft, maxMarkCount, noteStatus } from './mark-data.js'
 import { DocumentLimitError } from './input.js'
 import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
 
@@ -152,8 +152,9 @@ export async function exportDocument(bytes, marks, getViewport) {
   for (const mark of marks) {
     if (!views.has(mark.page)) views.set(mark.page,await getViewport(mark.page))
     const page=pages[mark.page-1]
+    const status = noteStatus(mark)
     const annotation=doc.context.obj({
-      Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:S(mark.text),
+      Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:S(status ? status + ': ' + mark.text : mark.text),
       MarginData:S(JSON.stringify(mark)),...appearance(doc,mark,views.get(mark.page))
     })
     page.node.addAnnot(doc.context.register(annotation))

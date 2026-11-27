@@ -63,7 +63,20 @@ export async function writeChanges(id, before, after) {
     lookup.onsuccess = () => {
       const merged = new Map((lookup.result ?? before).map(mark => [mark.id,mark]))
       for (const mark of removed) merged.delete(mark.id)
-      for (const mark of changed) merged.set(mark.id,mark)
+      for (const mark of changed) {
+        const prior = old.get(mark.id), latest = merged.get(mark.id)
+        // Text edits and checkbox clicks can land in different tabs before either receives the broadcast.
+        if (mark.type === 'note' && latest?.type === 'note' && prior?.type === 'note' &&
+            mark.point === prior.point && mark.page === prior.page && mark.color === prior.color) {
+          const note = {...latest}
+          if (prior.text !== mark.text) note.text = mark.text
+          if (prior.done !== mark.done) {
+            if (mark.done === undefined) delete note.done
+            else note.done = mark.done
+          }
+          merged.set(mark.id,note)
+        } else merged.set(mark.id,mark)
+      }
       const result = [...merged.values()]
       // Concurrent imports can each fit the limit on their own.
       try { checkMarkBudget(result) }
