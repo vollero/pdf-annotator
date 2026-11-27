@@ -7,6 +7,7 @@ import { createServer } from 'node:http'
 import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 import { checkReadingControls } from './reading-controls.mjs'
+import { checkNoteAppearance } from './note-appearance.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -64,6 +65,7 @@ try {
     await page.locator('.thumbnail canvas').nth(2).waitFor()
     await page.screenshot({path:process.env.MARGIN_PREVIEW_PATH,animations:'disabled'})
   }
+  await checkNoteAppearance(page)
   // Check the text layer aligns with the rendered PDF at ordinary zoom.
   const line=await sampleText.first().boundingBox(), sheet=await page.locator('.paper.current').boundingBox()
   assert.ok(Math.abs((line.x-sheet.x)/sheet.width-46/612)<.012)

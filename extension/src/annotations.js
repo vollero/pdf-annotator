@@ -8,7 +8,7 @@ export function shape(name, attrs) {
   for (const [key,value] of Object.entries(attrs)) el.setAttribute(key,value)
   return el
 }
-export function paintMark(mark, width, height) {
+export function paintMark(mark, width, height, interactive = false) {
   const group = shape('g', { 'data-id':mark.id })
   if (mark.type === 'highlight') {
     for (const [x,y,w,h] of mark.rects) group.append(shape('rect',{
@@ -26,9 +26,12 @@ export function paintMark(mark, width, height) {
     group.setAttribute('class','note-marker')
     group.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
     group.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
-    const title=shape('title',{})
-    title.textContent=mark.text
-    group.append(title)
+    if (interactive) {
+      group.setAttribute('tabindex','0')
+      group.setAttribute('role','button')
+      group.setAttribute('aria-label','Edit note on page ' + mark.page)
+      group.setAttribute('aria-haspopup','dialog')
+    }
   }
   return group
 }

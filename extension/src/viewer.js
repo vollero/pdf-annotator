@@ -174,7 +174,7 @@ export class Viewer {
   paint(sheet) {
     if (!sheet.ink) return
     sheet.ink.replaceChildren(...this.marks.filter(mark => mark.page === sheet.number)
-      .map(mark => paintMark(mark, sheet.base.width, sheet.base.height)))
+      .map(mark => paintMark(mark, sheet.base.width, sheet.base.height, true)))
   }
 
   activate(number) {

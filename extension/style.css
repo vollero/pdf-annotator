@@ -2,8 +2,14 @@
   color-scheme: light;
   --ink: #292b29; --muted: #70716b; --line: #dfdfd8; --accent: #a74b28;
   --sidebar: #fafaf7; --soft-orange: #f6e9df;
+  --note-font: system-ui, sans-serif; --note-size: 18px;
+  --note-panel: 350px; --note-editor: 610px; --note-lines: 10;
   font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 14px; color: var(--ink);
 }
+:root[data-note-font="serif"] { --note-font: Georgia, "Times New Roman", serif }
+:root[data-note-font="mono"] { --note-font: ui-monospace, Consolas, monospace }
+:root[data-note-box="compact"] { --note-panel: 280px; --note-editor: 450px; --note-lines: 6 }
+:root[data-note-box="spacious"] { --note-panel: 450px; --note-editor: 800px; --note-lines: 16 }
 * { box-sizing: border-box }
 body { margin: 0; height: 100dvh; overflow: hidden; display: grid; grid-template-rows: 72px 52px minmax(0,1fr) auto; background: #fff }
 button,select,textarea { font: inherit; color: inherit }
@@ -41,7 +47,7 @@ button,.thumbnail .sheet { transition: background-color .12s, border-color .12s 
 main { min-height: 0; display: flex; position: relative; overflow: hidden }
 aside { background: var(--sidebar); display: flex; flex-direction: column; min-height: 0 }
 #pages-panel { width: 158px; border-right: 1px solid var(--line); flex: none }
-#annotations-panel { width: 270px; border-left: 1px solid var(--line); flex: none }
+#annotations-panel { width: min(var(--note-panel), 44vw); border-left: 1px solid var(--line); flex: none }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 57px; padding: 0 19px }
 .panel-heading h2 { font-size: 14px; font-weight: 650; margin: 0 }
 .count { font: 11px/19px ui-monospace, monospace; text-align: center; min-width: 21px; height: 19px; padding: 0 5px; background: #eaeae4; color: #60645a; border-radius: 5px }
@@ -89,16 +95,17 @@ body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 #cards { overflow: auto; padding: 0 17px 25px }
 .annotation-files { margin-top: auto; padding: 10px; border-top: 1px solid var(--line); display: flex; gap: 6px; flex: none }
 .annotation-files .button { flex: 1 1 0; min-width: 0; padding: 3px 5px; font-size: 12px; line-height: 1.2; white-space: normal }
-.page-label { display: flex; align-items: center; gap: 6px; margin: 16px 1px 10px; font-size: 10px; letter-spacing: 1.1px; text-transform: uppercase; font-weight: 650; color: #6d7067 }
+.page-label { display: flex; align-items: center; gap: 6px; margin: 16px 1px 10px; font-size: 11px; letter-spacing: 1.1px; text-transform: uppercase; font-weight: 650; color: #6d7067 }
 .page-label .icon { width: 12px; height: 12px }
 .card { position: relative; padding: 13px 13px 14px; border: 1px solid #dfdfd7; background: #fff; border-radius: 8px; margin-bottom: 9px }
 .card.selected { border-color: #b38568; box-shadow: 0 0 0 1px #b3856830 }
 .card-head { display: flex; align-items: center; gap: 8px; min-height: 22px }
 .card-icon { width: 24px; height: 24px; border-radius: 5px; background: color-mix(in srgb,var(--tone) 24%,white); color: color-mix(in srgb,var(--tone) 44%,#423c26); display: grid; place-items: center }
 .card-icon .icon { width: 15px; height: 15px }
-.card-title { font-size: 12px; font-weight: 650 }
+.card-title { font-size: 13px; font-weight: 650 }
 .card .more { margin-left: auto; width: 22px; height: 21px; color: #85867f }.more .icon { width: 16px }
-.card-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12.5px; line-height: 1.55; padding: 0; margin: 10px 0 0; width: 100%; display: block; text-align: left; color: #4c4f47; border-radius: 0; max-height: 10em; overflow: auto }
+.card-body, #note-text, #note-preview, #appearance-example { font: 400 var(--note-size)/1.55 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink) }
+.card-body { padding: 0; margin: 10px 0 0; width: 100%; display: block; text-align: left; border-radius: 0; max-height: calc(var(--note-lines) * 1lh); overflow: auto }
 .card-body:hover { text-decoration: underline; background: none !important }
 .card-body.quoted { padding-left: 9px; border-left: 3px solid var(--tone) }
 .card-menu { position: absolute; z-index: 3; right: 10px; top: 35px; background: #fff; border: 1px solid var(--line); box-shadow: 0 4px 12px #0002; border-radius: 6px; padding: 4px; display: grid }
@@ -111,12 +118,27 @@ footer { border-top: 1px solid var(--line); display: grid; grid-template-columns
 dialog { border: 1px solid var(--line); border-radius: 12px; color: var(--ink); padding: 23px; width: min(390px,95vw); box-shadow: 0 16px 60px #28271b38 }
 dialog::backdrop { background: #26272050 }.dialog-head,.dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 15px }.dialog-head { margin-bottom: 17px }.dialog-head h2 { margin: 0; font-size: 19px }
 .dialog-actions { justify-content: flex-end; margin-top: 16px }dialog label { font-size: 12px; font-weight: 600 }textarea { display: block; margin-top: 7px; resize: vertical; width: 100%; border: 1px solid #c5c7be; padding: 10px; border-radius: 6px; line-height: 1.5 }
+.appearance-link { font-size: 13px; font-weight: 600; color: #844020; padding: 6px 8px; border: 1px solid var(--line); background: #fff; white-space: nowrap }
+#annotations-panel .panel-heading { justify-content: flex-start; gap: 8px; flex-wrap: wrap; padding-block: 8px }
+#annotations-panel .appearance-link { margin-left: auto }
+.note-label { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+#note-dialog { width: min(var(--note-editor), calc(100vw - 20px)); max-height: calc(100dvh - 20px); overflow: auto }
+#note-text { padding: .65em .8em; height: min(calc(var(--note-lines) * 1lh + 1.4em), 50dvh); max-height: 65dvh }
+#note-preview, #appearance-example { width: min(var(--note-panel), 100%); max-height: min(calc(var(--note-lines) * 1lh + 24px), 38dvh); overflow: auto; background: #fffdf5; border: 1px solid #cfc8aa; border-radius: 8px; padding: 10px 14px }
+#note-preview { position: fixed; z-index: 7; max-width: calc(100vw - 16px); box-shadow: 0 3px 14px #28271b20 }
+#sheets .note-marker:focus-visible { outline: 2px solid var(--accent) }
+#appearance-dialog { width: min(520px, calc(100vw - 20px)); max-height: calc(100dvh - 20px); overflow: auto }
+.appearance-controls { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(112px,100%),1fr)); gap: 10px }
+.appearance-controls label { display: grid; gap: 5px; font-size: 14px }
+.appearance-controls select { font-weight: 400; min-width: 0; padding: 7px; border: 1px solid #c5c7be; border-radius: 5px; background: white }
+#appearance-example { margin: 16px 0 0 }
+#appearance-form .dialog-actions { justify-content: space-between }
 #key-list { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 9px; margin: 0 }dd { justify-self: end; font: 12px ui-monospace,monospace; background: #f2f2ec; padding: 4px 7px; border-radius: 4px }
 #toast { position: fixed; z-index: 8; bottom: 85px; left: 50%; transform: translateX(-50%); background: #353930; color: white; padding: 12px 19px; border-radius: 8px; box-shadow: 0 5px 16px #0002; max-width: min(85vw,540px); line-height: 1.45 }
 body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 [hidden] { display: none !important }.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
-@media(max-width: 1050px) { #pages-panel { width: 126px } #annotations-panel { width: 240px }.thumbnail .sheet { width: 83px }#scroller { padding: 22px 18px } }
-@media(max-width: 850px) { #annotations-panel { position: absolute; right: 0; height: 100%; z-index: 4; box-shadow: -4px 0 18px #2221 }.toolbar { gap: 10px; padding: 0 14px } }
+@media(max-width: 1050px) { #pages-panel { width: 126px }.thumbnail .sheet { width: 83px }#scroller { padding: 22px 18px } }
+@media(max-width: 850px) { #annotations-panel { width: min(var(--note-panel), 100%); position: absolute; right: 0; height: 100%; z-index: 4; box-shadow: -4px 0 18px #2221 }.toolbar { gap: 10px; padding: 0 14px } }
 @media(max-width: 650px) { body { grid-template-rows: 60px 50px minmax(0,1fr) auto }.topbar { gap: 10px; padding: 0 10px }.brand span { display: none }.brand img { width: 29px; height: 29px }.file-info { padding-left: 9px; gap: 3px }.file-info strong { font-size: 12px }.file-info small { font-size: 10px }.button { padding: 0 8px; font-size: 11px; gap: 4px }.button .icon { width: 14px }.file-actions { gap: 5px }.toolbar { padding: 0 6px; gap: 5px }.tool { font-size: 0; gap: 0; padding: 0 6px }.tool-group,.toolbar-end { gap: 0 }.palette { gap: 3px }.swatch { width: 17px; height: 17px; border-width: 2px }.toolbar-end .divider { margin: 0 3px }.toolbar .icon-button { width: 25px }.toolbar .divider { height: 15px }#pages-panel { position: absolute; height: 100%; z-index: 4; box-shadow: 4px 0 18px #2221 }#scroller { padding: 15px 10px }footer { padding: 0 8px; gap: 5px }.local-status { font-size: 10px }.page-nav { gap: 3px } }
 .thumbnail .sheet svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
 

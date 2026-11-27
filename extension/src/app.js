@@ -6,6 +6,7 @@ import { decorate } from './icons.js'
 import { colors,anchor } from './annotations.js'
 import { Viewer,readPDF } from './viewer.js'
 import { bindGestures } from './gestures.js'
+import { bindNotePreview } from './note-preview.js'
 import { renderCards,closeCardMenus } from './sidebar.js'
 import { lastDocument,remember,readMarks,writeChanges } from './storage.js'
 
@@ -38,12 +39,14 @@ function cards() {
     jump:jumpTo,edit:openNote,remove:mark=>change(marks.filter(m=>m.id!==mark.id))})
 }
 const viewer=new Viewer({onPage:cards,onError:toast})
+const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
 const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor:()=>color,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
   note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id))
 })
 function refresh() {
+  hideNotePreview()
   $('undo').disabled=!undo.length; $('redo').disabled=!redo.length
   viewer.setMarks(marks)
   cards()
@@ -104,6 +107,7 @@ channel.onmessage=async event=>{
 }
 
 function selectTool(value) {
+  hideNotePreview()
   tool=value;cancelGesture();window.getSelection().removeAllRanges()
   $('sheets').dataset.tool=value
   document.querySelectorAll('button[data-tool]').forEach(button=>{
@@ -139,6 +143,7 @@ async function jumpTo(mark) {
 }
 function openNote(mark) {
   if(!mark || !session) return
+  hideNotePreview()
   noteDraft={mark,session}
   $('note-title').textContent=marks.some(m=>m.id===mark.id)?'Edit note':'Add a note'
   $('note-text').value=mark.text
@@ -305,7 +310,7 @@ for(const name of ['pages','annotations']) {
 panel('pages',innerWidth>650)
 panel('annotations',innerWidth>850)
 
-// These two preferences affect the viewer across documents in this browser profile.
+// Reading preferences apply across documents in this browser profile.
 function preference(key, fallback) {
   try { return localStorage.getItem('margin.' + key) ?? fallback }
   catch { return fallback }
@@ -313,6 +318,48 @@ function preference(key, fallback) {
 function savePreference(key, value) {
   try { localStorage.setItem('margin.' + key, value) }
   catch { /* The view controls also work when browser storage is unavailable. */ }
+}
+const appearanceControls = [...$('appearance-form').querySelectorAll('select')]
+function applyAppearance() {
+  const root = document.documentElement
+  root.dataset.noteFont = $('note-font').value
+  root.style.setProperty('--note-size', $('note-size').value + 'px')
+  const box = $('note-box').value
+  if (root.dataset.noteBox !== box) {
+    $('note-text').style.removeProperty('height')
+    viewer.preservePosition(() => { root.dataset.noteBox = box })
+  }
+}
+function loadAppearance() {
+  for (const control of appearanceControls) {
+    const fallback = [...control.options].find(option => option.defaultSelected).value
+    const saved = preference(control.id, fallback)
+    control.value = [...control.options].some(option => option.value === saved) ? saved : fallback
+  }
+  applyAppearance()
+}
+loadAppearance()
+for (const control of appearanceControls) {
+  control.onchange = () => {
+    savePreference(control.id, control.value)
+    applyAppearance()
+  }
+}
+$('reset-appearance').onclick = () => {
+  $('appearance-form').reset()
+  for (const control of appearanceControls) savePreference(control.id, control.value)
+  applyAppearance()
+}
+window.addEventListener('storage', event => {
+  if (!event.key || appearanceControls.some(control => event.key === 'margin.' + control.id)) loadAppearance()
+})
+for (const button of document.querySelectorAll('[data-note-appearance]')) {
+  button.onclick = () => {
+    hideNotePreview()
+    const note = marks.find(mark => mark.type === 'note' && mark.id === selected) ?? marks.find(mark => mark.type === 'note')
+    $('appearance-example').textContent = ($('note-dialog').open ? $('note-text').value : note?.text) || 'Your note will appear at this size.'
+    $('appearance-dialog').showModal()
+  }
 }
 function showWorkspace(visible) {
   cancelGesture()

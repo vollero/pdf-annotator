@@ -47,7 +47,7 @@
       </div>
     </section>
     <aside id="annotations-panel" aria-labelledby="annotations-heading">
-      <div class="panel-heading"><h2 id="annotations-heading">Annotations</h2><span class="count" id="annotation-count">0</span></div>
+      <div class="panel-heading"><h2 id="annotations-heading">Annotations</h2><span class="count" id="annotation-count">0</span><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <div class="filter-wrap"><label for="filter" class="sr-only">Filter annotations</label>
         <select id="filter"><option value="all">All pages</option><option value="current">Current page</option></select><span data-icon="down"></span>
       </div>
@@ -88,10 +88,24 @@
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
       <div class="dialog-head"><h2 id="note-title">Add a note</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
-      <label for="note-text">Note</label><textarea id="note-text" rows="5" required maxlength="12000" placeholder="Write your note…" autofocus></textarea>
+      <div class="note-label"><label for="note-text">Note</label><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
+      <textarea id="note-text" rows="10" required maxlength="12000" placeholder="Write your note…" autofocus></textarea>
       <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Save note</button></div>
     </form>
   </dialog>
+  <dialog id="appearance-dialog" aria-labelledby="appearance-title">
+    <form id="appearance-form" method="dialog">
+      <div class="dialog-head"><h2 id="appearance-title">Note appearance</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
+      <div class="appearance-controls">
+        <label>Font<select id="note-font"><option value="sans" selected>Sans serif</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></label>
+        <label>Text size<select id="note-size"><option value="14">14 px</option><option value="16">16 px</option><option value="18" selected>18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option></select></label>
+        <label>Box size<select id="note-box"><option value="compact">Compact</option><option value="comfortable" selected>Comfortable</option><option value="spacious">Spacious</option></select></label>
+      </div>
+      <p id="appearance-example" aria-label="Note preview"></p>
+      <div class="dialog-actions"><button id="reset-appearance" type="button" class="button">Restore defaults</button><button class="button primary">Done</button></div>
+    </form>
+  </dialog>
+  <div id="note-preview" role="tooltip" hidden></div>
   <dialog id="keys-dialog" aria-labelledby="keys-title">
     <div class="dialog-head"><h2 id="keys-title">Keyboard shortcuts</h2><button class="icon-button" data-close data-icon="close" aria-label="Close"></button></div>
     <dl id="key-list"></dl>
