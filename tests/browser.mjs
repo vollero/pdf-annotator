@@ -26,11 +26,12 @@ async function importAnnotations(page, file, message) {
 }
 
 const dir=path.resolve(process.env.MARGIN_EXTENSION_DIR || 'dist'), profile=await mkdtemp(path.join(tmpdir(),'margin-browser-'))
+const downloads = path.join(profile,'downloads')
 const launch = () => chromium.launchPersistentContext(profile,{
   channel:'chromium',executablePath:process.env.CHROMIUM_PATH || undefined,
   headless:true,ignoreDefaultArgs:['--disable-extensions'],
   args:['--enable-unsafe-extension-debugging','--disable-extensions-except='+dir,'--load-extension='+dir],
-  viewport:{width:1360,height:920},acceptDownloads:true
+  viewport:{width:1360,height:920},acceptDownloads:true,downloadsPath:downloads
 })
 let context = await launch()
 try {
@@ -191,6 +192,13 @@ try {
   await importAnnotations(privatePage,migration,'6 added, 0 updated')
   await importAnnotations(privatePage,migration,'already in this document')
   assert.equal(await privatePage.locator('#annotation-count').textContent(),'6')
+  // chrome.windows.create created this off-the-record context outside Playwright.
+  // Give it the same download directory as the normal automated context.
+  const tabCDP = await context.newCDPSession(privatePage)
+  const {targetInfo} = await tabCDP.send('Target.getTargetInfo')
+  const browserCDP = await context.browser().newBrowserCDPSession()
+  await browserCDP.send('Browser.setDownloadBehavior',{browserContextId:targetInfo.browserContextId,
+    behavior:'allowAndName',downloadPath:downloads,eventsEnabled:true})
   assert.deepEqual(JSON.parse((await downloadAnnotations(privatePage)).buffer),exportedMarks)
   assert.deepEqual(await privatePage.evaluate(()=>indexedDB.databases()),[])
   await privatePage.reload()
