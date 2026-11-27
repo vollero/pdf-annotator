@@ -121,6 +121,27 @@ try {
     server.closeAllConnections()
     await new Promise(resolve=>server.close(resolve))
   }
+  // Open a real private window after granting Incognito access in this disposable profile.
+  const extensionId = new URL(sw.url()).hostname
+  const details = await context.newPage()
+  await details.goto('chrome://extensions/?id=' + extensionId)
+  await details.locator('#allow-incognito cr-toggle').click()
+  await details.locator('#allow-incognito[checked]').waitFor()
+  const launcher = await context.newPage()
+  const editorUrl = new URL('index.html',sw.url()).href
+  await launcher.goto(editorUrl)
+  const [privatePage] = await Promise.all([
+    context.waitForEvent('page',{timeout:15000}),
+    launcher.evaluate(url=>chrome.windows.create({incognito:true,url}),editorUrl)
+  ])
+  await privatePage.locator('#save-state').filter({hasText:'Private session'}).waitFor()
+  assert.equal(await privatePage.evaluate(()=>chrome.extension.inIncognitoContext),true)
+  await privatePage.locator('#file').setInputFiles({name:'Private review.pdf',mimeType:'application/pdf',buffer:remoteBytes})
+  await privatePage.locator('#filename').filter({hasText:'Private review.pdf'}).waitFor()
+  assert.deepEqual(await privatePage.evaluate(()=>indexedDB.databases()),[])
+  await privatePage.reload()
+  await privatePage.locator('#filename').filter({hasText:'Reading the Alps.pdf'}).waitFor()
+  assert.deepEqual(await privatePage.evaluate(()=>indexedDB.databases()),[])
   assert.deepEqual(errors,[])
   console.log('Chromium extension passed import, highlight, drawing, notes, history, autosave, navigation, zoom and PDF export/reopen.')
 } finally {

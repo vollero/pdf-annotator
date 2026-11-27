@@ -37,9 +37,33 @@ function removeUnreachable(context) {
   return removed
 }
 
+function purgeDetachedMarks(doc, detached = new Set()) {
+  for (const [, object] of doc.context.enumerateIndirectObjects()) {
+    if (object instanceof PDFDict && object.get(N('Type')) === N('Annot') && object.has(N('MarginData'))) {
+      detached.add(object)
+    }
+  }
+  if (!detached.size) return false
+  for (const page of doc.getPages()) {
+    const active = page.node.Annots()
+    if (!active) continue
+    for (let i = 0; i < active.size(); i++) detached.delete(active.lookup(i))
+  }
+  if (!detached.size) return false
+  // A reply from another editor can still reference a retired annotation.
+  // Preserve the reply relationship while erasing the old payload and geometry.
+  for (const dict of detached) {
+    for (const field of ['Contents','MarginData','AP','RC','InkList','QuadPoints']) dict.delete(N(field))
+    dict.set(N('Rect'), doc.context.obj([0,0,0,0]))
+  }
+  removeUnreachable(doc.context)
+  return true
+}
+
 export async function unpack(bytes) {
   const doc = await PDFDocument.load(bytes,{updateMetadata:false})
   const marks = []
+  const detached = new Set()
   let encodedSize = 0
   for (const [i,page] of doc.getPages().entries()) {
     const annotations = page.node.Annots()
@@ -61,15 +85,14 @@ export async function unpack(bytes) {
       if (mark) {
         marks.push(mark)
         if (marks.length > 2000) throw new DocumentLimitError('This PDF exceeds the editable annotation limit.')
-        // A third-party reply can still reference this dictionary after detachment.
-        for (const field of ['Contents','MarginData','AP','RC']) dict.delete(N(field))
+        detached.add(dict)
       } else kept.push(annotations.get(j))
     }
     if (kept.length !== annotations.size()) page.node.set(N('Annots'), doc.context.obj(kept))
   }
   const draft = readDraft(marks, doc.getPageCount())
   infoDict(doc).delete(N('MarginEditor'))
-  removeUnreachable(doc.context)
+  purgeDetachedMarks(doc, detached)
   return {bytes:await doc.save({updateFieldAppearances:false}), marks:draft}
 }
 
@@ -123,9 +146,7 @@ export async function exportDocument(bytes, marks, getViewport) {
   if (doc.isEncrypted) throw new Error('Encrypted PDFs cannot be exported by Margin.')
   // Earlier releases could leave detached Margin notes even in a file with no
   // live annotations or MarginEditor flag. Clean those on a fresh export too.
-  const hasOldMarks = doc.context.enumerateIndirectObjects().some(([,object]) =>
-    object instanceof PDFDict && object.has(N('MarginData')))
-  const cleaned = hasOldMarks && removeUnreachable(doc.context)
+  const cleaned = purgeDetachedMarks(doc)
   if (!marks.length) return cleaned ? doc.save({updateFieldAppearances:false}) : bytes
   const pages=doc.getPages(), views=new Map()
   for (const mark of marks) {

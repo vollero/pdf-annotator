@@ -33,6 +33,26 @@ test('removed and replaced Margin notes disappear from all serialized PDF object
   assert.deepEqual(await exportDocument(cleaned,[],viewport),cleaned)
 })
 
+test('a native reply keeps its own text when a retired Margin note is cleaned',async()=>{
+  const original = await PDFDocument.create()
+  original.addPage([100,100])
+  const written = await exportDocument(await original.save(),[note],viewport)
+  const legacy = await PDFDocument.load(written)
+  const page = legacy.getPage(0)
+  const parent = page.node.Annots().get(0)
+  const reply = legacy.context.obj({Type:'Annot',Subtype:'Text',IRT:parent,
+    Rect:[0,0,12,12],Contents:PDFHexString.fromText('Reply to review')})
+  page.node.addAnnot(legacy.context.register(reply))
+  page.node.Annots().remove(0)
+  legacy.context.lookup(legacy.context.trailerInfo.Info).delete(N('MarginEditor'))
+  const patched = await PDFDocument.load(await exportDocument(await legacy.save(),[],viewport))
+  const active = patched.getPage(0).node.Annots()
+  assert.equal(active.size(),1)
+  assert.equal(active.lookup(0).lookup(N('Contents')).decodeText(),'Reply to review')
+  const retired = active.lookup(0).lookup(N('IRT'))
+  for (const field of ['Contents','MarginData','AP']) assert.equal(retired.has(N(field)),false)
+})
+
 test('portable marks retain only fields used by the editor and each has its own identity',()=>{
   const marks = readDraft([note,{...note,extra:'importer metadata'},{...note,page:3}],1)
   assert.equal(marks.length,2)
