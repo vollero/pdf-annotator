@@ -8,12 +8,13 @@ import { PDFDocument } from 'pdf-lib'
 import { checkReadingControls } from './reading-controls.mjs'
 
 const dir=path.resolve(process.env.MARGIN_EXTENSION_DIR || 'dist'), profile=await mkdtemp(path.join(tmpdir(),'margin-browser-'))
-const context=await chromium.launchPersistentContext(profile,{
+const launch = () => chromium.launchPersistentContext(profile,{
   channel:'chromium',executablePath:process.env.CHROMIUM_PATH || undefined,
   headless:true,ignoreDefaultArgs:['--disable-extensions'],
   args:['--enable-unsafe-extension-debugging','--disable-extensions-except='+dir,'--load-extension='+dir],
   viewport:{width:1360,height:920},acceptDownloads:true
 })
+let context = await launch()
 try {
   const sw=context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker',{timeout:20000})
   const page=await context.newPage(),errors=[]
@@ -127,16 +128,18 @@ try {
   const extensionId = new URL(sw.url()).hostname
   const details = await context.newPage()
   await details.goto('chrome://extensions/?id=' + extensionId)
-  // Changing Incognito access reloads the extension and invalidates its old worker.
-  const [reloaded] = await Promise.all([
-    context.waitForEvent('serviceworker',{predicate:w=>new URL(w.url()).hostname===extensionId,timeout:20000}),
-    details.locator('#allow-incognito cr-toggle').click()
-  ])
+  await details.locator('#allow-incognito cr-toggle').click()
   await details.locator('#allow-incognito[checked]').waitFor()
+  // Chromium may defer an access change until restart. Reopen the same test profile.
+  await context.close()
+  context = await launch()
+  const launcher = await context.newPage()
   const editorUrl = new URL('index.html',sw.url()).href
+  await launcher.goto(editorUrl)
+  assert.equal(await launcher.evaluate(()=>chrome.extension.isAllowedIncognitoAccess()),true)
   const [privatePage] = await Promise.all([
     context.waitForEvent('page',{timeout:15000}),
-    reloaded.evaluate(url=>chrome.windows.create({incognito:true,url}),editorUrl)
+    launcher.evaluate(url=>chrome.windows.create({incognito:true,url}),editorUrl)
   ])
   await privatePage.locator('#save-state').filter({hasText:'Private session'}).waitFor()
   assert.equal(await privatePage.evaluate(()=>chrome.extension.inIncognitoContext),true)
