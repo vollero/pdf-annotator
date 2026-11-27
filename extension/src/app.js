@@ -25,10 +25,10 @@ function cards() {
   renderCards({marks,page:viewer.page,currentOnly:$('filter').value==='current',selected,
     jump:jumpTo,edit:openNote,remove:mark=>change(marks.filter(m=>m.id!==mark.id))})
 }
-const viewer=new Viewer({onPage:()=>{cancelGesture();cards()},onError:toast})
+const viewer=new Viewer({onPage:cards,onError:toast})
 const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor:()=>color,
-  add:mark=>{ selected=mark.id; change([...marks,mark]) },
+  add:added=>{ selected=added[0].id; change([...marks,...added]) },
   note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id))
 })
 function refresh() {
@@ -90,7 +90,7 @@ channel.onmessage=async event=>{
 
 function selectTool(value) {
   tool=value;cancelGesture();window.getSelection().removeAllRanges()
-  $('paper').dataset.tool=value
+  $('sheets').dataset.tool=value
   document.querySelectorAll('button[data-tool]').forEach(button=>{
     const active=button.dataset.tool===value
     button.classList.toggle('active',active)
@@ -112,9 +112,11 @@ for(const [label,value] of colors) {
 
 async function jumpTo(mark) {
   selected=mark.id
-  if(viewer.page!==mark.page || $('paper').dataset.ready!=='true') await viewer.go(mark.page)
+  const sheet = viewer.sheets[mark.page - 1]
+  if (viewer.page !== mark.page || sheet.element.dataset.ready !== 'true') await viewer.go(mark.page)
+  if (!sheet.element.isConnected || selected !== mark.id) return
   cards()
-  const [x,y]=anchor(mark), paper=$('paper'), scroller=$('scroller')
+  const [x,y]=anchor(mark), paper=sheet.element, scroller=$('scroller')
   const br=paper.getBoundingClientRect(),sr=scroller.getBoundingClientRect()
   const dx=br.left+x*br.width-sr.left,dy=br.top+y*br.height-sr.top
   if(dy<15 || dy>sr.height-75) scroller.scrollTop+=dy-sr.height*.4
@@ -242,8 +244,42 @@ for(const name of ['pages','annotations']) {
 panel('pages',innerWidth>650)
 panel('annotations',innerWidth>850)
 
+// These two preferences affect the viewer across documents in this browser profile.
+function preference(key, fallback) {
+  try { return localStorage.getItem('margin.' + key) ?? fallback }
+  catch { return fallback }
+}
+function savePreference(key, value) {
+  try { localStorage.setItem('margin.' + key, value) }
+  catch { /* The view controls also work when browser storage is unavailable. */ }
+}
+function showWorkspace(visible) {
+  cancelGesture()
+  closeCardMenus()
+  viewer.preservePosition(() => document.body.classList.toggle('pdf-only', !visible))
+  viewer.redrawVisible()
+  const toggle = $('workspace-toggle')
+  toggle.setAttribute('aria-expanded', String(visible))
+  toggle.querySelector('span').textContent = visible ? 'Hide workspace' : 'Show workspace'
+}
+function toggleWorkspace() {
+  const show = document.body.classList.contains('pdf-only')
+  showWorkspace(show)
+  savePreference('workspace', show ? 'shown' : 'hidden')
+}
+$('workspace-toggle').onclick = toggleWorkspace
+showWorkspace(preference('workspace', 'shown') !== 'hidden')
+$('page-layout').value = preference('layout', 'single') === 'continuous' ? 'continuous' : 'single'
+viewer.setLayout($('page-layout').value)
+$('page-layout').onchange = () => {
+  cancelGesture()
+  viewer.setLayout($('page-layout').value)
+  savePreference('layout', $('page-layout').value)
+  $('scroller').focus({preventScroll: true})
+}
+
 const mod=navigator.platform.includes('Mac')?'⌘':'Ctrl'
-for(const [action,key] of [['Select','V'],['Highlight','H'],['Draw','D'],['Note','N'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
+for(const [action,key] of [['Select','V'],['Highlight','H'],['Draw','D'],['Note','N'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
   const dt=document.createElement('dt'), dd=document.createElement('dd')
   dt.textContent=action;dd.textContent=key;$('key-list').append(dt,dd)
 }
@@ -257,6 +293,17 @@ document.addEventListener('keydown',e=>{
     if(key==='y') {e.preventDefault();$('redo').click()}
     if(key==='o') {e.preventDefault();$('open').click()}
     if(key==='s') {e.preventDefault();download()}
+    return
+  }
+  if (key === 'w' && !e.repeat) { e.preventDefault(); toggleWorkspace(); return }
+  if (key === 'escape' && document.body.classList.contains('pdf-only')) {
+    toggleWorkspace()
+    $('workspace-toggle').focus()
+    return
+  }
+  if (['+', '=', '-', '0'].includes(key)) {
+    e.preventDefault()
+    viewer.changeZoom(key === '0' ? 0 : key === '-' ? -1 : 1)
     return
   }
   const toolKeys={v:'select',h:'highlight',d:'draw',n:'note'}

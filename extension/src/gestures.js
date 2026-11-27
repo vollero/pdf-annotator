@@ -1,90 +1,125 @@
 import { paintMark } from './annotations.js'
 
-const clamp=v=>Math.min(1,Math.max(0,v))
-export function bindGestures({viewer,getTool,getColor,add,note,editNote}) {
-  const paper=document.getElementById('paper')
-  let active=null
-  function point(event) {
-    const rect=paper.getBoundingClientRect()
-    return [clamp((event.clientX-rect.left)/rect.width),clamp((event.clientY-rect.top)/rect.height)]
+const clamp = value => Math.min(1, Math.max(0, value))
+
+function point(event, paper) {
+  const rect = paper.getBoundingClientRect()
+  return [clamp((event.clientX - rect.left) / rect.width), clamp((event.clientY - rect.top) / rect.height)]
+}
+
+function area(a, b) {
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1])]
+}
+
+// A text selection can cross a page break. Each PDF highlight belongs to one page.
+function selectedHighlights(viewer, mark) {
+  const selection = window.getSelection()
+  if (!selection.rangeCount || selection.isCollapsed) return []
+  const range = selection.getRangeAt(0)
+  const pageOf = node => (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)
+    ?.closest('.textLayer')?.closest('.paper')
+  const first = pageOf(range.startContainer), last = pageOf(range.endContainer)
+  if (!first || !last) return []
+  const highlights = []
+  for (let number = Number(first.dataset.page); number <= Number(last.dataset.page); number++) {
+    const paper = viewer.sheets[number - 1].element
+    const layer = paper.querySelector('.textLayer')
+    if (!layer) continue
+    const part = range.cloneRange()
+    if (paper !== first) part.setStart(layer, 0)
+    if (paper !== last) part.setEnd(layer, layer.childNodes.length)
+    const text = part.toString().trim()
+    const bounds = paper.getBoundingClientRect()
+    const rectangles = new Map()
+    for (const r of part.getClientRects()) {
+      if (r.width <= 1 || r.height <= 1) continue
+      const rect = area([clamp((r.left - bounds.left) / bounds.width), clamp((r.top - bounds.top) / bounds.height)],
+        [clamp((r.right - bounds.left) / bounds.width), clamp((r.bottom - bounds.top) / bounds.height)])
+      rectangles.set(rect.join(','), rect)
+    }
+    if (text && rectangles.size) {
+      highlights.push({...mark, id: crypto.randomUUID(), page: number, text, rects: [...rectangles.values()]})
+    }
   }
-  function area(a,b) {
-    return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.abs(a[0]-b[0]),Math.abs(a[1]-b[1])]
-  }
+  selection.removeAllRanges()
+  return highlights
+}
+
+export function bindGestures({viewer, getTool, getColor, add, note, editNote}) {
+  const stack = document.getElementById('sheets')
+  let active = null
   function reset() {
-    if(active?.preview) active.preview.remove()
-    active=null
+    active?.preview?.remove()
+    active = null
   }
+
   function move(event) {
-    if(!active || event.pointerId!==active.pointer || active.textSelection) return
-    const p=point(event), m=active.mark
-    if(m.type==='draw') {
-      const last=m.points.at(-1)
-      if(Math.hypot((p[0]-last[0])*viewer.base.width,(p[1]-last[1])*viewer.base.height)<.5) return
-      m.points.push(p)
-    } else if(m.type==='highlight') m.rects=[area(active.start,p)]
+    if (!active || event.pointerId !== active.pointer || active.textSelection) return
+    const {sheet, mark, ink} = active
+    if (sheet.ink !== ink || !ink.isConnected) return reset()
+    const p = point(event, sheet.element)
+    const {width, height} = sheet.base
+    if (mark.type === 'draw') {
+      const last = mark.points.at(-1)
+      if (Math.hypot((p[0] - last[0]) * width, (p[1] - last[1]) * height) < .5) return
+      mark.points.push(p)
+    } else if (mark.type === 'highlight') mark.rects = [area(active.start, p)]
     else return
     active.preview?.remove()
-    active.preview=paintMark(m,viewer.base.width,viewer.base.height)
-    document.getElementById('ink').append(active.preview)
+    active.preview = paintMark(mark, width, height)
+    ink.append(active.preview)
   }
-  paper.addEventListener('pointerdown',event=>{
-    if(event.button!==0 || !event.isPrimary || paper.dataset.ready!=='true') return
-    const type=getTool()
-    if(type==='select') {
-      const marker=event.target.closest('.note-marker')
-      if(marker) editNote(marker.dataset.id)
+
+  stack.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || !event.isPrimary) return
+    const paper = event.target.closest('.paper[data-ready="true"]')
+    if (!paper) return
+    const sheet = viewer.sheetFor(paper), type = getTool()
+    if (type === 'select') {
+      const marker = event.target.closest('.note-marker')
+      if (marker) editNote(marker.dataset.id)
       return
     }
     reset()
-    const start=point(event)
-    const mark={id:crypto.randomUUID(),page:viewer.page,type,color:getColor(),text:''}
-    active={start,mark,pointer:event.pointerId,sequence:viewer.sequence}
-    if(type==='highlight' && event.target.closest('.textLayer span:not(.markedContent)')) {
-      window.getSelection().removeAllRanges()
-      active.textSelection=true
+    const start = point(event, paper)
+    const mark = {id: crypto.randomUUID(), page: sheet.number, type, color: getColor(), text: ''}
+    active = {start, mark, pointer: event.pointerId, sheet, ink: sheet.ink}
+    window.getSelection().removeAllRanges()
+    if (type === 'highlight' && event.target.closest('.textLayer span:not(.markedContent)')) {
+      active.textSelection = true
       return
     }
     event.preventDefault()
-    window.getSelection().removeAllRanges()
-    if(type==='draw') { mark.points=[start]; mark.text='Freehand drawing' }
-    if(type==='highlight') { mark.rects=[]; mark.text='Area highlight' }
+    if (type === 'draw') { mark.points = [start]; mark.text = 'Freehand drawing' }
+    if (type === 'highlight') { mark.rects = []; mark.text = 'Area highlight' }
     paper.setPointerCapture(event.pointerId)
   })
-  paper.addEventListener('pointermove',move)
-  window.addEventListener('pointerup',event=>{
-    if(!active || event.pointerId!==active.pointer) return
-    if(paper.dataset.ready!=='true' || active.sequence!==viewer.sequence) return reset()
-    if(!active.textSelection) move(event)
-    const {mark,start,textSelection}=active
+  stack.addEventListener('pointermove', move)
+  window.addEventListener('pointerup', event => {
+    if (!active || event.pointerId !== active.pointer) return
+    const {mark, start, sheet, ink, textSelection} = active
+    if (sheet.ink !== ink || !ink.isConnected) return reset()
+    if (!textSelection) move(event)
     reset()
-    if(textSelection) {
-      // The browser finishes the selection in its pointerup default action.
-      const sequence=viewer.sequence
-      requestAnimationFrame(()=>{
-        if(sequence!==viewer.sequence) return
-        const selection=window.getSelection(), layer=document.getElementById('text-layer')
-        if(!selection.rangeCount || selection.isCollapsed || !layer.contains(selection.anchorNode) || !layer.contains(selection.focusNode)) return
-        const bounds=paper.getBoundingClientRect(), range=selection.getRangeAt(0)
-        mark.text=selection.toString().trim()
-        mark.rects=[...range.getClientRects()].filter(r=>r.width>1 && r.height>1).map(r=>
-          area([clamp((r.left-bounds.left)/bounds.width),clamp((r.top-bounds.top)/bounds.height)],
-               [clamp((r.right-bounds.left)/bounds.width),clamp((r.bottom-bounds.top)/bounds.height)]))
-        selection.removeAllRanges()
-        if(mark.text && mark.rects.length) add(mark)
+    const {width, height} = sheet.base
+    if (textSelection) {
+      requestAnimationFrame(() => {
+        if (ink !== sheet.ink || !ink.isConnected) return
+        const highlights = selectedHighlights(viewer, mark)
+        if (highlights.length) add(highlights)
       })
-    } else if(mark.type==='note') {
-      mark.point=[Math.min(start[0],Math.max(0,1-18/viewer.base.width)),Math.min(start[1],Math.max(0,1-18/viewer.base.height))]
+    } else if (mark.type === 'note') {
+      mark.point = [Math.min(start[0], Math.max(0, 1 - 18 / width)), Math.min(start[1], Math.max(0, 1 - 18 / height))]
       note(mark)
-    } else if(mark.type==='draw') {
-      if(mark.points.length===1) {
-        const [x,y]=mark.points[0]
-        mark.points.push([clamp(x+(x>.5?-.2:.2)/viewer.base.width),y])
+    } else if (mark.type === 'draw') {
+      if (mark.points.length === 1) {
+        const [x, y] = start
+        mark.points.push([clamp(x + (x > .5 ? -.2 : .2) / width), y])
       }
-      add(mark)
-    } else if(mark.rects[0][2]*viewer.base.width>=2 && mark.rects[0][3]*viewer.base.height>=2) add(mark)
+      add([mark])
+    } else if (mark.rects[0][2] * width >= 2 && mark.rects[0][3] * height >= 2) add([mark])
   })
-  paper.addEventListener('pointercancel',reset)
-  window.addEventListener('blur',reset)
+  stack.addEventListener('pointercancel', reset)
+  window.addEventListener('blur', reset)
   return reset
 }

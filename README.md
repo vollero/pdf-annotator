@@ -29,6 +29,16 @@ On your first launch from a new tab, Margin opens *Reading the Alps*. It already
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to delete it. **Undo** and **Redo** apply to the current editing session.
 
+## Reading controls in the release candidate
+
+The bottom bar lets you change how you read the PDF. These controls are available in [Margin 0.1.1-rc.2](https://github.com/vollero/pdf-annotator/releases/tag/v0.1.1-rc.2).
+
+- Choose **Continuous scrolling** in the **Single page** menu to scroll from one page straight into the next. The page counter follows your reading position. Choose **Single page** to switch back.
+- Click **Hide workspace** to give the PDF more room. The page, zoom, and scrolling controls stay at the bottom. Click **Show workspace** or press **Esc** to bring the editor back.
+- Click **+** or **−** to zoom the PDF. The percentage shows its current scale. The **Fit to width** button resizes the page to the available space. You can also press **+**, **−**, or **0** for the same actions.
+
+Margin remembers your scrolling mode and workspace visibility the next time you open it.
+
 ## Where your edits go
 
 **Saved locally** means your draft is stored in this browser profile. Reopen Margin to return to the last document, or open the same PDF again to recover its draft. Local PDFs can be edited offline.

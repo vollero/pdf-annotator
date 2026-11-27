@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
+import { checkReadingControls } from './reading-controls.mjs'
 
 const dir=path.resolve(process.env.MARGIN_EXTENSION_DIR || 'dist'), profile=await mkdtemp(path.join(tmpdir(),'margin-browser-'))
 const context=await chromium.launchPersistentContext(profile,{
@@ -19,19 +20,19 @@ try {
   page.on('pageerror',e=>errors.push(e.message))
   page.on('console',m=>{if(m.type()==='error') console.error(m.text())})
   await page.goto(new URL('index.html',sw.url()).href)
-  async function ready() {await page.locator('#paper[data-ready="true"]').waitFor()}
+  async function ready() {await page.locator('.paper.current[data-ready="true"]').waitFor()}
   async function count(value) {await page.waitForFunction(n=>document.querySelector('#annotation-count').textContent===String(n),value)}
   async function saved() {await page.waitForFunction(()=>document.querySelector('#save-state').textContent==='Saved locally')}
   await ready();await count(3)
   assert.equal(await page.locator('.thumbnail').count(),3)
-  const sampleText=page.locator('#text-layer span').filter({hasText:'Every ridge holds'})
+  const sampleText=page.locator('.paper.current .textLayer span').filter({hasText:'Every ridge holds'})
   await sampleText.first().waitFor()
   if (process.env.MARGIN_PREVIEW_PATH) {
     await page.locator('.thumbnail canvas').nth(2).waitFor()
     await page.screenshot({path:process.env.MARGIN_PREVIEW_PATH,animations:'disabled'})
   }
   // Check the text layer aligns with the rendered PDF at ordinary zoom.
-  const line=await sampleText.first().boundingBox(), sheet=await page.locator('#paper').boundingBox()
+  const line=await sampleText.first().boundingBox(), sheet=await page.locator('.paper.current').boundingBox()
   assert.ok(Math.abs((line.x-sheet.x)/sheet.width-46/612)<.012)
   await page.locator('[data-tool="highlight"].tool').click()
   await page.mouse.move(line.x+1,line.y+line.height*.5)
@@ -80,6 +81,7 @@ try {
   await page.locator('#file').setInputFiles({name:'Invalid.pdf',mimeType:'application/pdf',buffer:Buffer.from('invalid')})
   await page.locator('#toast').filter({hasText:'could not be opened'}).waitFor()
   assert.equal(await page.locator('#filename').textContent(),'Reopened.pdf')
+  await checkReadingControls(page)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])
@@ -105,7 +107,7 @@ try {
       browserCDP.send('Extensions.triggerAction',{id:new URL(sw.url()).hostname,targetId})
     ])
     await editor.locator('#filename').filter({hasText:'Field-study.pdf'}).waitFor({timeout:12000})
-    await editor.locator('#paper[data-ready="true"]').waitFor()
+    await editor.locator('.paper.current[data-ready="true"]').waitFor()
     assert.equal(await editor.locator('#total').textContent(),'1')
   } finally {
     server.closeAllConnections()

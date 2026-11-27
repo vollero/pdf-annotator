@@ -5,7 +5,7 @@
   font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 14px; color: var(--ink);
 }
 * { box-sizing: border-box }
-body { margin: 0; height: 100dvh; overflow: hidden; display: grid; grid-template-rows: 72px 52px minmax(0,1fr) 35px; background: #fff }
+body { margin: 0; height: 100dvh; overflow: hidden; display: grid; grid-template-rows: 72px 52px minmax(0,1fr) auto; background: #fff }
 button,select,textarea { font: inherit; color: inherit }
 button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: none; border: 0; border-radius: 6px }
 button:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible { outline: 2px solid #a75230; outline-offset: 2px }
@@ -52,14 +52,14 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 .thumbnail[aria-current="page"] .sheet { outline: 2px solid #b35a35; outline-offset: 3px }
 .thumbnail[aria-current="page"] { color: var(--accent); font-weight: 650 }
 #stage { position: relative; min-width: 0; flex: 1; background-color: #eaeae4; background-image: radial-gradient(#c8c8bf 0.6px, transparent .7px); background-size: 7px 7px }
-#scroller { width: 100%; height: 100%; overflow: auto; padding: 30px 30px 82px; overscroll-behavior: contain }
-#paper { position: relative; background: white; box-shadow: 0 2px 8px #25261c20, 0 0 0 1px #5b5c4016; margin: 0 auto; isolation: isolate; overflow: hidden }
-#page-canvas,#ink { display: block; width: 100%; height: 100%; position: absolute; inset: 0 }
-#ink { pointer-events: none; overflow: visible }
-#paper[data-tool="draw"],#paper[data-tool="note"],#paper[data-tool="highlight"] { cursor: crosshair }
-#paper:is([data-tool="draw"],[data-tool="note"]) #ink { pointer-events: auto; touch-action: none }
-#paper[data-tool="highlight"] { touch-action: none }
-#paper[data-tool="select"] .note-marker { pointer-events: all; cursor: pointer }
+#scroller { width: 100%; height: 100%; overflow: auto; padding: 30px; overscroll-behavior: contain }
+.paper { width: 100%; aspect-ratio: var(--page-ratio, 612 / 792); position: relative; background: white; box-shadow: 0 2px 8px #25261c20, 0 0 0 1px #5b5c4016; margin: 0 auto; isolation: isolate; overflow: hidden }
+.page-canvas,.ink { display: block; width: 100%; height: 100%; position: absolute; inset: 0 }
+.ink { pointer-events: none; overflow: visible }
+#sheets[data-tool="draw"],#sheets[data-tool="note"],#sheets[data-tool="highlight"] { cursor: crosshair }
+#sheets:is([data-tool="draw"],[data-tool="note"]) .ink { pointer-events: auto; touch-action: none }
+#sheets[data-tool="highlight"] { touch-action: none }
+#sheets[data-tool="select"] .note-marker { pointer-events: all; cursor: pointer }
 .textLayer { position:absolute; inset:0; overflow:clip; line-height:1; text-align:initial; transform-origin:0 0; text-size-adjust:none; --min-font-size:1; --text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv:calc(1 / var(--min-font-size)); --scale-round-x:1px; --scale-round-y:1px }
 .textLayer :is(span,br) { color:transparent; position:absolute; white-space:pre; cursor:text; transform-origin:0 0 }
 .textLayer > :not(.markedContent),.textLayer .markedContent span:not(.markedContent) { --font-height:0; --scale-x:1; --rotate:0deg; font-size:calc(var(--text-scale-factor) * var(--font-height)); transform:rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)) }
@@ -68,9 +68,21 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 .textLayer[data-main-rotation="180"] { transform:rotate(180deg) translate(-100%,-100%) }
 .textLayer[data-main-rotation="270"] { transform:rotate(270deg) translateX(-100%) }
 .textLayer ::selection { background: #96c3ea92 }
-#paper[data-tool="highlight"] .textLayer ::selection { background: #e9bf518e }
-.zoom { position: absolute; z-index: 2; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 1px; border: 1px solid #d3d4cb; padding: 3px 5px; border-radius: 9px; background: #fffffdf7; box-shadow: 0 3px 12px #35362620 }
-.zoom .icon-button { width: 28px; height: 27px }.zoom .icon { width: 15px }.zoom .divider { height: 16px; margin: 0 3px }.zoom output { font-size: 12px; min-width: 40px; text-align: center; font-variant-numeric: tabular-nums }
+#sheets[data-tool="highlight"] .textLayer ::selection { background: #e9bf518e }
+#sheets[data-layout="single"] .paper:not(.current) { display: none }
+#sheets[data-layout="continuous"] .paper + .paper { margin-top: 20px }
+#sheets.manual-zoom .paper { width: calc(var(--page-width, 612px) * var(--zoom)) }
+.paper[data-error]::after { content: "This page could not be rendered."; display: block; padding: 1rem; color: var(--muted) }
+.view-controls, .view-actions, .zoom { display: flex; align-items: center; gap: 5px }
+.view-controls { grid-column: 2; justify-content: center; gap: 10px }
+.view-actions { justify-self: end; gap: 10px }
+.view-controls .divider { height: 16px }
+.zoom .icon-button { width: 28px; height: 28px }
+.zoom .icon { width: 15px }
+.zoom output { min-width: 38px; text-align: center; font-variant-numeric: tabular-nums }
+#page-layout { max-width: 145px; background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: 4px; font-size: 12px; }
+body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
+.pdf-only :is(.topbar, .toolbar, #workspace > aside, .local-status, #shortcuts) { display: none }
 .filter-wrap { position: relative; margin: 0 18px 13px }
 .filter-wrap select { width: 100%; height: 32px; padding: 0 11px; appearance: none; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; background: #fff; cursor: pointer }
 .filter-wrap span { position: absolute; right: 9px; top: 9px; pointer-events: none }.filter-wrap .icon { width: 14px; height: 14px }
@@ -90,7 +102,7 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 .card-menu { position: absolute; z-index: 3; right: 10px; top: 35px; background: #fff; border: 1px solid var(--line); box-shadow: 0 4px 12px #0002; border-radius: 6px; padding: 4px; display: grid }
 .card-menu button { padding: 7px 10px; justify-content: flex-start; font-size: 12px }.card-menu .icon { width: 14px; height: 14px }
 .empty { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 18px 2px }
-footer { border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 0 20px; font-size: 11px; color: #686b63; background: #fafaf7 }
+footer { border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; min-height: 41px; padding: 4px 15px; font-size: 12px; color: #555a50; background: #fafaf7 }
 .local-status,.page-nav,.text-button { display: inline-flex; align-items: center; gap: 7px }.local-status .icon,.text-button .icon { width: 14px; height: 14px }
 .page-nav { gap: 12px }.page-nav .icon-button { width: 24px; height: 24px }.page-nav .icon { width: 13px }.page-nav b { color: var(--ink) }
 .text-button { justify-self: end; padding: 5px; font-size: inherit }
@@ -101,7 +113,22 @@ dialog::backdrop { background: #26272050 }.dialog-head,.dialog-actions { display
 #toast { position: fixed; z-index: 8; bottom: 85px; left: 50%; transform: translateX(-50%); background: #353930; color: white; padding: 12px 19px; border-radius: 8px; box-shadow: 0 5px 16px #0002; max-width: min(85vw,540px); line-height: 1.45 }
 body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 [hidden] { display: none !important }.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
-@media(max-width: 1050px) { #pages-panel { width: 126px } #annotations-panel { width: 240px }.thumbnail .sheet { width: 83px }#scroller { padding: 22px 18px 76px } }
+@media(max-width: 1050px) { #pages-panel { width: 126px } #annotations-panel { width: 240px }.thumbnail .sheet { width: 83px }#scroller { padding: 22px 18px } }
 @media(max-width: 850px) { #annotations-panel { position: absolute; right: 0; height: 100%; z-index: 4; box-shadow: -4px 0 18px #2221 }.toolbar { gap: 10px; padding: 0 14px } }
-@media(max-width: 650px) { body { grid-template-rows: 60px 50px minmax(0,1fr) 33px }.topbar { gap: 10px; padding: 0 10px }.brand span { display: none }.brand img { width: 29px; height: 29px }.file-info { padding-left: 9px; gap: 3px }.file-info strong { font-size: 12px }.file-info small { font-size: 10px }.button { padding: 0 8px; font-size: 11px; gap: 4px }.button .icon { width: 14px }.file-actions { gap: 5px }.toolbar { padding: 0 6px; gap: 5px }.tool { font-size: 0; gap: 0; padding: 0 6px }.tool-group,.toolbar-end { gap: 0 }.palette { gap: 3px }.swatch { width: 17px; height: 17px; border-width: 2px }.toolbar-end .divider { margin: 0 3px }.toolbar .icon-button { width: 25px }.toolbar .divider { height: 15px }#pages-panel { position: absolute; height: 100%; z-index: 4; box-shadow: 4px 0 18px #2221 }#scroller { padding: 15px 10px 66px }footer { padding: 0 8px; gap: 5px }.local-status { font-size: 10px }.page-nav { gap: 3px } }
+@media(max-width: 650px) { body { grid-template-rows: 60px 50px minmax(0,1fr) auto }.topbar { gap: 10px; padding: 0 10px }.brand span { display: none }.brand img { width: 29px; height: 29px }.file-info { padding-left: 9px; gap: 3px }.file-info strong { font-size: 12px }.file-info small { font-size: 10px }.button { padding: 0 8px; font-size: 11px; gap: 4px }.button .icon { width: 14px }.file-actions { gap: 5px }.toolbar { padding: 0 6px; gap: 5px }.tool { font-size: 0; gap: 0; padding: 0 6px }.tool-group,.toolbar-end { gap: 0 }.palette { gap: 3px }.swatch { width: 17px; height: 17px; border-width: 2px }.toolbar-end .divider { margin: 0 3px }.toolbar .icon-button { width: 25px }.toolbar .divider { height: 15px }#pages-panel { position: absolute; height: 100%; z-index: 4; box-shadow: 4px 0 18px #2221 }#scroller { padding: 15px 10px }footer { padding: 0 8px; gap: 5px }.local-status { font-size: 10px }.page-nav { gap: 3px } }
 .thumbnail .sheet svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
+
+@media (max-width: 950px) {
+  footer { grid-template-columns: minmax(0,1fr) auto }
+  footer .local-status { display: none }
+  .view-controls { grid-column: 1; justify-content: flex-start }
+  #shortcuts span { display: none }
+}
+@media (max-width: 620px) {
+  footer { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 12px; row-gap: 2px; padding: 3px 6px }
+  .view-controls, .view-actions, .zoom { gap: 2px }
+  .view-controls { flex-wrap: wrap; justify-content: center }
+  .view-controls .divider { margin: 0 3px }
+  .page-nav { gap: 2px }
+  #page-layout { font-size: 11px }
+}

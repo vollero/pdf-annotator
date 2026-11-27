@@ -1,0 +1,111 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { PDFDocument, degrees } from 'pdf-lib'
+
+export async function checkReadingControls(page) {
+  const doc = await PDFDocument.create()
+  for (let number = 1; number <= 18; number++) {
+    const sheet = doc.addPage(number === 2 ? [430, 760] : [600, 720])
+    if (number === 2) sheet.setRotation(degrees(90))
+    sheet.drawText('Start of page ' + number, {x: 40, y: sheet.getHeight() - 40})
+    sheet.drawText('End of page ' + number, {x: 40, y: 30})
+  }
+  await page.locator('#file').setInputFiles({
+    name: 'Reading controls.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await doc.save())
+  })
+  const sheet = number => page.locator('.paper[data-page="' + number + '"]')
+  const ready = number => page.locator('.paper.current[data-page="' + number + '"][data-ready="true"]').waitFor()
+  const zoom = async () => Number.parseInt(await page.locator('#zoom-value').textContent(), 10)
+  await page.waitForFunction(() => document.querySelector('#filename').textContent === 'Reading controls.pdf')
+  await ready(1)
+  assert.equal(await page.locator('.paper:visible').count(), 1)
+
+  await page.locator('#pages-toggle').click()
+  await page.getByRole('button', {name: 'Hide workspace'}).click()
+  for (const id of ['#file-bar', '#annotation-tools', '#pages-panel', '#annotations-panel']) {
+    assert.ok(await page.locator(id).isHidden())
+  }
+  await page.locator('#next').click()
+  await ready(2)
+  assert.ok((await sheet(2).boundingBox()).width > (await sheet(2).boundingBox()).height)
+  await page.locator('#page-layout').selectOption('continuous')
+  await ready(2)
+  assert.equal(await page.locator('.paper:visible').count(), 18)
+
+  const initialZoom = await zoom()
+  await page.keyboard.press('-')
+  await ready(2)
+  assert.ok(await zoom() < initialZoom)
+  await page.keyboard.press('=')
+  await ready(2)
+  assert.ok(Math.abs(await zoom() - initialZoom) <= 1)
+  await page.locator('#zoom-in').dblclick()
+  await ready(2)
+  assert.ok(await zoom() > initialZoom * 1.45, 'Both rapid zoom steps apply')
+  await page.keyboard.press('0')
+  await ready(2)
+  assert.ok(Math.abs(await zoom() - initialZoom) <= 1)
+
+  const bounds = await sheet(2).boundingBox()
+  await page.mouse.move(bounds.x + 50, Math.max(80, bounds.y + 45))
+  await page.mouse.wheel(0, Math.ceil(bounds.height + 40))
+  await ready(3)
+  await page.keyboard.press('Escape')
+  await ready(3)
+  assert.ok(await page.locator('#file-bar').isVisible())
+  assert.ok(await page.locator('#annotations-panel').isVisible())
+  assert.ok(await page.locator('#pages-panel').isHidden(), 'Restores the previous sidebar choice')
+
+  // Leave the top of page four visible while page three is still the current page.
+  await page.locator('#filter').selectOption('current')
+  await page.locator('#zoom-out').click()
+  await ready(3)
+  await page.locator('#zoom-out').click()
+  await ready(3)
+  await page.evaluate(() => {
+    const scroller = document.querySelector('#scroller')
+    const pageFour = document.querySelector('.paper[data-page="4"]')
+    const offset = pageFour.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+    scroller.scrollBy(0, offset - scroller.clientHeight * .64)
+  })
+  await ready(3)
+  await page.locator('.paper[data-page="4"][data-ready="true"]').waitFor()
+  await page.locator('.tool[data-tool="note"]').click()
+  const fourth = await sheet(4).boundingBox()
+  await page.mouse.click(fourth.x + fourth.width * .45, fourth.y + fourth.height * .07)
+  await page.locator('#note-text').fill('Attached to page four')
+  await page.getByRole('button', {name: 'Save note', exact: true}).click()
+  await page.waitForFunction(() => document.querySelector('#save-state').textContent === 'Saved locally')
+  assert.equal(await sheet(4).locator('.note-marker').count(), 1)
+  assert.equal(await sheet(3).locator('.note-marker').count(), 0)
+  assert.equal(await page.locator('.card').count(), 0)
+  await page.locator('#next').click()
+  await ready(4)
+  assert.equal(await page.locator('.card').count(), 1)
+
+  const pending = page.waitForEvent('download')
+  await page.locator('#export').click()
+  const downloaded = await pending
+  const exported = await PDFDocument.load(await readFile(await downloaded.path()))
+  assert.equal(exported.getPage(3).node.Annots().size(), 1)
+  assert.equal(exported.getPage(2).node.Annots()?.size() ?? 0, 0)
+
+  await page.locator('#pages-toggle').click()
+  await page.getByRole('button', {name: 'Go to page 17', exact: true}).click()
+  await ready(17)
+  await page.waitForFunction(() => !document.querySelector('.paper[data-page="3"] canvas'))
+  assert.ok(await page.locator('.page-canvas').count() < 10)
+  await page.locator('#page-layout').selectOption('single')
+  await ready(17)
+  assert.equal(await page.locator('.paper:visible').count(), 1)
+  await page.locator('#page-layout').selectOption('continuous')
+  await ready(17)
+  await page.getByRole('button', {name: 'Hide workspace'}).click()
+  await page.reload()
+  await ready(1)
+  assert.equal(await page.locator('#page-layout').inputValue(), 'continuous')
+  assert.ok(await page.getByRole('button', {name: 'Show workspace'}).isVisible())
+  await page.getByRole('button', {name: 'Show workspace'}).click()
+  await page.locator('#page-layout').selectOption('single')
+  console.log('Verified both page layouts, continuous wheel scrolling, page-specific ink, PDF-only view, zoom, and preferences.')
+}

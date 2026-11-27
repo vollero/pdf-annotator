@@ -9,7 +9,7 @@
   <script type="module" src="src/app.js"></script>
 </head>
 <body>
-  <header class="topbar">
+  <header id="file-bar" class="topbar">
     <div class="brand"><img src="assets/mark.svg" width="35" height="35" alt=""><span>Margin</span></div>
     <div class="file-info"><strong id="filename">PDF workspace</strong><small id="save-state" role="status"><i></i><span>Opening document…</span></small></div>
     <div class="file-actions">
@@ -18,7 +18,7 @@
     </div>
     <input id="file" type="file" accept=".pdf,application/pdf" hidden>
   </header>
-  <div class="toolbar" role="toolbar" aria-label="Annotation tools">
+  <div id="annotation-tools" class="toolbar" role="toolbar" aria-label="Annotation tools">
     <button id="pages-toggle" class="icon-button panel-toggle" data-icon="leftpanel" aria-label="Toggle pages" title="Toggle pages" aria-expanded="true"></button>
     <span class="divider"></span>
     <div class="tool-group">
@@ -42,19 +42,8 @@
       <nav id="thumbnails" aria-label="Document pages"></nav>
     </aside>
     <section id="stage" aria-label="PDF viewer">
-      <div id="scroller" tabindex="0">
-        <div id="paper" data-tool="select" hidden>
-          <canvas id="page-canvas" aria-hidden="true"></canvas>
-          <div class="textLayer" id="text-layer"></div>
-          <svg id="ink" aria-label="Annotation layer"></svg>
-        </div>
-      </div>
-      <div class="zoom" aria-label="Zoom controls">
-        <button class="icon-button" id="zoom-out" data-icon="minus" aria-label="Zoom out" title="Zoom out"></button>
-        <output id="zoom-value">100%</output>
-        <button class="icon-button" id="zoom-in" data-icon="plus" aria-label="Zoom in" title="Zoom in"></button>
-        <span class="divider"></span>
-        <button class="icon-button" id="fit" data-icon="fit" aria-label="Fit to width" title="Fit to width"></button>
+      <div id="scroller" tabindex="0" aria-label="PDF pages">
+        <div id="sheets" data-tool="select" data-layout="single"></div>
       </div>
     </section>
     <aside id="annotations-panel" aria-labelledby="annotations-heading">
@@ -67,8 +56,29 @@
   </main>
   <footer>
     <span class="local-status" data-icon="lock">Local workspace</span>
-    <div class="page-nav" aria-label="Page navigation"><button id="prev" class="icon-button" data-icon="prev" aria-label="Previous page"></button><span>Page <b id="current">–</b> of <span id="total">–</span></span><button id="next" class="icon-button" data-icon="next" aria-label="Next page"></button></div>
-    <button id="shortcuts" class="text-button" data-icon="keys">Shortcuts</button>
+    <div class="view-controls">
+      <div class="page-nav" role="group" aria-label="Page navigation">
+        <button id="prev" class="icon-button" data-icon="prev" aria-label="Previous page" disabled></button>
+        <span>Page <b id="current">–</b> of <span id="total">–</span></span>
+        <button id="next" class="icon-button" data-icon="next" aria-label="Next page" disabled></button>
+      </div>
+      <span class="divider"></span>
+      <div class="zoom" role="group" aria-label="PDF zoom">
+        <button class="icon-button" id="zoom-out" data-icon="minus" aria-label="Zoom out" title="Zoom out (−)" disabled></button>
+        <output id="zoom-value" aria-label="PDF zoom level">–</output>
+        <button class="icon-button" id="zoom-in" data-icon="plus" aria-label="Zoom in" title="Zoom in (+)" disabled></button>
+        <button class="icon-button" id="fit" data-icon="fit" aria-label="Fit to width" title="Fit to width (0)" disabled></button>
+      </div>
+      <span class="divider"></span>
+      <select id="page-layout" aria-label="Page layout" title="Page layout">
+        <option value="single">Single page</option>
+        <option value="continuous">Continuous scrolling</option>
+      </select>
+    </div>
+    <div class="view-actions">
+      <button id="workspace-toggle" class="text-button" data-icon="leftpanel" aria-expanded="true" aria-controls="file-bar annotation-tools pages-panel annotations-panel"><span>Hide workspace</span></button>
+      <button id="shortcuts" class="text-button" data-icon="keys" aria-label="Shortcuts" title="Shortcuts"><span>Shortcuts</span></button>
+    </div>
   </footer>
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
