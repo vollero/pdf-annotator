@@ -4,20 +4,22 @@ Highlight text, draw on a scan, or leave a note on a PDF. Margin works in **desk
 
 ## Install Margin
 
-1. **[Download Margin for Chrome and Chromium (.zip)](https://github.com/vollero/pdf-annotator/releases/latest/download/margin-pdf-annotator.zip).** This is the ready-to-use extension. All you need is your browser.
+1. **[Download Margin for Chrome and Chromium (.zip)](https://github.com/vollero/pdf-annotator/releases/latest/download/margin-pdf-annotator.zip).** This ZIP contains the ready-to-use extension.
 2. **Extract the ZIP.** On Windows, right-click it and choose **Extract All**. On macOS, double-click it. On Linux, use your archive manager’s **Extract** command. Move the extracted **Margin** folder somewhere you’ll keep it, such as your Documents folder. Open it once to check that it contains `manifest.json`.
 3. **Load the extension.** Type `chrome://extensions` into the address bar and press Enter. Turn on **Developer mode** at the top right, click **Load unpacked**, and select the **Margin** folder that contains `manifest.json`. A **Margin – PDF Annotator** card should appear.
 4. **Launch Margin.** Open a new tab, click the **Extensions** puzzle-piece button next to the address bar, then click **Margin – PDF Annotator**. Use the pin beside its name if you’d like a toolbar shortcut.
 
-If you want to see where Chrome puts those controls, its illustrated guide shows the Extensions page and pin menu. [Chrome’s installation screenshots](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
+For pictures of the **Load unpacked** button and pin menu, see [Chrome’s illustrated instructions](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
 
 ## Try it on the sample
 
-On your first launch from a new tab, Margin opens *Reading the Alps*. Try a complete edit on that sample before opening your own file.
+On your first launch from a new tab, Margin opens *Reading the Alps*. It already contains a few example marks.
 
 1. Click **Highlight**, choose a color, and drag across a sentence. The passage appears under **Annotations** on the right.
 2. Click **Note**, click a spot on the page, type a comment, and click **Save note**. To edit it later, click **Select**, then the note marker.
 3. Click **Export PDF**. Your browser downloads **Reading the Alps-annotated.pdf**. Open that file in your PDF reader to see the marks, or reopen it in Margin to keep editing.
+
+![Margin showing Reading the Alps, with the Highlight and Note tools above the page and the annotations list on the right.](docs/margin-editor.png)
 
 ## Open your own PDF
 
@@ -33,9 +35,14 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 **Export PDF** creates a separate file with your highlights, drawings, and notes. Use it to send someone a copy, move to another computer, or keep your work before removing the extension or clearing browser data. Your original PDF stays intact.
 
-## Updates and troubleshooting
+## Update Margin
 
-- **Update an existing installation.** Export any work you want to back up, close Margin, and extract the latest ZIP. Replace the contents of the **same Margin folder** you loaded originally. At `chrome://extensions`, click the circular **Reload** arrow on the Margin card, then reopen the editor.
+Export any work you want to back up, close Margin, and extract the new ZIP. Replace the contents of the **same Margin folder** you loaded originally. At `chrome://extensions`, click the circular **Reload** arrow on the Margin card, then reopen the editor.
+
+The install button above downloads the latest stable version. To try a candidate, choose a version marked **Pre-release** and download **margin-pdf-annotator.zip** under **Assets**. [Browse releases](https://github.com/vollero/pdf-annotator/releases)
+
+## Troubleshooting
+
 - **“Manifest file is missing or unreadable.”** Extract the download first. If there are nested folders, select the one where you can see both `manifest.json` and `vendor`. The install link above downloads the packaged extension.
 - **The toolbar can’t read a local PDF tab.** Use **Open PDF**, or go to `chrome://extensions` → **Margin** → **Details** and turn on **Allow access to file URLs** to open PDFs directly from local tabs.
 - **A PDF asks for a password.** Open an unlocked copy in Margin.
