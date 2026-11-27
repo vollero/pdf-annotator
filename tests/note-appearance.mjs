@@ -78,6 +78,12 @@ export async function checkNoteAppearance(page) {
   assert.equal(await settings.getByLabel('Box size').inputValue(),'comfortable')
   await page.keyboard.press('Escape')
   await page.setViewportSize({width:1360,height:920})
-  await page.locator('.paper.current[data-ready="true"]').waitFor()
+  await page.waitForFunction(() => {
+    const paper = document.querySelector('.paper.current[data-ready="true"]')
+    const text = paper?.querySelector('.textLayer')
+    const scale = Number(text?.style.getPropertyValue('--total-scale-factor'))
+    const pageWidth = parseFloat(paper?.style.getPropertyValue('--page-width'))
+    return text && Math.abs(pageWidth * scale - paper.getBoundingClientRect().width) < 1
+  })
   assert.deepEqual(await fontOf(card),['18px','system-ui, sans-serif'])
 }

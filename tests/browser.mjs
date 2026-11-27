@@ -68,7 +68,10 @@ try {
   await checkNoteAppearance(page)
   // Check the text layer aligns with the rendered PDF at ordinary zoom.
   const line=await sampleText.first().boundingBox(), sheet=await page.locator('.paper.current').boundingBox()
-  assert.ok(Math.abs((line.x-sheet.x)/sheet.width-46/612)<.012)
+  assert.ok(Math.abs((line.x-sheet.x)/sheet.width-46/612)<.012,
+    'Sample text must align with the 46 pt left margin: ' + JSON.stringify({line,sheet,
+      layer:await sampleText.first().evaluate(el => ({spanStyle:el.style.cssText,
+        layerStyle:el.closest('.textLayer').style.cssText,paperScroll:el.closest('.paper').scrollLeft}))}))
   await page.locator('[data-tool="highlight"].tool').click()
   await page.mouse.move(line.x+1,line.y+line.height*.5)
   await page.mouse.down()
