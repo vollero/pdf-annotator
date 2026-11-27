@@ -64,4 +64,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" margin-pdf-annotator.zip "${release_flags[@]}" \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "Margin ${GITHUB_REF_NAME#v}" \
-            --notes "Download **margin-pdf-annotator.zip** under **Assets** and extract it. The **Margin** folder inside is ready to load in desktop Chrome or Chromium. [Follow the installation guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#install-margin)."
+            --notes "Download **margin-pdf-annotator.zip** under **Assets**, extract it, and load the **Margin** folder. [Install Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#install-margin) · [Update an existing installation]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY#update-margin). For PDFs with previously deleted or replaced Margin notes, see the [security review and re-export instructions]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/security-review.md)."

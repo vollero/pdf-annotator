@@ -33,7 +33,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Reading controls in the release candidate
 
-The bottom bar lets you change how you read the PDF. To try these controls, download the [Margin 0.1.1-rc.3 extension ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.1.1-rc.3/margin-pdf-annotator.zip) and follow the installation steps above.
+The bottom bar lets you change how you read the PDF. To try these controls, download the [Margin 0.1.1-rc.4 extension ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.1.1-rc.4/margin-pdf-annotator.zip) and follow the installation steps above.
 
 - Choose **Continuous scrolling** in the **Single page** menu to scroll from one page straight into the next. The page counter follows your reading position. Choose **Single page** to switch back.
 - Click **Hide workspace** to give the PDF more room. The page, zoom, and scrolling controls stay at the bottom. Click **Show workspace** or press **Esc** to bring the editor back.
@@ -48,6 +48,8 @@ Margin remembers your scrolling mode and workspace visibility the next time you 
 **Export PDF** creates a separate file with your highlights, drawings, and notes. Use it to send someone a copy, move to another computer, or keep your work before removing the extension or clearing browser data. Your original PDF stays intact. To share a copy with a Margin note removed, delete the note and export again with the current release. Other PDF content, attachments, and metadata can travel with the export. Use a redaction tool for sensitive information in the underlying document.
 
 ## Update Margin
+
+If you removed or replaced a note in a PDF exported with an earlier version, open that file in the updated extension and export a fresh copy before sharing it. [Security review](docs/security-review.md)
 
 Export any work you want to back up, close Margin, and extract the new ZIP. Replace the contents of the **same Margin folder** you loaded originally. At `chrome://extensions`, click the circular **Reload** arrow on the Margin card, then reopen the editor.
 
