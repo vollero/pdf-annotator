@@ -1,15 +1,35 @@
 import { getDocument, GlobalWorkerOptions, TextLayer } from '../vendor/pdf.min.mjs'
+import { maxPages, DocumentLimitError } from './input.js'
 import { paintMark, shape } from './annotations.js'
 
 const asset = file => new URL('../vendor/'+file,import.meta.url).href
 GlobalWorkerOptions.workerSrc=asset('pdf.worker.min.mjs')
 
-export function readPDF(bytes) {
-  return getDocument({
+export async function readPDF(bytes, signal) {
+  signal?.throwIfAborted()
+  const task = getDocument({
     data:bytes.slice(),isEvalSupported:false,enableXfa:false,
+    stopAtErrors:true,maxImageSize:32 * 1024 * 1024,canvasMaxAreaInBytes:64 * 1024 * 1024,
     cMapUrl:asset('cmaps/'),cMapPacked:true,standardFontDataUrl:asset('standard_fonts/'),
     wasmUrl:asset('wasm/'),iccUrl:asset('iccs/')
-  }).promise
+  })
+  const deadline = AbortSignal.timeout(60000)
+  const stop = signal ? AbortSignal.any([signal,deadline]) : deadline
+  let cancel
+  const interrupted = new Promise((_,reject) => {
+    cancel = () => reject(stop.reason)
+    stop.addEventListener('abort',cancel,{once:true})
+  })
+  try {
+    const pdf = await Promise.race([task.promise, interrupted])
+    if (!Number.isSafeInteger(pdf.numPages) || pdf.numPages < 1 || pdf.numPages > maxPages) {
+      throw new DocumentLimitError('Margin can open PDFs with up to ' + maxPages + ' pages.')
+    }
+    return pdf
+  } catch (error) {
+    task.destroy().catch(() => {})
+    throw error
+  } finally { stop.removeEventListener('abort',cancel) }
 }
 
 const $=id=>document.getElementById(id)
@@ -122,7 +142,7 @@ export class Viewer {
       const page=await pdf.getPage(+button.dataset.page)
       if(this.thumbs.get(button)!==entry) return
       const base=page.getViewport({scale:1})
-      const viewport=page.getViewport({scale:184/base.width})
+      const viewport=page.getViewport({scale:Math.min(184/base.width, 512/base.height)})
       Object.assign(entry,{base,number:page.pageNumber})
       button.firstChild.style.aspectRatio=base.width+' / '+base.height
       const canvas=document.createElement('canvas')

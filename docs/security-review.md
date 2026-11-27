@@ -1,0 +1,25 @@
+# Margin security review · 27 November 2026
+
+The review followed a PDF from the browser toolbar or file picker through rendering, local storage, annotation import, and export. It also covered the dependencies and GitHub Actions workflow used to build the installable ZIP.
+
+| Finding | Impact | Change |
+| --- | --- | --- |
+| Removed Margin annotations could survive export as detached PDF objects | Someone receiving the file could recover the previous text of a deleted or replaced note. | Reopening a Margin export clears the old annotation payload and removes unreachable objects before serialization. Export also cleans legacy files containing detached Margin notes, including files with zero visible marks. |
+| Toolbar imports used a URL fragment and a credentialed request | The editor URL could contain a signed download address. A request could carry the user's website cookies or follow redirects beyond the selected address. | The clicked address is held in browser-session memory for one editor tab. Only its top frame can claim it, once, within one minute. The request omits credentials and referrer, rejects redirects, and clears the temporary record. Failed imports leave the editor ready for a local file. |
+| PDF size, thumbnail height, editable metadata, and parser work had incomplete bounds | Large inputs could exhaust memory or make the editor unresponsive. | Both local and streamed PDFs have a 64 MiB limit. The editor caps page count at 3,000, image size at 32 megapixels, and thumbnail raster height at 512 pixels. Imported overlay data has limits on geometry, text, encoded bytes, and annotation count. The secondary parser runs in a terminable worker. |
+| Draft handling did not distinguish private browsing | An extension enabled in Incognito could direct work into the regular workspace. | Incognito uses a separate extension context and bypasses persistent document and draft storage. |
+| Release jobs referenced movable action tags and retained checkout credentials during tests | Upstream action changes could affect a release without a repository change. Test steps had unnecessary access to the checkout credential. | Actions are pinned to commit hashes, checkout credentials are discarded, dependency install scripts are disabled, and a high-severity npm audit gates the build. Only the tag publication job has write access. |
+
+## Checks and scope
+
+Regression tests inspect all registered objects in a re-exported PDF, including a file produced in the older format. They also cover one-time toolbar handoff, streamed size limits, annotation field validation, and normal annotation round trips. The Chromium suite performs a toolbar import from a local HTTP server and checks the extension sends neither the browser's test cookie nor a referrer.
+
+The npm advisory check covers the locked npm package versions. Some decoders and font resources arrive inside upstream distributions and have no independent npm package entry. Margin bundles PDF.js 5.5.207. Mozilla's 2026 PDF.js scripting advisory lists affected versions starting at 5.6.83. Margin loads the rendering API, has no PDF scripting manager, and disables evaluation of generated code. [Mozilla advisory](https://github.com/mozilla/pdf.js/security/advisories/GHSA-hq66-cqwq-w95j)
+
+The editor renders note text as text, constrains annotation colors and coordinates, and loads scripts and workers from the extension. The content security policy blocks frames, embedded objects, external images, and form submissions. Network access remains available for the specific PDF the user opens from the toolbar.
+
+## Existing files and local drafts
+
+To replace a previously shared PDF containing a deleted Margin note, open it in the updated extension and export a fresh copy. Earlier downloads and copies already held by recipients are unaffected. Margin preserves original page content, third-party annotations, metadata, and attachments. A visual highlight or drawing does not redact the text beneath it.
+
+Regular browser profiles retain imported files and drafts in extension-origin IndexedDB. Anyone with access to the unlocked profile can reopen the workspace. The resource limits reduce exposure to expensive inputs. They do not provide a hard memory ceiling for Chromium or for every native decoder.
