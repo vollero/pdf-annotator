@@ -12,7 +12,7 @@ The review followed a PDF from the browser toolbar or file picker through render
 
 ## Checks and scope
 
-Regression tests inspect all registered objects in a re-exported PDF, including a file produced in the older format. They also cover one-time toolbar handoff, streamed size limits, annotation field validation, and normal annotation round trips. The Chromium suite performs a toolbar import from a local HTTP server and checks the extension sends neither the browser's test cookie nor a referrer.
+Regression tests inspect all registered objects in a re-exported PDF, including an older-format file in which a third-party reply still references a deleted note. The reply text survives the cleanup. They also cover one-time toolbar handoff, streamed size limits, annotation field validation, and normal annotation round trips. The Chromium suite performs a toolbar import from a local HTTP server and checks the extension sends neither the browser's test cookie nor a referrer. It also opens a PDF in a real Incognito window, verifies that opening it creates no IndexedDB database, and confirms that reloading the tab discards the private document.
 
 The npm advisory check covers the locked npm package versions. Some decoders and font resources arrive inside upstream distributions and have no independent npm package entry. Margin bundles PDF.js 5.5.207. Mozilla's 2026 PDF.js scripting advisory lists affected versions starting at 5.6.83. Margin loads the rendering API, has no PDF scripting manager, and disables evaluation of generated code. [Mozilla advisory](https://github.com/mozilla/pdf.js/security/advisories/GHSA-hq66-cqwq-w95j)
 
