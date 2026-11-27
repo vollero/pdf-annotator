@@ -90,9 +90,11 @@ try {
     await tab.goto('http://127.0.0.1:'+server.address().port+'/Field-study.pdf',{waitUntil:'commit'})
     const cdp=await context.newCDPSession(tab)
     const {targetInfo}=await cdp.send('Target.getTargetInfo')
-    const editorPromise=context.waitForEvent('page')
-    await cdp.send('Extensions.triggerAction',{id:new URL(sw.url()).hostname,targetId:targetInfo.targetId})
-    const editor=await editorPromise
+    const browserCDP=await context.browser().newBrowserCDPSession()
+    const [editor]=await Promise.all([
+      context.waitForEvent('page',{timeout:12000}),
+      browserCDP.send('Extensions.triggerAction',{id:new URL(sw.url()).hostname,targetId:targetInfo.targetId})
+    ])
     await editor.locator('#filename').filter({hasText:'Field-study.pdf'}).waitFor({timeout:12000})
     await editor.locator('#paper[data-ready="true"]').waitFor()
     assert.equal(await editor.locator('#total').textContent(),'1')
