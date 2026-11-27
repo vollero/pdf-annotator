@@ -8,12 +8,15 @@ import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 import { checkReadingControls } from './reading-controls.mjs'
 
-async function downloadAnnotations(page) {
+async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button',{name:'Export annotations',exact:true}).click()
   ])
-  return {name:download.suggestedFilename(),mimeType:'application/json',buffer:await readFile(await download.path())}
+  assert.equal(await download.failure(),null)
+  const name = download.suggestedFilename()
+  const file = directory ? path.join(directory,name) : await download.path()
+  return {name,mimeType:'application/json',buffer:await readFile(file)}
 }
 
 async function importAnnotations(page, file, message) {
@@ -193,13 +196,10 @@ try {
   await importAnnotations(privatePage,migration,'already in this document')
   assert.equal(await privatePage.locator('#annotation-count').textContent(),'6')
   // chrome.windows.create created this off-the-record context outside Playwright.
-  // Give it the same download directory as the normal automated context.
+  // Configure downloads through its page since this context has no automation ID.
   const tabCDP = await context.newCDPSession(privatePage)
-  const {targetInfo} = await tabCDP.send('Target.getTargetInfo')
-  const browserCDP = await context.browser().newBrowserCDPSession()
-  await browserCDP.send('Browser.setDownloadBehavior',{browserContextId:targetInfo.browserContextId,
-    behavior:'allowAndName',downloadPath:downloads,eventsEnabled:true})
-  assert.deepEqual(JSON.parse((await downloadAnnotations(privatePage)).buffer),exportedMarks)
+  await tabCDP.send('Page.setDownloadBehavior',{behavior:'allow',downloadPath:downloads})
+  assert.deepEqual(JSON.parse((await downloadAnnotations(privatePage,downloads)).buffer),exportedMarks)
   assert.deepEqual(await privatePage.evaluate(()=>indexedDB.databases()),[])
   await privatePage.reload()
   await privatePage.locator('#filename').filter({hasText:'Reading the Alps.pdf'}).waitFor()
