@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Margin – PDF Annotator",
+  "version": "0.1.0",
+  "description": "Highlight, draw and leave notes on PDFs in a private, local workspace.",
+  "minimum_chrome_version": "141",
+  "permissions": ["activeTab"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Open in Margin",
+    "default_icon": { "16": "assets/icon-16.png", "32": "assets/icon-32.png", "128": "assets/icon-128.png" }
+  },
+  "icons": { "16": "assets/icon-16.png", "32": "assets/icon-32.png", "48": "assets/icon-48.png", "128": "assets/icon-128.png" },
+  "content_security_policy": { "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';" }
+}

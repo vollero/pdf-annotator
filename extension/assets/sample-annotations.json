@@ -1,0 +1,43 @@
+[
+  {
+    "id": "sample-ridge",
+    "type": "highlight",
+    "page": 1,
+    "color": "#efc650",
+    "text": "Every ridge holds a record of the forces that shaped it.",
+    "rects": [
+      [
+        0.0727124183006536,
+        0.2111111111111111,
+        0.5746797385620915,
+        0.020606060606060607
+      ]
+    ]
+  },
+  {
+    "id": "sample-note",
+    "type": "note",
+    "page": 1,
+    "color": "#91b9dd",
+    "text": "Compare the ridge in this photograph with the profile on page 2.",
+    "point": [
+      0.875,
+      0.32
+    ]
+  },
+  {
+    "id": "sample-contour",
+    "type": "highlight",
+    "page": 2,
+    "color": "#9abd9e",
+    "text": "Trace the crest before filling in the shadow.",
+    "rects": [
+      [
+        0.0727124183006536,
+        0.616919191919192,
+        0.37227941176470586,
+        0.016742424242424243
+      ]
+    ]
+  }
+]
