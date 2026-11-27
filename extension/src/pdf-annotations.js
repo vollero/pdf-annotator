@@ -67,7 +67,7 @@ function appearance(doc, mark, viewport) {
     }
     fields={Subtype:'Highlight',QuadPoints:quads,CA:.48}
   } else if (mark.type==='draw') {
-    points.push(...mark.points.map(normalized))
+    for (const point of mark.points) points.push(normalized(point))
     ops+=rgb+' RG\n'+num(strokeWidth)+' w 1 J 1 j\n'+points.map((p,i)=>command(p,i?'l':'m')).join('\n')+'\nS'
     fields={Subtype:'Ink',InkList:[points.flat()],BS:{W:strokeWidth,S:'S'}}
     pad=strokeWidth/2

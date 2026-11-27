@@ -2,6 +2,7 @@ import { chromium } from 'playwright-core'
 import assert from 'node:assert/strict'
 import { mkdtemp,rm,readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { createServer } from 'node:http'
 import path from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 
@@ -9,7 +10,7 @@ const dir=path.resolve('dist'), profile=await mkdtemp(path.join(tmpdir(),'margin
 const context=await chromium.launchPersistentContext(profile,{
   channel:'chromium',executablePath:process.env.CHROMIUM_PATH || undefined,
   headless:true,ignoreDefaultArgs:['--disable-extensions'],
-  args:['--disable-extensions-except='+dir,'--load-extension='+dir],
+  args:['--enable-unsafe-extension-debugging','--disable-extensions-except='+dir,'--load-extension='+dir],
   viewport:{width:1360,height:920},acceptDownloads:true
 })
 try {
@@ -75,6 +76,30 @@ try {
   await page.locator('#file').setInputFiles({name:'Invalid.pdf',mimeType:'application/pdf',buffer:Buffer.from('invalid')})
   await page.locator('#toast').filter({hasText:'could not be opened'}).waitFor()
   assert.equal(await page.locator('#filename').textContent(),'Reopened.pdf')
+  // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
+  const remote=await PDFDocument.create()
+  remote.addPage([360,480])
+  const remoteBytes=Buffer.from(await remote.save())
+  const server=createServer((_request,response)=>{
+    response.writeHead(200,{'Content-Type':'application/pdf','Content-Length':remoteBytes.length})
+    response.end(remoteBytes)
+  })
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
+  try {
+    const tab=await context.newPage()
+    await tab.goto('http://127.0.0.1:'+server.address().port+'/Field-study.pdf',{waitUntil:'commit'})
+    const cdp=await context.newCDPSession(tab)
+    const {targetInfo}=await cdp.send('Target.getTargetInfo')
+    const editorPromise=context.waitForEvent('page')
+    await cdp.send('Extensions.triggerAction',{id:new URL(sw.url()).hostname,targetId:targetInfo.targetId})
+    const editor=await editorPromise
+    await editor.locator('#filename').filter({hasText:'Field-study.pdf'}).waitFor({timeout:12000})
+    await editor.locator('#paper[data-ready="true"]').waitFor()
+    assert.equal(await editor.locator('#total').textContent(),'1')
+  } finally {
+    server.closeAllConnections()
+    await new Promise(resolve=>server.close(resolve))
+  }
   assert.deepEqual(errors,[])
   console.log('Chromium extension passed import, highlight, drawing, notes, history, autosave, navigation, zoom and PDF export/reopen.')
 } finally {

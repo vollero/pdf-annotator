@@ -144,7 +144,7 @@ export class Viewer {
       const base=page.getViewport({scale:1})
       const style=getComputedStyle(scroller)
       const available=scroller.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)
-      const scale=this.zoom ?? Math.min(1.25,Math.max(50,available)/base.width)
+      const scale=this.zoom ?? Math.max(50,available)/base.width
       const viewport=page.getViewport({scale})
       const ratio=Math.min(window.devicePixelRatio||1,8192/Math.max(viewport.width,viewport.height),Math.sqrt(16000000/(viewport.width*viewport.height)))
       const canvas=document.createElement('canvas')
