@@ -50,6 +50,16 @@ try {
   assert.equal(await page.locator('.thumbnail').count(),3)
   const sampleText=page.locator('.paper.current .textLayer span').filter({hasText:'Every ridge holds'})
   await sampleText.first().waitFor()
+  for (const width of [760,1360]) {
+    await page.setViewportSize({width,height:920})
+    const panel = await page.locator('#annotations-panel').boundingBox()
+    for (const button of await page.locator('.annotation-files button').all()) {
+      const box = await button.boundingBox()
+      assert.ok(box.x >= panel.x && box.x + box.width <= panel.x + panel.width,'Annotation controls fit the panel')
+      assert.ok(await button.evaluate(el=>el.scrollWidth <= el.clientWidth),'The full button label fits')
+    }
+  }
+  await ready()
   if (process.env.MARGIN_PREVIEW_PATH) {
     await page.locator('.thumbnail canvas').nth(2).waitFor()
     await page.screenshot({path:process.env.MARGIN_PREVIEW_PATH,animations:'disabled'})

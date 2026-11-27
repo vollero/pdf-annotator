@@ -88,7 +88,7 @@ body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 .filter-wrap span { position: absolute; right: 9px; top: 9px; pointer-events: none }.filter-wrap .icon { width: 14px; height: 14px }
 #cards { overflow: auto; padding: 0 17px 25px }
 .annotation-files { margin-top: auto; padding: 10px; border-top: 1px solid var(--line); display: flex; gap: 6px; flex: none }
-.annotation-files .button { flex: 1; padding: 0 5px; font-size: 11px }
+.annotation-files .button { flex: 1 1 0; min-width: 0; padding: 3px 5px; font-size: 12px; line-height: 1.2; white-space: normal }
 .page-label { display: flex; align-items: center; gap: 6px; margin: 16px 1px 10px; font-size: 10px; letter-spacing: 1.1px; text-transform: uppercase; font-weight: 650; color: #6d7067 }
 .page-label .icon { width: 12px; height: 12px }
 .card { position: relative; padding: 13px 13px 14px; border: 1px solid #dfdfd7; background: #fff; border-radius: 8px; margin-bottom: 9px }
