@@ -4,7 +4,23 @@ import {chromium} from 'playwright-core'
 import {execFileSync} from 'node:child_process'
 import {setTimeout as sleep} from 'node:timers/promises'
 const id='io.github.vollero.margin.dev'
-const adb=(...args)=>execFileSync('adb',args,{encoding:'utf8'}).trim()
+const adb=(...args)=>execFileSync('adb',args,{encoding:'utf8',timeout:20000}).trim()
+async function tapPickerItem(matches) {
+  for(let i=0;i<8;i++) {
+    adb('shell','uiautomator','dump','/sdcard/margin-ui.xml')
+    const xml=adb('shell','cat','/sdcard/margin-ui.xml')
+    for(const [node] of xml.matchAll(/<node\b[^>]*>/g)) {
+      if(!matches(node))continue
+      const coords=node.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/)
+      if(!coords)continue
+      const [,x,y,u,v]=coords.map(Number)
+      adb('shell','input','tap',String((x+u)>>1),String((y+v)>>1))
+      return
+    }
+    await sleep(500)
+  }
+  throw Error('Expected document picker control was unavailable')
+}
 async function launch() {
   adb('shell','am','start','-W','-n',id+'/io.github.vollero.margin.ReaderActivity')
   const pid=adb('shell','pidof',id)
@@ -14,9 +30,11 @@ async function launch() {
     await sleep(500)
   }
   const browser=await chromium.connectOverCDP('ws://127.0.0.1:9222/devtools/browser')
-  const page=browser.contexts()[0].pages()[0]
+  const context=browser.contexts()[0]
+  const page=context.pages()[0] ?? await context.waitForEvent('page')
+  page.on('pageerror',e=>console.error(e.message))
   page.on('console',msg=>{if(msg.type()==='error')console.error(msg.text())})
-  await page.locator('.paper.current[data-ready="true"]').waitFor()
+  await page.locator('.paper.current[data-ready="true"]').waitFor({timeout:60000}).catch(async error=>{console.error(await page.locator('body').innerText());throw error})
   return {browser,page}
 }
 let {page}=await launch()
@@ -39,4 +57,15 @@ await page.locator('#book-sheet').waitFor()
 assert.equal(await page.locator('#book-title').textContent(),'Emulator derivation')
 assert.equal(await page.locator('#book-sheet path').count(),1)
 console.log('Rendered the bundled PDF, wrote a pen stroke and recovered the open notebook after process death.')
+await page.locator('#book-close').click()
+await page.locator('#export-annotations').click()
+await tapPickerItem(node=>/text="save"/i.test(node) && /enabled="true"/.test(node))
+await page.locator('.card').filter({hasText:'Emulator derivation'}).locator('.more').click()
+await page.getByRole('button',{name:'Delete',exact:true}).click()
+await page.locator('#import-annotations').click()
+await tapPickerItem(node=>/text="Reading the Alps\.marginbook"/i.test(node))
+await page.locator('#toast').filter({hasText:'1 added'}).waitFor()
+await page.getByRole('button',{name:'Open notebook · 1 page'}).click()
+await page.locator('#book-sheet path').waitFor()
+console.log('Exported an editable package through Android DocumentsUI and restored its handwriting through the open picker.')
 process.exit(0)
