@@ -60,6 +60,8 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       if (mark.type === 'note') {
         marker.classList.add('point-note')
         marker.setAttribute('aria-description','Click to edit or drag to move on this page.')
+        // Reserve touches on the SVG marker for dragging. The page around it still scrolls.
+        marker.addEventListener('touchstart',event=>event.preventDefault(),{passive:false})
       }
       marker.setAttribute('tabindex','0')
       marker.setAttribute('role','button')

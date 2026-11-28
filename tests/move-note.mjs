@@ -141,12 +141,23 @@ export async function checkNoteMove(page, downloadAnnotations, importAnnotations
   const touch = await page.context().newCDPSession(page)
   try {
     await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1})
+    await page.bringToFront()
+    await marker.scrollIntoViewIfNeeded()
+    const pointerEvents = await page.evaluateHandle(()=>{
+      const events = []
+      for (const name of ['pointerdown','pointermove','pointercancel','pointerup','lostpointercapture']) {
+        window.addEventListener(name,event=>{
+          if (event.pointerType==='touch') events.push([name,event.target.tagName,event.target.getAttribute('class')])
+        },{capture:true})
+      }
+      return events
+    })
     const box = await marker.boundingBox(), x = box.x+box.width/2, y = box.y+box.height/2
     const previous = await marker.getAttribute('transform')
     await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]})
     await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+48,y:y+30}]})
     await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})
-    assert.notEqual(await marker.getAttribute('transform'),previous)
+    assert.notEqual(await marker.getAttribute('transform'),previous,JSON.stringify(await pointerEvents.jsonValue()))
     assert.ok(await editor.isHidden())
   } finally {
     await touch.send('Emulation.setTouchEmulationEnabled',{enabled:false})
