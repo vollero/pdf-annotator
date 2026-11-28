@@ -69,7 +69,7 @@ async function recolor(mark) {
   if (!compatibleMarkTypes(current,mark)) { toast('This annotation is no longer in the document.'); return }
   if (color!==current.color.toLowerCase()) change(marks.map(m=>m===current ? {...m,color} : m))
 }
-const viewer=new Viewer({onPage:cards,onError:toast})
+const viewer=new Viewer({onPage:cards,onError:toast,onEditNote:openNote})
 const notePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
 const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor,getStyle:()=>$('tool-style').value,
@@ -194,6 +194,7 @@ function openNote(mark) {
   $('note-label').textContent = comment ? 'Comment' : 'Note'
   $('note-save').textContent = comment ? 'Save comment' : 'Save note'
   $('note-text').value=mark.text
+  $('note-placement').value = mark.marginSide ?? ''
   $('track-note').checked = mark.done !== undefined
   $('note-done').checked = mark.done === true
   $('note-done-label').hidden = !$('track-note').checked
@@ -213,13 +214,18 @@ $('note-form').addEventListener('submit',e=>{
     } else {
       const mark = {...(current ?? original)}
       if (text !== original.text) mark.text = text
+      const side = $('note-placement').value
+      if (side !== (original.marginSide ?? '')) {
+        if (side) mark.marginSide = side
+        else delete mark.marginSide
+      }
       const done = $('track-note').checked ? $('note-done').checked : undefined
       if (done !== original.done) {
         if (done === undefined) delete mark.done
         else mark.done = done
       }
       selected = mark.id
-      if (!current || current.text !== mark.text || current.done !== mark.done) {
+      if (!current || current.text !== mark.text || current.done !== mark.done || current.marginSide !== mark.marginSide) {
         const next = current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark]
         if (!change(next,message => {
           const input = $('note-text')

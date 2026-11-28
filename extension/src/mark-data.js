@@ -67,6 +67,10 @@ export function readMark(raw, page, pages = maxPages) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'marginSide')) {
+    if (!isNote(mark) || (raw.marginSide !== 'left' && raw.marginSide !== 'right')) return
+    mark.marginSide = raw.marginSide
+  }
   if (Object.hasOwn(raw,'size')) {
     if ((type !== 'note' && type !== 'region') || !point(raw.size) || raw.size.some(n=>n===0)) return
     mark.size = raw.size

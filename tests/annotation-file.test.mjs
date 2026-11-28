@@ -77,7 +77,7 @@ test('conversion uses the displayed footprint and migrates the same annotation i
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:7}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:8}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
@@ -87,6 +87,24 @@ test('invalid or oversized packages are rejected as a whole', async () => {
   }
   await assert.rejects(readAnnotations(new Blob(['{']),hash,3),/JSON file/)
   await assert.rejects(readAnnotations({size:16*1024*1024+1},hash,3),/16 MiB/)
+})
+
+test('margin sides travel only on notes in version 7 and can be removed by import', async () => {
+  const note = {id:'axis',type:'note',page:2,text:'Label the axis.',point:[.45,.6],color:'#205b4a'}
+  const placed = {...note,marginSide:'left'}
+  const transfer = JSON.parse(await file(placed).text())
+  assert.equal(transfer.version,7)
+  const decode = (version,mark) => readAnnotations(new Blob([JSON.stringify({...transfer,version,annotations:[mark]})]),hash,3)
+  assert.deepEqual(await decode(7,placed),[placed])
+  for (const version of [1,2,3,4,5,6]) await assert.rejects(decode(version,placed),/Invalid/)
+  for (const side of ['',null,'bottom',false]) await assert.rejects(decode(7,{...note,marginSide:side}),/Invalid/)
+  await assert.rejects(decode(7,{...drawing,marginSide:'right'}),/Invalid/)
+  const right = mergeAnnotations([placed],await decode(7,{...note,marginSide:'right'}))
+  assert.equal(right.updated,1)
+  assert.equal(right.marks[0].marginSide,'right')
+  const restored = mergeAnnotations(right.marks,await decode(1,note))
+  assert.deepEqual(restored.marks,[note])
+  assert.equal(JSON.parse(await file(...restored.marks).text()).version,1)
 })
 
 test('passage comments preserve quotes and reject incompatible versions or invalid anchors', async () => {

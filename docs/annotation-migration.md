@@ -1,6 +1,6 @@
 # Move Margin annotations between sessions or computers
 
-Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. Files with region notes require Margin **0.3.0-rc.10 or later**. Files with resized point notes require Margin **0.3.0-rc.9 or later**. Files with underlines, strikethrough, or outlines require Margin **0.3.0-rc.5 or later**. Files with filled passage comments require at least **0.3.0-rc.4**. Files with action checkboxes require at least **0.3.0-rc.2**, and version 1 files work with **0.2.0 or later**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
+Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. Files with left or right margin notes require Margin **0.3.0-rc.13 or later**. Files with region notes shown on demand require Margin **0.3.0-rc.10 or later**. Files with resized point notes require Margin **0.3.0-rc.9 or later**. Files with underlines, strikethrough, or outlines require Margin **0.3.0-rc.5 or later**. Files with filled passage comments require at least **0.3.0-rc.4**. Files with action checkboxes require at least **0.3.0-rc.2**, and version 1 files work with **0.2.0 or later**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
 For example, suppose you marked up `Survey.pdf` on your laptop. Send the JSON to a colleague who already has that PDF. Their copy can be named `Survey for review.pdf`. Margin calculates SHA-256 over every byte of the PDF they open and compares it with the fingerprint in the JSON. The check also works offline.
 
@@ -46,13 +46,13 @@ Moving a note on its page updates its `point` and preserves its ID. Import the n
 
 ## Version 2 and action checkboxes
 
-For documents without resized notes, passage comments or styled marks, when at least one note has **Track as action** selected, Margin exports the whole document’s annotations with `"version": 2`. A note can have one extra field, `done`. Set it to `false` for **To do** or `true` for **Done**. Omitting it makes the note an ordinary comment. For example, change the version in the sample above to 2 and add `"done": false` alongside the note’s `"point"` field to import it as an open action.
+For documents without margin notes, regions, resized notes, passage comments or styled marks, when at least one note has **Track as action** selected, Margin exports the whole document’s annotations with `"version": 2`. A note can have one extra field, `done`. Set it to `false` for **To do** or `true` for **Done**. Omitting it makes the note an ordinary comment. For example, change the version in the sample above to 2 and add `"done": false` alongside the note’s `"point"` field to import it as an open action.
 
-Importing a matching note ID updates its checkbox along with its text. Importing an ordinary note over a tracked note removes its checkbox. Filtering the sidebar by status or page never limits the export. Documents with only compact ordinary notes, drawings and filled highlights use version 1.
+Importing a matching note ID updates its checkbox along with its text. Importing an ordinary note over a tracked note removes its checkbox. Filtering the sidebar by status or page never limits the export. Documents with only compact ordinary notes shown on demand, drawings and filled highlights use version 1.
 
 ## Version 3 and passage comments
 
-A document with passage comments, compact note markers and only filled text markup uses version 3. One `comment` entry holds the author’s words in `text` and an ordered `passages` array. Each passage has its one-based `page`, the selected `quote`, and the line rectangles in `rects`. The mark’s top-level `page` is the first quoted page. A comment can span multiple pages and has a single ID and an optional `done` checkbox. An import updates the entire comment in one operation. The PDF fingerprint check applies exactly as in earlier versions.
+A document with passage comments shown on demand, compact on-demand note markers and only filled text markup uses version 3. One `comment` entry holds the author’s words in `text` and an ordered `passages` array. Each passage has its one-based `page`, the selected `quote`, and the line rectangles in `rects`. The mark’s top-level `page` is the first quoted page. A comment can span multiple pages and has a single ID and an optional `done` checkbox. An import updates the entire comment in one operation. The PDF fingerprint check applies exactly as in earlier versions.
 
 ## Version 4 and text markup styles
 
@@ -62,7 +62,7 @@ Importing an existing ID also updates its style. Switching every styled mark bac
 
 ## Version 5 and resized notes
 
-A document with expanded point notes and no region notes uses version 5. Its `note` entry carries `size` as a pair of positive fractions up to 1. For example, `"size": [0.30, 0.15]` makes the box 30% of the displayed page width and 15% of its height. The `point` field locates the upper-left corner. Both measurements follow the displayed page’s crop and rotation. The full `text` travels even when only a few lines fit. Font preferences come from the receiving browser.
+Expanded point notes require at least version 5. Its `note` entry carries `size` as a pair of positive fractions up to 1. For example, `"size": [0.30, 0.15]` makes the box 30% of the displayed page width and 15% of its height. The `point` field locates the upper-left corner. Both measurements follow the displayed page’s crop and rotation. The full `text` travels even when only a few lines fit. Font preferences come from the receiving browser.
 
 Importing a matching note ID updates its box. Importing a compact note with the same ID removes its saved size. Once all notes are compact again, Margin exports the lowest version needed for the other marks.
 
@@ -74,4 +74,10 @@ The rectangle identifies the area you commented on. The JSON carries your words 
 
 Converting a point note to a region keeps its ID, page, color, text and action status. Its exported type becomes `region` and its `size` describes the outline. Converting back produces a compact `note` and omits `size`. Import either export onto the same PDF to update the matching note in place. Margin still chooses the lowest format version needed by all marks in the file.
 
-All six versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.
+## Version 7 and margin placement
+
+Choose **Left margin** or **Right margin** under **Show note text** when editing a note. Its JSON entry gains `"marginSide": "left"` or `"marginSide": "right"`. This optional field applies to point notes, region notes, and passage comments. A multi-page comment uses one side for every quoted page. Its original position, text, and ID travel with it.
+
+Margin writes version 7 whenever any note uses a margin. Importing a matching ID with a different side moves the note. Importing a matching ID without `marginSide` restores **On demand**. Once all notes use **On demand**, Margin writes the earliest format that supports the document’s remaining marks.
+
+All seven versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

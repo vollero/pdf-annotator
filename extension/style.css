@@ -77,7 +77,18 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 .thumbnail[aria-current="page"] .sheet { outline: 2px solid #b35a35; outline-offset: 3px }
 .thumbnail[aria-current="page"] { color: var(--accent); font-weight: 650 }
 #stage { position: relative; min-width: 0; flex: 1; background-color: #eaeae4; background-image: radial-gradient(#c8c8bf 0.6px, transparent .7px); background-size: 7px 7px }
-#scroller { width: 100%; height: 100%; overflow: auto; padding: 30px; overscroll-behavior: contain }
+#scroller { width: 100%; height: 100%; overflow: auto; padding: 30px; overscroll-behavior: contain; container-type: inline-size }
+.page-row { display: grid; grid-template-columns: var(--left, 0px) minmax(0, 1fr) var(--right, 0px); --rail-width: clamp(144px, 21cqw, 240px) }
+.page-row.has-left { --left: var(--rail-width) }
+.page-row.has-right { --right: var(--rail-width) }
+#sheets:not(.manual-zoom) .page-row:is(.has-left,.has-right) { min-width: calc(min(100%, 260px) + var(--left, 0px) + var(--right, 0px)) }
+.page-row > .paper { grid-area: 1 / 2; align-self: start }
+.margin-rail { grid-row: 1; position: relative; min-height: 0; overflow: auto; cursor: auto }
+.margin-rail.left { grid-column: 1; margin-right: 6px }
+.margin-rail.right { grid-column: 3; margin-left: 6px }
+.margin-note { position: absolute; inset-inline: 3px; display: block; text-align: left; padding: 7px 10px; border: 1px solid #d5d1bd; border-left: 4px solid var(--tone); background: #fffdf5; font: 400 var(--note-size)/1.45 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere }
+.margin-note span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--note-lines); overflow: hidden }
+.margin-note:focus-visible { outline-offset: -2px }
 .paper { width: 100%; aspect-ratio: var(--page-ratio, 612 / 792); position: relative; background: white; box-shadow: 0 2px 8px #25261c20, 0 0 0 1px #5b5c4016; margin: 0 auto; isolation: isolate; overflow: hidden }
 .page-canvas,.ink { display: block; width: 100%; height: 100%; position: absolute; inset: 0 }
 .ink { pointer-events: none; overflow: visible }
@@ -101,9 +112,9 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 .textLayer[data-main-rotation="270"] { transform:rotate(270deg) translateX(-100%) }
 .textLayer ::selection { background: #96c3ea92 }
 #sheets[data-tool="highlight"] .textLayer ::selection { background: #e9bf518e }
-#sheets[data-layout="single"] .paper:not(.current) { display: none }
-#sheets[data-layout="continuous"] .paper + .paper { margin-top: 20px }
-#sheets.manual-zoom .paper { width: calc(var(--page-width, 612px) * var(--zoom)) }
+#sheets[data-layout="single"] .page-row:not(:has(> .paper.current)) { display: none }
+#sheets[data-layout="continuous"] .page-row + .page-row { margin-top: 20px }
+#sheets.manual-zoom .page-row { width: calc(var(--page-width, 612px) * var(--zoom) + var(--left, 0px) + var(--right, 0px)); margin-inline: auto }
 .paper[data-error]::after { content: "This page could not be rendered."; display: block; padding: 1rem; color: var(--muted) }
 .view-controls, .view-actions, .zoom { display: flex; align-items: center; gap: 5px }
 .view-controls { grid-column: 2; justify-content: center; gap: 10px }
@@ -157,6 +168,7 @@ dialog::backdrop { background: #26272050 }.dialog-head,.dialog-actions { display
 #annotations-panel .panel-heading { justify-content: flex-start; gap: 8px; flex-wrap: wrap; padding-block: 8px }
 #annotations-panel .appearance-link { margin-left: auto }
 .note-label { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+.note-placement { display: flex; align-items: center; gap: 8px; margin-top: 12px }
 .note-checks { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px }
 .check-label { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; font: 600 14px/1.4 system-ui,sans-serif; cursor: pointer }
 .check-label input { margin: 0; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer }

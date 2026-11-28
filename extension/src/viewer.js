@@ -2,6 +2,7 @@ import { getDocument, GlobalWorkerOptions, TextLayer } from '../vendor/pdf.min.m
 import { maxPages, DocumentLimitError } from './input.js'
 import { paintMark, shape } from './annotations.js'
 import { partOnPage } from './mark-data.js'
+import { clearMargins, indexMarginNotes, showMargins } from './margin-notes.js'
 
 const asset = file => new URL('../vendor/'+file,import.meta.url).href
 GlobalWorkerOptions.workerSrc=asset('pdf.worker.min.mjs')
@@ -35,12 +36,14 @@ export async function readPDF(bytes, signal) {
 
 const $=id=>document.getElementById(id)
 export class Viewer {
-  constructor({onPage, onError}) {
+  constructor({onPage, onError, onEditNote}) {
     this.onPage = onPage
     this.onError = onError
+    this.onEditNote = onEditNote
     this.page = 1
     this.zoom = null
     this.marks = []
+    this.marginPages = new Map()
     this.sheets = []
     this.nearby = new Set()
     this.thumbs = new Map()
@@ -53,14 +56,15 @@ export class Viewer {
     // Keep page-sized placeholders in the document; allocate canvases only near the reader.
     this.pageObserver = new IntersectionObserver(entries => {
       for (const entry of entries) {
-        const sheet = this.sheetFor(entry.target)
-        if (!sheet) continue
+        const sheet = this.sheets[Number(entry.target.dataset.page) - 1]
+        if (sheet?.row !== entry.target) continue
         if (entry.isIntersecting) {
           this.nearby.add(sheet)
           this.renderSheet(sheet)
         } else {
           this.nearby.delete(sheet)
           this.release(sheet)
+          clearMargins(sheet)
         }
       }
     }, {root: this.scroller, rootMargin: '250px 0px'})
@@ -87,11 +91,15 @@ export class Viewer {
     const previous = this.pdf
     this.observer.disconnect()
     this.pageObserver.disconnect()
-    for (const sheet of this.nearby) this.release(sheet)
+    for (const sheet of this.sheets) {
+      if (sheet.job) this.release(sheet)
+      clearMargins(sheet)
+    }
     this.nearby.clear()
     this.thumbs.clear()
     this.pdf = pdf
     this.marks = marks
+    this.marginPages = indexMarginNotes(marks)
     this.sheets = []
     this.page = 1
     this.zoom = null
@@ -106,8 +114,14 @@ export class Viewer {
       element.dataset.page = number
       element.setAttribute('role', 'group')
       element.setAttribute('aria-label', 'Page ' + number)
-      this.sheets.push({number, element})
-      pages.append(element)
+      const row = document.createElement('div')
+      row.className = 'page-row'
+      row.dataset.page = number
+      row.append(element)
+      const sheet = {number, element, row}
+      this.sheets.push(sheet)
+      this.reserveMargins(sheet)
+      pages.append(row)
       const button = document.createElement('button')
       button.className = 'thumbnail'
       button.dataset.page = number
@@ -119,7 +133,7 @@ export class Viewer {
       button.append(preview, label)
       thumbnails.append(button)
       this.observer.observe(button)
-      this.pageObserver.observe(element)
+      this.pageObserver.observe(row)
     }
     this.stack.replaceChildren(pages)
     $('thumbnails').replaceChildren(thumbnails)
@@ -165,10 +179,27 @@ export class Viewer {
   }
 
   setMarks(marks) {
+    if (this.marks !== marks) {
+      const previous = this.marginPages
+      this.marginPages = indexMarginNotes(marks)
+      for (const number of new Set([...previous.keys(), ...this.marginPages.keys()])) {
+        this.reserveMargins(this.sheets[number - 1])
+      }
+    }
     this.marks = marks
-    for (const sheet of this.nearby) this.paint(sheet)
-    if (this.currentSheet && !this.nearby.has(this.currentSheet)) this.paint(this.currentSheet)
+    const visible = new Set(this.nearby)
+    if (this.currentSheet) visible.add(this.currentSheet)
+    for (const sheet of visible) {
+      this.renderSheet(sheet)
+      this.paint(sheet)
+    }
     for (const entry of this.thumbs.values()) this.paintThumb(entry)
+  }
+
+  reserveMargins(sheet) {
+    const sides = this.marginPages.get(sheet.number)
+    sheet.row.classList.toggle('has-left', !!sides?.left.length)
+    sheet.row.classList.toggle('has-right', !!sides?.right.length)
   }
 
   paint(sheet) {
@@ -190,6 +221,7 @@ export class Viewer {
     previous?.element.classList.remove('current')
     if (previous && previous.number !== number && (!this.continuous || !this.nearby.has(previous))) {
       this.release(previous)
+      clearMargins(previous)
     }
     this.page = number
     this.currentSheet.element.classList.add('current')
@@ -304,6 +336,7 @@ export class Viewer {
   renderSheet(sheet) {
     const width = sheet.element.getBoundingClientRect().width
     if (!width) return
+    showMargins(sheet,this.marginPages.get(sheet.number),this.onEditNote)
     if (sheet.job?.width === width) return sheet.job.promise
     this.release(sheet)
     const job = {width}
@@ -325,7 +358,7 @@ export class Viewer {
             target.style.setProperty('--page-width', sheet.base.width + 'px')
             target.style.setProperty('--page-ratio', sheet.base.width + ' / ' + sheet.base.height)
           }
-          setSize(element)
+          setSize(sheet.row)
           if (sheet.number === 1) setSize(this.stack)
         })
       }

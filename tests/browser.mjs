@@ -19,6 +19,7 @@ import { checkNoteResize } from './resize-note.mjs'
 import { checkRegionNotes } from './region-notes.mjs'
 import { checkNoteConversion } from './convert-note.mjs'
 import { checkPinnedPreview } from './pin-preview.mjs'
+import { checkMarginNotes } from './margin-notes.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -178,6 +179,7 @@ try {
   await checkRegionNotes(page,downloadAnnotations,importAnnotations)
   await checkNoteConversion(page,downloadAnnotations,importAnnotations)
   await checkPinnedPreview(page,downloadAnnotations,importAnnotations)
+  await checkMarginNotes(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])

@@ -90,6 +90,10 @@ export async function writeChanges(id, before, after) {
           if (prior.text !== mark.text && (updated.type !== 'region' || mark.text.trim())) updated.text = mark.text
           if (converted && updated.type === 'region' && !updated.text.trim()) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
+          if (prior.marginSide !== mark.marginSide) {
+            if (mark.marginSide) updated.marginSide = mark.marginSide
+            else delete updated.marginSide
+          }
           if (prior.done !== mark.done) {
             if (mark.done === undefined) delete updated.done
             else updated.done = mark.done
