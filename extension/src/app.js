@@ -57,9 +57,15 @@ const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor,getStyle:()=>$('tool-style').value,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
   note:openNote,hideNotePreview,notify:toast,
-  moveNote:(mark,point)=>{
-    selected=mark.id
-    change(marks.map(m=>m.id===mark.id ? {...m,point} : m))
+  setNoteBox:(id,point,size)=>{
+    selected=id
+    change(marks.map(m=>{
+      if (m.id!==id) return m
+      const updated = {...m,point}
+      if (size) updated.size = size
+      else delete updated.size
+      return updated
+    }))
   }
 })
 function refresh() {
@@ -333,7 +339,9 @@ async function download() {
       const {width,height,userUnit,transform} = (await pdf.getPage(number)).getViewport({scale:1})
       views.set(number,{width,height,userUnit,transform})
     }
-    const bytes=await runPdfJob({operation:'export',bytes:base,marks:snapshot,views})
+    const style = getComputedStyle($('note-text'))
+    const noteFont = {fontSize:parseFloat(style.fontSize),fontFamily:style.fontFamily}
+    const bytes=await runPdfJob({operation:'export',bytes:base,marks:snapshot,views,noteFont})
     downloadFile(new Blob([bytes],{type:'application/pdf'}), file.name.replace(/(?:-annotated)?\.pdf$/i,'')+'-annotated.pdf')
   } catch {toast('This PDF could not be exported. Try an unlocked copy of the original file.')}
   finally {exporting=false;$('export').disabled=!session}

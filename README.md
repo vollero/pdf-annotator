@@ -31,9 +31,17 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to edit it or delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Move a note marker
+## Resize a note on the page
 
-[Download the 0.3.0-rc.8 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.8/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.9 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.9/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. Choose **Select**. Find a marker you placed with **Note** and drag its striped lower-right corner down and to the right. Your note’s text appears inside the box as you drag.
+2. Release when you can see the lines you need. The top-left corner stays in place. To make room near a page edge, drag the body of the note toward the middle first. Click the body to open the full text.
+3. To return to a compact marker, drag the corner up and left until both sides reach their smallest size. Press **Esc** during a drag to cancel, or choose **Undo** after releasing.
+
+With a keyboard, use **Tab** to focus a note and **Shift + an arrow key** to adjust its width or height. Zoom scales the box with its page. **Note appearance** controls its font and text size. **Export PDF** includes the visible box and its full note text. To move the editable box to another copy of the same PDF, use **Export annotations** and open the JSON with **Import annotations** in Margin 0.3.0-rc.9 or later.
+
+## Move a note marker
 
 1. Choose **Select** and find a marker you placed with **Note**. Drag it to a new spot on the same page and release. A click opens the note for editing.
 2. Press **Esc** during the drag to cancel. After releasing, use **Undo** to return the marker to its previous spot or **Redo** to move it again.
@@ -96,7 +104,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.8/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.9/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.

@@ -20,7 +20,7 @@ self.onmessage = async ({data}) => {
         return {...view, convertToPdfPoint(x, y) {
           return [((x - e) * d - (y - f) * c) / det, ((y - f) * a - (x - e) * b) / det]
         }}
-      })
+      },data.noteFont)
       self.postMessage({result}, [result.buffer])
     }
   } catch (error) {

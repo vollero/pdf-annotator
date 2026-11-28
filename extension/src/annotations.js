@@ -1,4 +1,4 @@
-import { fitNotePoint, noteStatus } from './mark-data.js'
+import { fitNotePoint, noteDimensions, noteStatus } from './mark-data.js'
 import { markupLabels, markupStrokes } from './markup.js'
 
 export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', comment: 'Passage comment' }
@@ -45,21 +45,37 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       x = Math.max(0,Math.min(width - 18,(left + w)*width + 2))
       y = Math.max(0,Math.min(height - 18,top*height))
     } else {
-      const [u,v] = fitNotePoint(mark.point,width,height)
+      const [u,v] = fitNotePoint(mark.point,width,height,mark.size)
       x = u*width; y = v*height
     }
     const marker = shape('g',{'data-id':mark.id,transform:'translate('+x+' '+y+')',class:'note-marker'})
     group.append(marker)
-    marker.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
     const status = noteStatus(mark)
-    if (status) {
-      marker.append(shape('rect',{x:5,y:2.5,width:8,height:8,rx:1,fill:'white',stroke:'#353a32','stroke-width':1}))
-      if (mark.done) marker.append(shape('path',{d:'m6.5 6.5 1.8 1.8 3.3-3.8',fill:'none',stroke:'#353a32','stroke-width':1.5}))
-    } else marker.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
+    const [w,h] = noteDimensions(mark.size,width,height)
+    if (mark.size) {
+      marker.classList.add('expanded-note')
+      marker.append(shape('rect',{x:1,y:1,width:Math.max(0,w-2),height:Math.max(0,h-2),rx:2,fill:'#fffdf5',stroke:mark.color,'stroke-width':2}))
+      const body = shape('foreignObject',{x:5,y:4,width:Math.max(0,w-10),height:Math.max(0,h-8)})
+      const text = document.createElement('div')
+      text.className = 'page-note-text'
+      text.textContent = status ? status + ' · ' + mark.text : mark.text
+      body.append(text)
+      marker.append(body)
+    } else {
+      marker.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
+      if (status) {
+        marker.append(shape('rect',{x:5,y:2.5,width:8,height:8,rx:1,fill:'white',stroke:'#353a32','stroke-width':1}))
+        if (mark.done) marker.append(shape('path',{d:'m6.5 6.5 1.8 1.8 3.3-3.8',fill:'none',stroke:'#353a32','stroke-width':1.5}))
+      } else marker.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
+    }
     if (interactive) {
       if (mark.type === 'note') {
         marker.classList.add('point-note')
-        marker.setAttribute('aria-description','Click to edit or drag to move on this page.')
+        marker.setAttribute('aria-description','Click to edit, drag to move, or use Shift and the arrow keys to resize.')
+        const handle = shape('g',{class:'note-resize-handle',transform:'translate('+w+' '+h+')'})
+        handle.append(shape('rect',{x:-8,y:-8,width:8,height:8,fill:'transparent'}),
+          shape('path',{d:'m-7 -1 6 -6 m-3 6 3 -3',fill:'none',stroke:'#484c43','stroke-width':1.2}))
+        marker.append(handle)
         // Reserve touches on the SVG marker for dragging. The page around it still scrolls.
         marker.addEventListener('touchstart',event=>event.preventDefault(),{passive:false})
       }

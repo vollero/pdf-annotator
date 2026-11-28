@@ -1,4 +1,5 @@
-import { readMark, readDraft, maxMarkCount, noteStatus, fitNotePoint } from './mark-data.js'
+import { readMark, readDraft, maxMarkCount, noteStatus, fitNotePoint, noteDimensions } from './mark-data.js'
+import { noteTextMask } from './note-text-mask.js'
 import { DocumentLimitError } from './input.js'
 import { markupStrokes } from './markup.js'
 import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
@@ -104,7 +105,7 @@ export async function unpack(bytes) {
   return {bytes:await doc.save({updateFieldAppearances:false}), marks:draft}
 }
 
-function appearance(doc, mark, viewport) {
+function appearance(doc, mark, viewport, noteFont) {
   const width=viewport.width, height=viewport.height
   const pdfPoint=(x,y)=>viewport.convertToPdfPoint(x,y)
   const normalized=([x,y])=>pdfPoint(x*width,y*height)
@@ -114,7 +115,7 @@ function appearance(doc, mark, viewport) {
   const strokeWidth=2.4 / viewport.userUnit
   const rgb=color.map(num).join(' ')
   const points=[]
-  let ops=rgb+' rg\n', fields={}, pad=0
+  let ops=rgb+' rg\n', fields={}, pad=0, resources={}
   if (mark.type==='highlight') {
     const quads=[]
     for (const [x,y,w,h] of mark.rects) {
@@ -138,6 +139,22 @@ function appearance(doc, mark, viewport) {
     ops+=rgb+' RG\n'+num(strokeWidth)+' w 1 J 1 j\n'+points.map((p,i)=>command(p,i?'l':'m')).join('\n')+'\nS'
     fields={Subtype:'Ink',InkList:[points.flat()],BS:{W:strokeWidth,S:'S'}}
     pad=strokeWidth/2
+  } else if (mark.size) {
+    const [w,h] = noteDimensions(mark.size,width,height)
+    const [x,y] = fitNotePoint(mark.point,width,height,mark.size)
+    const pt = (dx,dy)=>pdfPoint(x*width+dx,y*height+dy)
+    const corners = [pt(0,0),pt(w,0),pt(w,h),pt(0,h)]
+    points.push(...corners)
+    const [bl,br,tl] = [corners[3],corners[2],corners[0]]
+    const matrix = [br[0]-bl[0],br[1]-bl[1],tl[0]-bl[0],tl[1]-bl[1],...bl]
+    const status = noteStatus(mark)
+    const mask = noteTextMask(status ? status+' · '+mark.text : mark.text,w,h,noteFont)
+    const image = doc.context.flateStream(mask.bytes,{Type:'XObject',Subtype:'Image',Width:mask.width,
+      Height:mask.height,ImageMask:true,BitsPerComponent:1})
+    resources = {XObject:{TextMask:doc.context.register(image)},Font:{Helv:{Type:'Font',Subtype:'Type1',BaseFont:'Helvetica'}}}
+    ops += polygon(corners)+'\n1 .992 .961 rg\n'+polygon([pt(2,2),pt(w-2,2),pt(w-2,h-2),pt(2,h-2)])+
+      '\n.16 .17 .16 rg\n'+matrix.map(num).join(' ')+' cm /TextMask Do'
+    fields = {Subtype:'FreeText',DA:PDFString.of('/Helv '+num(noteFont.fontSize/viewport.userUnit)+' Tf 0 g')}
   } else {
     const [x,y]=fitNotePoint(mark.point,width,height)
     const pt=(dx,dy)=>pdfPoint(x*width+dx,y*height+dy)
@@ -152,14 +169,14 @@ function appearance(doc, mark, viewport) {
     rect[2]=Math.max(rect[2],x+pad); rect[3]=Math.max(rect[3],y+pad)
   }
   const filled = fields.Subtype === 'Highlight'
-  const resources=filled ? {ExtGState:{GS:{Type:'ExtGState',ca:.48,BM:'Multiply'}}} : {}
+  if (filled) resources.ExtGState = {GS:{Type:'ExtGState',ca:.48,BM:'Multiply'}}
   const stream=doc.context.flateStream('q\n'+(filled?'/GS gs\n':'')+ops+'\nQ',{
     Type:'XObject',Subtype:'Form',FormType:1,BBox:rect,Resources:resources
   })
   return {...fields,Rect:rect,C:color,AP:{N:doc.context.register(stream)}}
 }
 
-export async function exportDocument(bytes, marks, getViewport) {
+export async function exportDocument(bytes, marks, getViewport, noteFont = {fontSize:18,fontFamily:'sans-serif'}) {
   const doc=await PDFDocument.load(bytes,{updateMetadata:false})
   if (doc.isEncrypted) throw new Error('Encrypted PDFs cannot be exported by Margin.')
   // Earlier releases could leave detached Margin notes even in a file with no
@@ -178,7 +195,7 @@ export async function exportDocument(bytes, marks, getViewport) {
       const painted = mark.type === 'comment' ? {type:'highlight',color:mark.color,style:mark.style,rects:part.rects} : mark
       const annotation=doc.context.obj({
         Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:contents,
-        ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page))
+        ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page),noteFont)
       })
       const ref = doc.context.register(annotation)
       page.node.addAnnot(ref)

@@ -34,7 +34,7 @@ test('the migration file contains only versioned annotation data and the exact P
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:5}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:6}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
@@ -128,4 +128,21 @@ test('merging updates by ID, keeps unrelated marks, and is idempotent', async ()
   const full = Array.from({length:2000},(_,i)=>({...onlyHere,id:'local'+i}))
   assert.throws(()=>mergeAnnotations(full,incoming),/limit/)
   assert.equal(full.length,2000)
+})
+
+test('version 5 transfers the size of a point note and can restore a compact marker', async () => {
+  const compact = sample.find(mark=>mark.type==='note')
+  const expanded = {...compact,size:[.3,.15],done:false}
+  const data = JSON.parse(await file(expanded,drawing).text())
+  assert.equal(data.version,5)
+  const read = (version,annotation) => readAnnotations(new Blob([JSON.stringify({...data,version,annotations:[annotation]})]),hash,3)
+  assert.deepEqual(await read(5,expanded),[expanded])
+  for (const version of [1,2,3,4]) await assert.rejects(read(version,expanded),/Invalid/)
+  for (const size of [null,{},[],[.3],[0,.3],[-1,.1],[.1,1.1],['.4',1],[1,1,1]]) {
+    await assert.rejects(read(5,{...compact,size}),/Invalid/)
+  }
+  await assert.rejects(read(5,{...drawing,size:[.3,.2]}),/Invalid/)
+  const restored = mergeAnnotations([expanded],await read(1,compact))
+  assert.deepEqual(restored.marks,[compact])
+  assert.equal(JSON.parse(await file(...restored.marks).text()).version,1)
 })

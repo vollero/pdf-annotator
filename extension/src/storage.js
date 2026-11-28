@@ -73,6 +73,10 @@ export async function writeChanges(id, before, after) {
           if (mark.type === 'note' && (mark.point[0] !== prior.point[0] || mark.point[1] !== prior.point[1])) {
             updated.point = mark.point
           }
+          if (mark.size?.[0] !== prior.size?.[0] || mark.size?.[1] !== prior.size?.[1]) {
+            if (mark.size) updated.size = mark.size
+            else delete updated.size
+          }
           if (prior.text !== mark.text) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
           if (prior.done !== mark.done) {

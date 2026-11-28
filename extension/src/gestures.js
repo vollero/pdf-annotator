@@ -1,8 +1,9 @@
 import { paintMark } from './annotations.js'
-import { fitNotePoint } from './mark-data.js'
+import { fitNotePoint, resizeNote } from './mark-data.js'
 import { withMarkupStyle } from './markup.js'
 
 const clamp = value => Math.min(1, Math.max(0, value))
+const sameSize = (a,b) => a?.[0] === b?.[0] && a?.[1] === b?.[1]
 
 function point(event, paper) {
   const rect = paper.getBoundingClientRect()
@@ -63,7 +64,7 @@ function selectedPassages(viewer, range) {
   return passages
 }
 
-export function bindGestures({viewer, getTool, getColor, getStyle, add, note, moveNote, hideNotePreview, notify}) {
+export function bindGestures({viewer, getTool, getColor, getStyle, add, note, setNoteBox, hideNotePreview, notify}) {
   const stack = document.getElementById('sheets')
   const actions = document.getElementById('selection-actions')
   let range
@@ -113,7 +114,8 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, mo
     preview?.remove()
     if (marker) {
       marker.setAttribute('transform',transform)
-      sheet.element.classList.remove('moving-note')
+      marker.removeAttribute('visibility')
+      sheet.element.classList.remove('moving-note','resizing-note')
     }
     if (sheet.element.hasPointerCapture(pointer)) sheet.element.releasePointerCapture(pointer)
   }
@@ -124,14 +126,26 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, mo
       // Other tabs can edit the wording or color and repaint the SVG during a drag.
       const current = viewer.marks.find(m=>m.id===mark.id)
       if (current?.type!=='note' || current.page!==mark.page ||
-          current.point[0]!==mark.point[0] || current.point[1]!==mark.point[1]) return reset()
+          current.point[0]!==mark.point[0] || current.point[1]!==mark.point[1] || !sameSize(current.size,mark.size)) return reset()
       const marker = [...ink.querySelectorAll('.point-note')].find(el=>el.dataset.id===mark.id)
       if (!marker) return reset()
       active.marker = marker
+      active.mark = current
     }
     if (!active.destination && Math.hypot(event.clientX-active.pressX,event.clientY-active.pressY)<4) return
     const {width,height} = sheet.base
-    const destination = fitNotePoint([origin[0]+(p[0]-start[0]),origin[1]+(p[1]-start[1])],width,height)
+    const dx = p[0]-start[0], dy = p[1]-start[1]
+    if (active.resizing) {
+      active.destination = origin
+      active.size = resizeNote(mark.size,origin,width,height,dx*width,dy*height)
+      active.preview?.remove()
+      active.preview = paintMark({...active.mark,point:origin,size:active.size},width,height)
+      active.marker.setAttribute('visibility','hidden')
+      sheet.element.classList.add('resizing-note')
+      ink.append(active.preview)
+      return
+    }
+    const destination = fitNotePoint([origin[0]+dx,origin[1]+dy],width,height,mark.size)
     active.destination = destination
     sheet.element.classList.add('moving-note')
     active.marker.setAttribute('transform','translate('+destination[0]*width+' '+destination[1]*height+')')
@@ -170,7 +184,8 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, mo
       marker.focus({preventScroll:true})
       hideNotePreview()
       active = {sheet, ink:sheet.ink, mark, marker, pointer:event.pointerId, transform:marker.getAttribute('transform'),
-        start:point(event,paper), origin:fitNotePoint(mark.point,sheet.base.width,sheet.base.height),
+        start:point(event,paper), origin:fitNotePoint(mark.point,sheet.base.width,sheet.base.height,mark.size),
+        resizing:!!event.target.closest('.note-resize-handle'),
         pressX:event.clientX, pressY:event.clientY}
       paper.setPointerCapture(event.pointerId)
       return
@@ -201,10 +216,12 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, mo
     if (!textSelection) move(event)
     if (!active) return
     if (active.marker) {
-      const {destination,origin} = active
+      const {destination,origin,resizing,size} = active
       reset()
-      if (!destination) note(viewer.marks.find(m=>m.id===mark.id))
-      else if (destination[0]!==origin[0] || destination[1]!==origin[1]) moveNote(mark,destination)
+      if (resizing) {
+        if (destination && !sameSize(size,mark.size)) setNoteBox(mark.id,origin,size)
+      } else if (!destination) note(viewer.marks.find(m=>m.id===mark.id))
+      else if (destination[0]!==origin[0] || destination[1]!==origin[1]) setNoteBox(mark.id,destination,mark.size)
       return
     }
     reset()
@@ -226,6 +243,22 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, mo
     } else if (mark.rects[0][2] * width >= 2 && mark.rects[0][3] * height >= 2) add([mark])
   })
   stack.addEventListener('pointercancel',event=>{ if (event.pointerId===active?.pointer) reset() })
+  stack.addEventListener('keydown',event=>{
+    const steps = {ArrowRight:[12,0],ArrowLeft:[-12,0],ArrowDown:[0,12],ArrowUp:[0,-12]}
+    const marker = event.target.closest('.point-note')
+    if (active || !marker || getTool()!=='select' || !event.shiftKey || !Object.hasOwn(steps,event.key)) return
+    event.preventDefault()
+    event.stopPropagation()
+    const mark = viewer.marks.find(m=>m.id===marker.dataset.id)
+    const paper = marker.closest('.paper'), {width,height} = viewer.sheetFor(paper).base
+    const origin = fitNotePoint(mark.point,width,height,mark.size)
+    const size = resizeNote(mark.size,origin,width,height,...steps[event.key])
+    if (sameSize(size,mark.size)) return
+    setNoteBox(mark.id,origin,size)
+    for (const next of paper.querySelectorAll('.point-note')) {
+      if (next.dataset.id===mark.id) { next.focus({preventScroll:true}); break }
+    }
+  })
   stack.addEventListener('lostpointercapture',event=>{
     if (event.pointerId===active?.pointer && event.target===active.sheet.element) reset()
   })

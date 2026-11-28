@@ -7,9 +7,23 @@ const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
 const rect = r => Array.isArray(r) && r.length === 4 && r.every(unit)
 function unit(v) { return Number.isFinite(v) && v >= 0 && v <= 1 }
 
-// The point is the top-left corner of the 18-unit note icon on the displayed page.
-export function fitNotePoint([x,y], width, height) {
-  return [Math.max(0,Math.min(x,1-18/width)),Math.max(0,Math.min(y,1-18/height))]
+export function noteDimensions(size, width, height) {
+  return [Math.min(width,Math.max(18,(size?.[0] ?? 0)*width)),
+    Math.min(height,Math.max(18,(size?.[1] ?? 0)*height))]
+}
+
+// Store positions and sizes relative to the displayed, rotated crop box.
+export function fitNotePoint([x,y], width, height, size) {
+  const [w,h] = noteDimensions(size,width,height)
+  return [Math.max(0,Math.min(x,1-w/width)),Math.max(0,Math.min(y,1-h/height))]
+}
+
+export function resizeNote(size, origin, width, height, dx, dy) {
+  const [w,h] = noteDimensions(size,width,height)
+  const nextW = Math.min((1-origin[0])*width,Math.max(18,w+dx))
+  const nextH = Math.min((1-origin[1])*height,Math.max(18,h+dy))
+  if (nextW <= 18.00001 && nextH <= 18.00001) return
+  return [nextW/width,nextH/height]
 }
 
 export function readMark(raw, page, pages = maxPages) {
@@ -17,6 +31,10 @@ export function readMark(raw, page, pages = maxPages) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'size')) {
+    if (type !== 'note' || !point(raw.size) || raw.size.some(n=>n===0)) return
+    mark.size = raw.size
+  }
   if (Object.hasOwn(raw,'style')) {
     if ((type !== 'highlight' && type !== 'comment') || typeof raw.style !== 'string' ||
         raw.style === 'highlight' || !Object.hasOwn(markupLabels,raw.style)) return
