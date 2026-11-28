@@ -159,9 +159,13 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     if (active.marker) return dragNote(event,p)
     const {width, height} = sheet.base
     if (mark.type === 'draw') {
-      const last = mark.points.at(-1)
-      if (Math.hypot((p[0] - last[0]) * width, (p[1] - last[1]) * height) < .5) return
-      mark.points.push(p)
+      const samples=mark.ink ? event.getCoalescedEvents?.() : null
+      for(const ev of samples?.length ? samples : [event]) {
+        const pos=point(ev,sheet.element),last=mark.points.at(-1)
+        if(Math.hypot((pos[0]-last[0])*width,(pos[1]-last[1])*height)<.5)continue
+        mark.points.push(pos)
+        if(mark.ink)mark.ink.pressure.push(clamp(ev.pressure || .5))
+      }
     } else if (mark.type === 'region') {
       if (!active.regionDragged && Math.hypot(event.clientX-active.pressX,event.clientY-active.pressY)<4) return
       active.regionDragged = true
@@ -208,8 +212,11 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
       return
     }
     event.preventDefault()
-    if (type === 'draw') { mark.points = [start]; mark.text = 'Freehand drawing' }
-    if (type === 'highlight') {
+    if (type === 'draw' || type==='highlight' && event.pointerType==='pen' && getStyle()==='highlight') {
+      mark.type='draw'; mark.points=[start];mark.text=type==='highlight'?'Handwritten highlight':'Freehand drawing'
+      if(event.pointerType==='pen')mark.ink={brush:type==='highlight'?'highlight':'pen',width:type==='highlight'?.016:.0035,pressure:[clamp(event.pressure || .5)]}
+    }
+    if (mark.type === 'highlight') {
       mark.rects = []
       mark.text = 'Area highlight'
       if (getStyle() !== 'highlight') { mark.style = getStyle(); mark.text = 'Marked area' }
@@ -252,6 +259,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     } else if (mark.type === 'draw') {
       if (mark.points.length === 1) {
         const [x, y] = start
+        if(mark.ink)mark.ink.pressure.push(mark.ink.pressure[0])
         mark.points.push([clamp(x + (x > .5 ? -.2 : .2) / width), y])
       }
       add([mark])

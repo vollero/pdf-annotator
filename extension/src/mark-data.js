@@ -78,6 +78,14 @@ export function readMark(raw, page, pages = maxPages) {
     if (!isNote(mark) || !validRefs(raw.notebook)) return
     mark.notebook=raw.notebook
   }
+  if (Object.hasOwn(raw,'ink')) {
+    const ink=raw.ink
+    if(type!=='draw' || !ink || !['pen','highlight'].includes(ink.brush) ||
+      !(ink.width>0 && ink.width<=.05 && Number.isFinite(ink.width)) ||
+      !Array.isArray(ink.pressure) || ink.pressure.length!==raw.points?.length || !ink.pressure.every(unit) ||
+      Object.keys(ink).some(k=>!['brush','width','pressure'].includes(k))) return
+    mark.ink=ink
+  }
   if (raw.createdAt) mark.createdAt = raw.createdAt
   if (raw.updatedAt) mark.updatedAt = raw.updatedAt
   if (Object.hasOwn(raw,'history') || Object.hasOwn(raw,'replies')) {

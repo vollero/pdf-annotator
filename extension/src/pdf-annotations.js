@@ -1,3 +1,4 @@
+import {inlineStroke,inkOutline} from './notebook-ink.js'
 import { threadRows } from './discussion.js'
 import { readMark, readDraft, maxMarkCount, noteStatus, fitNotePoint, noteDimensions } from './mark-data.js'
 import { noteTextMask } from './note-text-mask.js'
@@ -140,6 +141,11 @@ function appearance(doc, mark, viewport, noteFont) {
     for (const point of mark.points) points.push(normalized(point))
     ops+=rgb+' RG\n'+num(strokeWidth)+' w 1 J 1 j\n'+points.map((p,i)=>command(p,i?'l':'m')).join('\n')+'\nS'
     fields={Subtype:'Ink',InkList:[points.flat()],BS:{W:strokeWidth,S:'S'}}
+    if(mark.ink) {
+      const outline=inkOutline(inlineStroke(mark),width,height).map(([x,y])=>pdfPoint(x,y))
+      ops=rgb+' rg\n'+polygon(outline)
+      for(const p of outline)points.push(p)
+    }
     pad=strokeWidth/2
   } else if (mark.size) {
     const [w,h] = noteDimensions(mark,width,height)
@@ -170,8 +176,8 @@ function appearance(doc, mark, viewport, noteFont) {
     rect[0]=Math.min(rect[0],x-pad); rect[1]=Math.min(rect[1],y-pad)
     rect[2]=Math.max(rect[2],x+pad); rect[3]=Math.max(rect[3],y+pad)
   }
-  const filled = fields.Subtype === 'Highlight'
-  if (filled) resources.ExtGState = {GS:{Type:'ExtGState',ca:.48,BM:'Multiply'}}
+  const filled = fields.Subtype === 'Highlight' || mark.ink?.brush==='highlight'
+  if (filled) resources.ExtGState = {GS:{Type:'ExtGState',ca:mark.ink?.brush==='highlight'?.32:.48,BM:'Multiply'}}
   const stream=doc.context.flateStream('q\n'+(filled?'/GS gs\n':'')+ops+'\nQ',{
     Type:'XObject',Subtype:'Form',FormType:1,BBox:rect,Resources:resources
   })

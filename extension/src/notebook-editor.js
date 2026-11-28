@@ -1,3 +1,4 @@
+import {bindPenNavigation} from './pen-navigation.js'
 import {blankPage,checkPage,inside,nextRef,pageHash,pageLimit} from './notebook-data.js'
 import {inkPath,paperLines,W,H} from './notebook-ink.js'
 const $=id=>document.getElementById('book-'+id)
@@ -14,7 +15,7 @@ function trace(stroke,selected=false) {
 function drawSheet(sheet,data) {
   sheet.replaceChildren(...paperLines(data.paper).map(([x1,y1,x2,y2])=>svg('line',{x1,y1,x2,y2,stroke:'#d0dce2','stroke-width':.55})),...data.strokes.map(s=>trace(s)))
 }
-export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) {
+export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,notify}) {
   const dialog=$('dialog'),sheet=$('sheet')
   let doc,book,pageId,data,queue=Promise.resolve(),busy=false,active,clipboard=[],selected=new Set(),failure,sourceJob
   let histories=new Map(), epoch=0,zoom=1
@@ -54,9 +55,10 @@ export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) 
     await doc.books.put([[rev,new Blob([JSON.stringify(page)],{type:'application/json'})]])
     return rev
   }
-  function publish(refs) {
+  async function publish(refs) {
     const currentBook=live()
     if (!currentBook || !commit(doc,{...currentBook,notebook:refs})) throw Error('This notebook could not be saved.')
+    await flush(doc)
     book={...currentBook,notebook:refs}
   }
   async function loadPage(id) {
@@ -84,7 +86,7 @@ export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) 
       const rev=await store(page),ref=nextRef(base,rev)
       const latest=live()
       if(!latest || latest.notebook.find(r=>r.id===id)?.rev!==base.rev) throw Error('This page changed in another window. Export the unsaved page before reopening.')
-      publish(latest.notebook.map(r=>r.id===id?ref:r))
+      await publish(latest.notebook.map(r=>r.id===id?ref:r))
       failure=null;$('status').classList.remove('error');$('status').textContent=doc.privateWindow?'In memory':'Page saved';nav()
     }).catch(e=>{failure=e;$('status').classList.add('error');$('status').textContent=e.message+' Use Retry or Save page PDF.'})
   }
@@ -160,6 +162,9 @@ export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) 
     } catch(error){notify(error.message);drawSheet(sheet,data)}
   }
   sheet.onpointercancel=sheet.onlostpointercapture=e=>{if(active?.pointer===e.pointerId){active.preview?.remove();active=null}}
+  bindPenNavigation(sheet,sheet.parentElement,()=>!$('finger').checked,step=>{
+    zoom=Math.max(100,Math.min(300,zoom+step*20));$('zoom').value=zoom;sheet.style.width=zoom+'%'
+  })
   $('finger').onchange=()=>sheet.classList.toggle('finger-ink',$('finger').checked)
   $('copy').onclick=()=>{clipboard=data.strokes.filter(s=>selected.has(s.id));$('status').textContent=clipboard.length+' strokes copied'}
   $('paste').onclick=()=>{if(clipboard.length)action(()=>replace({...data,strokes:[...data.strokes,...translate(clipboard,.018,.018,true)]}))}
@@ -185,7 +190,7 @@ export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) 
         const r=nextRef(null,op==='duplicate'?refs[i].rev:await store(blankPage(data.paper)))
         refs.splice(op==='append'?refs.length:op==='before'?i:i+1,0,r);target=r.id
       }
-      publish(refs);await loadPage(target)
+      await publish(refs);await loadPage(target)
     })
   }
   $('retry').onclick=()=>{if(failure)save(data)}
@@ -198,7 +203,7 @@ export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) 
     const ids=new Set([...$('exports').selectedOptions].map(o=>o.value));const list=current().marks.filter(m=>ids.has(m.id) && m.notebook)
     if(list.length)await print(list)
   })
-  $('close').onclick=()=>action(()=>dialog.close())
+  $('close').onclick=()=>{if(failure){if(confirm('Discard unsaved handwriting on this page?'))dialog.close()}else action(()=>dialog.close())}
   $('source').onclick=()=>action(()=>{dialog.close();jump(book,book.passages?.[0]??book)})
   $('details').onclick=()=>action(()=>{dialog.close();editDetails(book)})
   dialog.oncancel=e=>{e.preventDefault();$('close').click()}
@@ -209,7 +214,7 @@ export function bindNotebook({current,commit,saveFile,editDetails,jump,notify}) 
     if(dialog.open)return
     const token=++epoch
     doc=current().doc;book=mark;histories=new Map();failure=null;clipboard=[]
-    if(!book.notebook) {const rev=await store(blankPage());publish([nextRef(null,rev)])}
+    if(!book.notebook) {const rev=await store(blankPage());await publish([nextRef(null,rev)])}
     if(token!==epoch || !live())return
     let last
     if(!doc.privateWindow)try{last=localStorage.getItem('margin.book.'+doc.file.id+'.'+book.id)}catch{}

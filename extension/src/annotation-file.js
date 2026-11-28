@@ -11,7 +11,7 @@ const hashPattern = /^[0-9a-f]{64}$/
 const latestVersion = 13
 
 function requiredVersion(mark) {
-  if (mark.notebook) return 13
+  if (mark.notebook || mark.ink) return 13
   if (mark.createdAt || mark.updatedAt) return 12
   if (mark.replies || mark.history) return 11
   if (mark.author || mark.tags) return 10

@@ -286,3 +286,8 @@ body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 #book-status.error + #book-retry {display:inline}
 @media(orientation:portrait){.book-layout{grid-template-columns:minmax(0,1fr)}.book-layout aside{display:none}}
 @media(pointer:coarse){.toolbar{overflow-x:auto}.toolbar>*{flex-shrink:0}#book-dialog button{min-height:40px}}
+#book-sheet { touch-action:none }
+@media (pointer:coarse) and (max-width:1100px) {
+  #annotations-panel:not([hidden]) {position:absolute;right:0;z-index:4;height:100%;max-width:48vw;background:var(--sidebar)}
+  #pages-panel {max-width:18vw}
+}

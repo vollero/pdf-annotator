@@ -1,3 +1,4 @@
+import {bindPenNavigation} from './pen-navigation.js'
 import {bindNotebook} from './notebook-editor.js'
 import {exportBooks,isBookFile,readBooks} from './notebook-files.js'
 import {notebookStore} from './storage.js'
@@ -51,6 +52,9 @@ function state(label,kind='saved') {
   $('save-state').dataset.state=kind
 }
 function cards() {
+  if(globalThis.MarginAndroid && session && !$('timeline-dialog').open && viewer.page!==session.readingPage) {
+    session.readingPage=viewer.page;savePreference('reading.'+session.file.id,String(viewer.page))
+  }
   if ($('timeline-dialog').open) return
   renderCards({marks:viewer.marks,sets,page:viewer.page,currentOnly:$('filter').value==='current',selected,
     moveToSet:(mark,name)=>change(marks.map(item=>item.id===mark.id ? assignSet(item,name) : item)),
@@ -171,7 +175,7 @@ function persist(next,nextSets) {
         doc.remembered=true
       }
       const {savedSets,concurrent} = await writeChanges(doc.file.id,doc.saved,next,doc.savedSets,nextSets)
-      doc.saved=next;doc.savedSets=nextSets
+      doc.saveFailed=false;doc.saved=next;doc.savedSets=nextSets
       channel.postMessage(doc.file.id)
       if(doc===session && number===editNumber) {
         state('Saved locally')
@@ -183,6 +187,7 @@ function persist(next,nextSets) {
         }
       }
     } catch {
+      doc.saveFailed=true
       if(doc===session) {
         state('Local save failed','error')
         toast('Local storage is unavailable. Export your PDF to keep these changes.')
@@ -310,7 +315,10 @@ async function jumpTo(mark,part=mark) {
   if(dy<15 || dy>sr.height-75) scroller.scrollTop+=dy-sr.height*.4
   if(dx<0 || dx>sr.width-25) scroller.scrollLeft+=dx-sr.width*.5
 }
+bindPenNavigation($('sheets'),$('scroller'),()=>!!globalThis.MarginAndroid && ['draw','highlight','region','note'].includes(tool),step=>viewer.changeZoom(step))
 const openBook=bindNotebook({
+  flush:async doc=>{await writes;if(!privateWindow && doc.saveFailed)throw Error('Local save failed.')},
+
   current:()=>({doc:session,marks,pdf:viewer.pdf}),editDetails:mark=>openNote(mark,null,true),jump:jumpTo,
   commit:(doc,mark)=>session===doc && change(marks.map(m=>m.id===mark.id?mark:m)),
   saveFile:downloadFile,notify:toast
@@ -516,7 +524,9 @@ async function load(file,initial=[],ticket=beginImport()) {
     $('annotation-search').value=''
     $('author-filter').value=''
     $('tag-filter').value=''
+    const lastPage=globalThis.MarginAndroid ? Number(preference('reading.'+file.id,'1')) : 1
     viewer.setDocument(pdf,visibleMarks(marks,sets))
+    if(lastPage>1 && lastPage<=pdf.numPages)viewer.go(lastPage)
     selectTool('select');refresh()
     return true
   } catch(error) {

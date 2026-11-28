@@ -1,3 +1,4 @@
+import {inlineStroke,inkPath} from './notebook-ink.js'
 import { fitNotePoint, isNote, noteDimensions, noteStatus } from './mark-data.js'
 import { markupLabels, markupStrokes, markupThickness } from './markup.js'
 import { renderNoteText } from './note-format.js'
@@ -33,6 +34,8 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
     }))
     fill.style.mixBlendMode='multiply'
     group.append(fill)
+  } else if (mark.ink) {
+    group.append(shape('path',{d:inkPath(inlineStroke(mark),width,height),fill:mark.color,opacity:mark.ink.brush==='highlight'?.32:1}))
   } else if (mark.type === 'draw') {
     group.append(shape('polyline',{
       points:mark.points.map(([x,y])=>[x*width,y*height].join(',')).join(' '),

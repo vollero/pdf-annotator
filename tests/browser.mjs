@@ -25,6 +25,7 @@ import { checkMathNotes } from './math-notes.mjs'
 import { checkNoteLinks } from './note-links.mjs'
 import { checkAnnotationSets } from './annotation-sets.mjs'
 import { checkRenameSet } from './rename-set.mjs'
+import { checkNotebooks } from "./notebooks.mjs"
 import { checkTimeline } from './timeline.mjs'
 import { checkDiscussion } from './discussion.mjs'
 import { checkCommentDetails } from './comment-details.mjs'
@@ -198,6 +199,7 @@ try {
   await checkArchiveSet(page,downloadAnnotations,importAnnotations)
   await checkDiscussion(page,downloadAnnotations,importAnnotations)
   await checkTimeline(page,downloadAnnotations,importAnnotations)
+  await checkNotebooks(page)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])
