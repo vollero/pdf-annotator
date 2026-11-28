@@ -36,7 +36,7 @@ test('removed and replaced Margin notes disappear from all serialized PDF object
 test('a native reply keeps its own text when a retired Margin note is cleaned',async()=>{
   const original = await PDFDocument.create()
   original.addPage([100,100])
-  const written = await exportDocument(await original.save(),[note],viewport)
+  const written = await exportDocument(await original.save(),[{...note,author:'Original reviewer',tags:['Internal']}],viewport)
   const legacy = await PDFDocument.load(written)
   const page = legacy.getPage(0)
   const parent = page.node.Annots().get(0)
@@ -50,7 +50,7 @@ test('a native reply keeps its own text when a retired Margin note is cleaned',a
   assert.equal(active.size(),1)
   assert.equal(active.lookup(0).lookup(N('Contents')).decodeText(),'Reply to review')
   const retired = active.lookup(0).lookup(N('IRT'))
-  for (const field of ['Contents','MarginData','AP']) assert.equal(retired.has(N(field)),false)
+  for (const field of ['Contents','T','MarginData','AP']) assert.equal(retired.has(N(field)),false)
 })
 
 test('portable marks retain only fields used by the editor and each has its own identity',()=>{

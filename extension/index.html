@@ -163,7 +163,8 @@
       <input id="rename-set-name" maxlength="64" required autocomplete="off">
       <div class="dialog-actions"><button class="button" type="button" id="cancel-rename">Cancel rename</button><button class="button primary" type="submit">Save name</button></div>
     </form>
-    <p class="format-hint">Export PDF includes visible sets. Export annotations includes every set.</p>
+    <fieldset id="archived-sets-wrap" hidden><legend>Archived sets</legend><div id="archived-sets"></div></fieldset>
+    <p class="format-hint">Export PDF includes visible sets. Export annotations includes every set, including archived sets.</p>
     <form id="create-set">
       <label for="set-name">New set name</label>
       <div class="set-entry"><input id="set-name" maxlength="64" required autocomplete="off" placeholder="Review comments"><button class="button" type="submit">Create and use</button></div>

@@ -1,13 +1,14 @@
 import { defaultSet, setLabel } from './annotation-sets.js'
 
-export function bindSetControls({create,rename,writeIn,showSet}) {
+export function bindSetControls({create,rename,archive,writeIn,showSet}) {
   const byId = id=>document.getElementById(id)
   const dialog = byId('sets-dialog'), trigger = byId('manage-sets')
   const active = byId('active-set'), list = byId('visible-sets'), name = byId('set-name')
   const form = byId('rename-set'), replacement = byId('rename-set-name')
+  const archivedList = byId('archived-sets')
   let displayedNames, editing
   function endRename(focus = true) {
-    const button = [...list.querySelectorAll('button')].find(item=>item.value===editing)
+    const button = [...list.querySelectorAll('.set-rename')].find(item=>item.value===editing)
     editing = undefined
     form.hidden = true
     if (focus) (button ?? active).focus()
@@ -51,16 +52,40 @@ export function bindSetControls({create,rename,writeIn,showSet}) {
     trigger.disabled = false
     const status = byId('writing-set')
     status.hidden = !view.names.length && !view.hidden.length
-    status.textContent = 'Writing in '+setLabel(view,view.active)+(view.hidden.length ? ' · '+view.hidden.length+' hidden' : '')
-    const names = JSON.stringify([view.names,view.labels])
+    const hiddenCount = view.hidden.filter(key=>!view.archived?.includes(key)).length
+    status.textContent = 'Writing in '+setLabel(view,view.active)+(hiddenCount ? ' · '+hiddenCount+' hidden' : '')+
+      (view.archived?.length ? ' · '+view.archived.length+' archived' : '')
+    const names = JSON.stringify([view.names,view.labels,view.archived])
     if (displayedNames !== names) {
       displayedNames = names
       const boxes = document.createDocumentFragment()
+      const archivedRows = document.createDocumentFragment()
       active.replaceChildren()
       for (const key of [defaultSet,...view.names]) {
         const text = setLabel(view,key)
-        active.add(new Option(text,key))
         const row = document.createElement('div')
+        const archived = view.archived?.includes(key)
+        let archiveButton
+        if (key!==defaultSet) {
+          archiveButton = document.createElement('button')
+          archiveButton.type = 'button'
+          archiveButton.className = 'text-button set-archive'
+          archiveButton.textContent = archived ? 'Restore' : 'Archive'
+          archiveButton.value = key
+          archiveButton.setAttribute('aria-label',archiveButton.textContent+' '+text)
+          archiveButton.onclick = ()=>{
+            archive(key,!archived)
+            const target = archived ? list : archivedList
+            const next = [...target.querySelectorAll('.set-archive')].find(item=>item.value===key)
+            next?.focus()
+          }
+        }
+        if (archived) {
+          row.append(text,archiveButton)
+          archivedRows.append(row)
+          continue
+        }
+        active.add(new Option(text,key))
         const label = document.createElement('label'), box = document.createElement('input')
         label.className = 'check-label'
         box.type = 'checkbox'
@@ -70,7 +95,7 @@ export function bindSetControls({create,rename,writeIn,showSet}) {
         if (key!==defaultSet) {
           const button = document.createElement('button')
           button.type = 'button'
-          button.className = 'text-button'
+          button.className = 'text-button set-rename'
           button.textContent = 'Rename'
           button.value = key
           button.setAttribute('aria-label','Rename '+text)
@@ -83,13 +108,15 @@ export function bindSetControls({create,rename,writeIn,showSet}) {
             replacement.focus()
             replacement.select()
           }
-          row.append(button)
+          row.append(button,archiveButton)
         }
         boxes.append(row)
       }
       list.replaceChildren(boxes)
+      archivedList.replaceChildren(archivedRows)
+      byId('archived-sets-wrap').hidden = !view.archived?.length
       if (editing !== undefined) {
-        if (view.names.includes(editing)) replacement.labels[0].textContent = 'New name for '+setLabel(view,editing)
+        if (view.names.includes(editing) && !view.archived?.includes(editing)) replacement.labels[0].textContent = 'New name for '+setLabel(view,editing)
         else endRename()
       }
     }

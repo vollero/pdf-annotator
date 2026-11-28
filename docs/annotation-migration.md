@@ -2,10 +2,11 @@
 
 Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
-Margin 0.4.0-rc.3 reads versions 1–9. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
+Margin 0.4.0-rc.5 reads versions 1–10. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
+| Comment author, tags or archived sets | 10 | 0.4.0-rc.5 |
 | Named annotation sets, including empty sets | 9 | 0.4.0-rc.3 |
 | Markdown in note text | 8 | 0.3.0-rc.14 |
 | Left or right margin placement | 7 | 0.3.0-rc.13 |
@@ -113,5 +114,13 @@ An export with a named set adds a top-level list such as `"sets": ["Review comme
 Export includes every set, regardless of visibility. Import combines sets by exact name, keeps local-only sets and marks, and updates the membership of matching mark IDs. When importing a version 1–8 file, matching IDs keep their local set and new marks go into **My notes**. Visibility and the current writing set are local preferences. A transfer with no named sets uses the earliest version its marks require.
 
 Renaming a set in 0.4.0-rc.4 keeps the version 9 format. For example, after renaming **Review** to **Decisions**, a new export lists **Decisions** and writes `"set": "Decisions"` on its marks. On another computer, importing that file moves matching marks into **Decisions**. Marks that exist only in the receiving copy of **Review** stay there. Importing an older version 9 export can bring back **Review** and move the matching marks back into it.
+
+## Version 10 and comment details
+
+Point notes, region notes and passage comments can carry `"author": "Ana García"` and `"tags": ["Methods", "Needs evidence"]`. Either field can be omitted. An import updates the complete comment by ID, so a matching comment imported without these fields clears its local author and tags. The saved default author for future comments belongs to the current browser.
+
+Names and tags are NFC-normalized, single-line text with no outer whitespace. An author can have up to 100 UTF-16 code units. A comment can have up to 16 distinct tags of up to 40 code units each. The editor accepts an optional leading `#` and comma-separated input. The JSON stores tag labels without the leading marker or commas and compares duplicates case-insensitively.
+
+Version 10 includes a `sets` array, which can be empty. An optional top-level `"archivedSets": ["First review"]` lists archived names from that array. The JSON includes their marks and can carry an empty archived set. Import archives the listed sets and preserves any sets already archived on the receiving computer. To reopen one, choose **Restore** there. A document without author names, tags or archived sets exports in the earliest format its remaining features require.
 
 All versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

@@ -12,9 +12,9 @@ import { bindNotePreview } from './note-preview.js'
 import { renderNoteText } from './note-format.js'
 import { renderCards,closeCardMenus } from './sidebar.js'
 import { lastDocument,remember,readWorkspace,writeChanges } from './storage.js'
-import { addNamedSet, assignSet, defaultSet, exportSetMarks, importNamedSets, initialSets, renameSet, setLabel, setNames, setView, visibleMarks } from './annotation-sets.js'
+import { addNamedSet, archiveSet, assignSet, defaultSet, exportSetMarks, importNamedSets, initialSets, renameSet, setLabel, setNames, setView, visibleMarks } from './annotation-sets.js'
 import { bindSetControls } from './set-controls.js'
-import { parseTags, validAuthor } from './comment-details.js'
+import { mergeTags, parseTags, validAuthor } from './comment-details.js'
 
 const $=id=>document.getElementById(id)
 decorate()
@@ -97,6 +97,7 @@ const cancelGesture=bindGestures({
   }
 })
 function revealSet(name) {
+  if (sets.archived?.includes(name)) return sets
   if (name !== defaultSet && !sets.names.includes(name)) return {...sets,names:[...sets.names,name]}
   return sets.hidden.includes(name) ? {...sets,hidden:sets.hidden.filter(item=>item!==name)} : sets
 }
@@ -115,6 +116,10 @@ const renderSets = bindSetControls({
     const next = renameSet(sets,key,label)
     if (next!==sets) change(marks,message=>{throw new Error(message)},next)
   },
+  archive(key,value) {
+    const next = archiveSet(sets,key,value)
+    if (next!==sets) change(marks,toast,next)
+  },
   writeIn(name) { updateSetView({...revealSet(name),active:name}) },
   showSet(name,show) {
     updateSetView(show ? revealSet(name) : {...sets,hidden:[...sets.hidden,name]})
@@ -127,7 +132,7 @@ function refresh() {
   notePreview.refresh()
   $('undo').disabled=!undo.length; $('redo').disabled=!redo.length
   renderSets(sets)
-  $('export').title = sets.hidden.length ? 'Export PDF with visible annotation sets only' : 'Export annotated PDF'
+  $('export').title = sets.hidden.length || sets.archived?.length ? 'Export PDF with visible annotation sets only' : 'Export annotated PDF'
   cards()
 }
 function persist(next,nextSets) {
@@ -181,7 +186,15 @@ function historyMove(from,to) {
   if(!from.length) return
   to.push({marks,sets})
   const prior = from.pop()
-  apply(prior.marks,setView(prior.sets.names,{...sets,labels:prior.sets.labels}))
+  const hidden = new Set(sets.hidden)
+  let active = sets.active
+  for (const key of prior.sets.names) {
+    if (!!sets.archived?.includes(key) === !!prior.sets.archived?.includes(key)) continue
+    if (prior.sets.hidden.includes(key)) hidden.add(key)
+    else hidden.delete(key)
+    if (active===defaultSet && prior.sets.active===key) active=key
+  }
+  apply(prior.marks,setView(prior.sets.names,{...prior.sets,active,hidden:[...hidden]}))
 }
 async function syncStored(doc,number) {
   try {
@@ -190,7 +203,7 @@ async function syncStored(doc,number) {
     const merged=readDraft(stored.marks,doc.pages)
     const mergedSets=setView(setNames(stored.sets.names,merged),stored.sets)
     const documentChanged = JSON.stringify(merged)!==JSON.stringify(marks) || JSON.stringify(mergedSets.names)!==JSON.stringify(sets.names) ||
-      JSON.stringify(mergedSets.labels)!==JSON.stringify(sets.labels)
+      JSON.stringify(mergedSets.labels)!==JSON.stringify(sets.labels) || JSON.stringify(mergedSets.archived)!==JSON.stringify(sets.archived)
     if (documentChanged || JSON.stringify(mergedSets)!==JSON.stringify(sets)) {
       if (documentChanged) { undo=[];redo=[];doc.saved=marks=merged }
       doc.savedSets=sets=mergedSets
@@ -309,7 +322,16 @@ $('note-form').addEventListener('submit',e=>{
         $('note-tags').reportValidity()
         return
       }
-      if (tags.join(',') !== (original.tags ?? []).join(',')) {
+      const tagBase = noteDraft.tagBase ?? original.tags ?? []
+      if (tags.join(',') !== tagBase.join(',')) {
+        tags=mergeTags(current?.tags,tagBase,tags)
+        if (tags.length>16) {
+          noteDraft.tagBase=current?.tags ?? []
+          $('note-tags').value=tags.join(', ')
+          $('note-tags').setCustomValidity('Another tab added tags. Keep up to 16 tags before saving.')
+          $('note-tags').reportValidity()
+          return
+        }
         if (tags.length) mark.tags = tags
         else delete mark.tags
       }
@@ -459,7 +481,8 @@ function downloadFile(blob, filename) {
 $('export-annotations').onclick=()=>{
   if (!session) return
   try {
-    const blob = exportAnnotations(session.file.id, session.pages, exportSetMarks(sets,marks), sets.names.map(key=>setLabel(sets,key)))
+    const blob = exportAnnotations(session.file.id, session.pages, exportSetMarks(sets,marks), sets.names.map(key=>setLabel(sets,key)),
+      sets.archived?.map(key=>setLabel(sets,key)))
     downloadFile(blob, session.file.name.replace(/\.pdf$/i,'') + '.margin-annotations.json')
   } catch (error) { toast(error.message) }
 }
@@ -473,13 +496,15 @@ $('annotation-file').onchange=async event=>{
   try {
     const incoming = await runPdfJob({operation:'read-annotations', file, documentSha256:doc.file.id, pages:doc.pages}, signal)
     if (doc !== session || signal.aborted) return
-    const imported = importNamedSets(sets,incoming.names,incoming.marks)
+    const imported = importNamedSets(sets,incoming.names,incoming.marks,incoming.archived)
     const result = mergeAnnotations(marks, imported.marks, incoming.version < 9)
     const newSets = imported.view.names.length - sets.names.length
-    if (result.added || result.updated || newSets) {
+    const newlyArchived = (imported.view.archived?.length ?? 0) - (sets.archived?.length ?? 0)
+    if (result.added || result.updated || newSets || newlyArchived) {
       if (!change(result.marks,toast,imported.view)) return
       const setCount = newSets ? ' Created '+newSets+(newSets === 1 ? ' set.' : ' sets.') : ''
-      toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.' + setCount)
+      const archiveCount = newlyArchived ? ' Archived '+newlyArchived+(newlyArchived === 1 ? ' set.' : ' sets.') : ''
+      toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.' + setCount + archiveCount)
     } else toast(incoming.marks.length || incoming.names.length ? 'These annotations are already in this document.' : 'The file contains no annotations.')
   } catch (error) {
     if (doc === session && !signal.aborted) toast(error.message)

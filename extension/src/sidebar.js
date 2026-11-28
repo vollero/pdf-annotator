@@ -58,8 +58,9 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
   const pageQuery = pagePrefix ? Number(pagePrefix[1]) : /^\d+$/u.test(query) ? Number(query) : null
   const onPages = currentOnly ? marks.filter(m => partOnPage(m,page)) : marks
   const found = currentOnly && pagePrefix && pageQuery !== page ? [] : searchAnnotations(onPages,query,pagePrefix)
-  const matches = found.filter(mark=>(!authorFilter.value || mark.author?.toLowerCase()===authorFilter.value) &&
-    (!tagFilter.value || mark.tags?.some(tag=>tag.toLowerCase()===tagFilter.value)))
+  const author = authorFilter.value, tag = tagFilter.value
+  const matches = author || tag ? found.filter(mark=>(!author || mark.author?.toLowerCase()===author) &&
+    (!tag || mark.tags?.some(value=>value.toLowerCase()===tag))) : found
   const todo = matches.filter(m => m.done === false).length
   const done = matches.filter(m => m.done === true).length
   actionFilter.options[1].textContent = 'To do (' + todo + ')'
@@ -72,7 +73,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     mark, part:partOnPage(mark,currentOnly ? page : pageQuery ?? mark.page) ?? mark.passages?.[0] ?? mark
   })).sort((a,b)=>a.part.page-b.part.page)
   const summary = document.getElementById('search-summary')
-  const searched = query || authorFilter.value || tagFilter.value
+  const searched = query || author || tag
   const resultCount = searched ? visible.length + (visible.length === 1 ? ' matching annotation' : ' matching annotations') : ''
   if (summary.textContent !== resultCount) summary.textContent = resultCount
   const focused = document.activeElement
@@ -177,7 +178,9 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
       if (sets.names.length) {
         const label = el('label','','Move to set')
         const picker = el('select')
-        for (const key of [defaultSet,...sets.names]) picker.add(new Option(setLabel(sets,key),key))
+        for (const key of [defaultSet,...sets.names]) {
+          if (!sets.archived?.includes(key)) picker.add(new Option(setLabel(sets,key),key))
+        }
         picker.value = mark.set ?? defaultSet
         picker.onchange = ()=>{
           moveToSet(mark,picker.value)
@@ -206,8 +209,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
   }
   if (!visible.length && searched) {
     frag.append(el('p','empty','Try another search or change the filters.'))
-  } else if (!marks.length && sets.hidden.length === sets.names.length+1) {
-    frag.append(el('p','empty','All annotation sets are hidden. Open Annotation sets to show one.'))
+  } else if (!marks.length && new Set([...sets.hidden,...(sets.archived ?? [])]).size === sets.names.length+1) {
+    frag.append(el('p','empty','All annotation sets are hidden or archived. Open Annotation sets to show one.'))
   } else if (!visible.length) {
     const empty = status === 'all' ? (currentOnly ? 'No annotations on this page.' : 'Choose a tool and mark the page. Your annotations will appear here.')
       : (status === 'todo' ? 'No actions to do' : 'No completed actions') + (currentOnly ? ' on this page.' : '.')

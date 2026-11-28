@@ -25,8 +25,19 @@ export function setLabel(view,key) {
 export function setView(names,view = initialSets) {
   const known = new Set([defaultSet,...names])
   const labels = names.filter(key=>setLabel(view,key)!==key).map(key=>[key,setLabel(view,key)])
-  return {names,active:known.has(view.active) ? view.active : defaultSet,hidden:view.hidden.filter(name=>known.has(name)),
+  const archived = names.filter(key=>view.archived?.includes(key))
+  return {names,active:known.has(view.active) && !archived.includes(view.active) ? view.active : defaultSet,hidden:view.hidden.filter(name=>known.has(name)),
+    ...(archived.length ? {archived} : {}),
     ...(labels.length ? {labels:Object.fromEntries(labels)} : {})}
+}
+
+export function archiveSet(view,key,archive) {
+  if (!view.names.includes(key)) return view
+  const archived = new Set(view.archived)
+  if (archived.has(key)===archive) return view
+  if (archive) archived.add(key)
+  else archived.delete(key)
+  return setView(view.names,{...view,archived:[...archived],hidden:archive ? view.hidden : view.hidden.filter(name=>name!==key)})
 }
 
 export function checkSetLabel(view,label,except) {
@@ -51,7 +62,7 @@ export function addNamedSet(view,label) {
   return {key,view:setView(names,{...view,labels:{...view.labels,[key]:label}})}
 }
 
-export function importNamedSets(view,names,marks) {
+export function importNamedSets(view,names,marks,archived = []) {
   const keys = new Map(view.names.map(key=>[setLabel(view,key),key]))
   for (const name of names) {
     if (keys.has(name)) continue
@@ -59,6 +70,7 @@ export function importNamedSets(view,names,marks) {
     view = added.view
     keys.set(name,added.key)
   }
+  if (archived.length) view=setView(view.names,{...view,archived:[...(view.archived ?? []),...archived.map(name=>keys.get(name))]})
   return {view,marks:marks.map(mark=>mark.set && keys.get(mark.set)!==mark.set ? assignSet(mark,keys.get(mark.set)) : mark)}
 }
 
@@ -75,8 +87,8 @@ export function assignSet(mark,name) {
 }
 
 export function visibleMarks(marks,view) {
-  if (!view.hidden.length) return marks
-  const hidden = new Set(view.hidden)
+  if (!view.hidden.length && !view.archived?.length) return marks
+  const hidden = new Set([...view.hidden,...(view.archived ?? [])])
   return marks.filter(mark=>!hidden.has(mark.set ?? defaultSet))
 }
 
@@ -110,6 +122,7 @@ export function mergeSetViews(stored,before,after,marks) {
   }
   return setView(names,{
     labels:Object.fromEntries(labels),
+    archived:mergeList(stored.archived ?? [],before.archived ?? [],after.archived ?? []),
     active:before.active === after.active ? stored.active : after.active,
     hidden:mergeList(stored.hidden,before.hidden,after.hidden)
   })

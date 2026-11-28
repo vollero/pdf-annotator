@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { exportAnnotations, readAnnotationFile, readAnnotations, mergeAnnotations } from '../dist/src/annotation-file.js'
 import { addNamedSet, exportSetMarks, importNamedSets, initialSets, mergeSetViews, renameSet, setLabel } from '../dist/src/annotation-sets.js'
 import { convertPageNote } from '../dist/src/mark-data.js'
+import { mergeTags } from '../dist/src/comment-details.js'
 
 const pdf = await readFile('extension/assets/reading-the-alps.pdf')
 const hash = createHash('sha256').update(pdf).digest('hex')
@@ -14,6 +15,21 @@ const entries = [...sample, drawing]
 const file = (...annotations) => exportAnnotations(hash,3,annotations)
 const packageData = JSON.parse(await file(...entries).text())
 
+test('archives include empty sets and reject duplicate or unregistered names',async()=>{
+  const data = JSON.parse(await exportAnnotations(hash,3,[],['Empty'],['Empty']).text())
+  assert.equal(data.version,10)
+  const read = patch=>readAnnotationFile(new Blob([JSON.stringify({...data,...patch})]),hash,3)
+  assert.deepEqual(await read({}),{marks:[],names:['Empty'],version:10,archived:['Empty']})
+  for (const patch of [{version:9},{archivedSets:null},{archivedSets:['Empty','Empty']},{archivedSets:['My notes']},{sets:[]}]) {
+    await assert.rejects(read(patch),/Invalid/)
+  }
+  const base = {names:['Review','Notes'],active:'Review',hidden:[]}
+  const stored = {...base,active:'My notes',archived:['Review']}
+  const combined = mergeSetViews(stored,base,{...base,archived:['Notes']},[])
+  assert.deepEqual(combined.archived,['Review','Notes'])
+  assert.equal(combined.active,'My notes')
+})
+
 test('comment authors and tags are optional, bounded and portable only on notes',async()=>{
   const note = sample.find(mark=>mark.type==='note')
   const authored = {...note,author:'A. Rossi',tags:['Review','unit change']}
@@ -21,6 +37,7 @@ test('comment authors and tags are optional, bounded and portable only on notes'
   assert.equal(serialized.version,10)
   const read = patch=>readAnnotations(new Blob([JSON.stringify({...serialized,...patch})]),hash,3)
   assert.deepEqual(await read({}),[authored])
+  assert.deepEqual(mergeTags(['Units','Editor'],['Units','Delete'],['units','Reviewer']),['units','Editor','Reviewer'])
   for (const fields of [{author:' '},{author:10},{author:'a\nb'},{tags:['a','A']},{tags:[]},{tags:['#bad']},
     {tags:['has,comma']},{tags:['x'.repeat(41)]},{tags:Array.from({length:17},(_,i)=>String(i))}]) {
     await assert.rejects(read({annotations:[{...note,...fields}]}),/Invalid/)

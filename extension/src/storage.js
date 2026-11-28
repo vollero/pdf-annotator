@@ -1,5 +1,6 @@
 import { checkMarkBudget, compatibleMarkTypes } from './mark-data.js'
 import { initialSets, mergeSetViews } from './annotation-sets.js'
+import { mergeTags } from './comment-details.js'
 
 let connection
 function database() {
@@ -106,10 +107,14 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
           if (prior.text !== mark.text && (updated.type !== 'region' || mark.text.trim())) updated.text = mark.text
           if (converted && updated.type === 'region' && !updated.text.trim()) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
-          for (const field of ['tags','author']) {
-            if (prior[field] === mark[field]) continue
-            if (mark[field] === undefined) delete updated[field]
-            else updated[field] = mark[field]
+          if (prior.author !== mark.author) {
+            if (mark.author) updated.author = mark.author
+            else delete updated.author
+          }
+          if (prior.tags !== mark.tags) {
+            const tags = mergeTags(latest.tags,prior.tags,mark.tags)
+            if (tags.length) updated.tags = tags
+            else delete updated.tags
           }
           if (prior.set !== mark.set) {
             if (mark.set) updated.set = mark.set

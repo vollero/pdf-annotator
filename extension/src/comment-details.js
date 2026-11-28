@@ -21,6 +21,16 @@ export function parseTags(input) {
   return result
 }
 
+// Preserve unrelated tag edits when another tab saves the same note first.
+export function mergeTags(stored = [],before = [],after = []) {
+  if (stored.join(',')===before.join(',')) return after
+  const index = tags=>new Map(tags.map(tag=>[tag.toLowerCase(),tag]))
+  const merged=index(stored), old=index(before), next=index(after)
+  for (const key of old.keys()) if (!next.has(key)) merged.delete(key)
+  for (const [key,tag] of next) if (old.get(key)!==tag) merged.set(key,tag)
+  return [...merged.values()]
+}
+
 export function commentByline(mark) {
   return [mark.author && 'By '+mark.author,...(mark.tags ?? []).map(tag=>'#'+tag)].filter(Boolean).join(' · ')
 }

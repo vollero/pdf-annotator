@@ -149,6 +149,7 @@ export function checkMarkBudget(marks) {
     } else geometry += mark.points?.length ?? mark.rects?.length ?? 1
     characters += mark.text.length
     characters += mark.author?.length ?? 0
+    if (mark.tags?.length>16) throw new DocumentLimitError('A comment can have up to 16 tags.')
     for (const tag of mark.tags ?? []) characters += tag.length
     let size = encodedSizes.get(mark)
     if (size === undefined) {

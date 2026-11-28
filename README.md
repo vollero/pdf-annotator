@@ -33,7 +33,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Organize annotations into sets
 
-Use sets to keep personal notes and review comments on the same PDF. This feature is available from **0.4.0-rc.3**. The standard download installs stable **0.3.0**. To try sets, use the candidate ZIP with the installation or update instructions in this README. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.4/margin-pdf-annotator.zip)
+Use sets to keep personal notes and review comments on the same PDF. This feature is available from **0.4.0-rc.3**. The standard download installs stable **0.3.0**. To try sets, use the candidate ZIP with the installation or update instructions in this README. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.5/margin-pdf-annotator.zip)
 
 1. Open **Annotations → Annotation sets**. Existing marks start in **My notes**. Type a name such as **Review comments**, click **Create and use**, then **Done**. New highlights, drawings, notes and passage comments go into that set. Choose **Write new annotations in** to switch sets.
 2. To organize a mark you already made, open its **…** menu in the sidebar and choose **Move to set**. **Undo** reverses the move.
@@ -41,13 +41,21 @@ Use sets to keep personal notes and review comments on the same PDF. This featur
 
 **To send a review copy**, show **Review comments**, hide **My notes**, and click **Export PDF**. The downloaded PDF includes the visible Margin marks. Reopening it in Margin restores the set names attached to those marks. This controls Margin annotations only. Content, attachments and annotations supplied by the original PDF can still be present.
 
-**To continue on another computer**, use **Export annotations** and import the JSON onto the exact same PDF in **0.4.0-rc.3 or later**. This carries all sets, including hidden marks and empty named sets. The writing set and visibility choices are saved per PDF in the current browser profile. The receiving browser keeps its own choices.
+**To continue on another computer**, use **Export annotations** and import the JSON onto the exact same PDF. Use **0.4.0-rc.5 or later** for archived sets, authors or tags. This carries hidden marks and empty sets as well. The writing set and visibility choices are saved per PDF in the current browser profile.
 
 ### Rename an annotation set
 
 In **0.4.0-rc.4**, open **Annotations → Annotation sets**, find the set under **Visible sets**, and click **Rename** beside it. For example, change **Review comments** to **Decisions** and press **Enter** or click **Save name**. You can rename any set you created or imported, including a hidden or empty set. **My notes** is the built-in set.
 
 The marks stay together. A hidden set stays hidden, and new marks continue going to the selected writing set. Close the dialog and click **Undo** to restore the previous name. Exported PDFs and annotation files use the name at the time of export. [How imports match set names](docs/annotation-migration.md#version-9-and-annotation-sets)
+
+### Archive a finished review
+
+Open **Annotations → Annotation sets** and click **Archive** beside the named set you want to put away. Its marks leave the page, thumbnails, margins, sidebar and search results. If it was your writing set, new marks go into **My notes**.
+
+To bring it back, open **Archived sets** in the same dialog and click **Restore**. The set becomes visible with its comments, authors and tags. **Undo** and **Redo** also work for archiving and restoring.
+
+Choose **Export PDF** to share the visible review. Choose **Export annotations** to migrate all work, including archived sets and their contents. The recipient can restore those sets in Margin.
 
 ## Format a note with Markdown
 
@@ -66,7 +74,7 @@ The marks stay together. A hidden set stays hidden, and new marks continue going
 
 ### Open a web link from a note
 
-Clickable links are available from **0.4.0-rc.2**. Stable **0.3.0** displays link syntax as text. To try links, install or update using the candidate ZIP. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.4/margin-pdf-annotator.zip)
+Clickable links are available from **0.4.0-rc.2**. Stable **0.3.0** displays link syntax as text. To try links, install or update using the candidate ZIP. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.5/margin-pdf-annotator.zip)
 
 1. Open a note, select **Format as Markdown**, and type `Check the [units table](https://example.org/units).` To show the address itself, write `<https://example.org/units>`. Use a full address beginning with `https://` or `http://`.
 2. Open **Preview formatting** and click the underlined link, or focus it with **Tab** and press **Enter**. The website opens in a new tab. Your PDF and any unsaved note stay open in Margin.
@@ -93,7 +101,7 @@ Open **Preview formatting** to see the indented sample in monospace. Spaces, tab
 
 ### Write an equation in a note
 
-Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.4/margin-pdf-annotator.zip)
+Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.5/margin-pdf-annotator.zip)
 
 1. Open a note and select **Format as Markdown**. Enclose an inline formula in single dollar signs, such as `$E=mc^2$`. For an equation on its own line, use a pair of dollar signs at each end.
 2. Paste the example below and open **Preview formatting**. The first formula appears in the sentence. The fraction appears on its own line.
@@ -199,7 +207,7 @@ Margin remembers your palette in this browser profile. Recipients see the colors
 
 In **0.4.0-rc.5**, open a passage comment, point note, or region note. Enter a display name in **Author** and comma-separated labels in **Tags**, for example `Methods, Needs evidence`. Both fields are optional. Choose **Save comment** or **Save note**. The sidebar and pinned preview display the attribution and tags.
 
-Choose **Use this author for future comments** before saving to prefill new comments in this browser. To clear the default, save a blank author with the same box checked. Existing comments keep the name entered on them. The author is an editable display name.
+Choose **Use this author for future comments** before saving to prefill new comments in this browser. To clear the default, save a blank author with the same box checked. In Incognito, the default lasts only for the current workspace tab. Existing comments keep the name entered on them. Anyone receiving the PDF or annotation file can read the author and tags on the included comments.
 
 Use **Filter by author** and **Filter by tag** together to find one reviewer’s comments on a topic. You can also type a name or `#Methods` in **Search annotations**. **Export PDF** writes the native PDF author and includes tags in the comment text. **Export annotations** preserves both fields for editing on another computer.
 
@@ -232,7 +240,7 @@ Margin starts with 18 px sans serif text and a Comfortable box. It remembers you
 ## Move annotations to another copy of the same PDF
 
 1. Open the PDF you annotated. In the **Annotations** panel, click **Export annotations**. Margin downloads a file such as `Field notes.margin-annotations.json` with your highlights, drawings, notes, and the PDF’s SHA-256 fingerprint. All pages are included, even when the list is filtered. If the panel is hidden, click **Show workspace** or **Toggle annotations** to bring it back.
-2. On the other computer, or in a later session, open the **exact same PDF**. Use **0.4.0-rc.3 or later** for transfers with named sets (version 9). Stable **0.3.0** imports versions 1–8. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
+2. On the other computer, or in a later session, open the **exact same PDF**. Use **0.4.0-rc.5 or later** for authors, tags and archives (version 10), or **0.4.0-rc.3 or later** for named sets in version 9. Stable **0.3.0** imports versions 1–8. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
 3. Click **Import annotations** and select the JSON file. Margin checks the fingerprint before applying changes. It adds new marks, updates matching marks, and keeps other local annotations. Importing an identical file twice adds no duplicates. **Undo** reverses the import in one step.
 
 If Margin reports a fingerprint mismatch, locate the copy that was open when you exported the annotations. A matching filename or page count is insufficient. The JSON contains readable note text and selected highlight text. [Annotation file format and worked example](docs/annotation-migration.md)
@@ -251,7 +259,7 @@ Margin remembers your scrolling mode and workspace visibility the next time you 
 
 **Saved locally** means your draft is stored in this browser profile. Reopen Margin to return to the last document, or open the same PDF again to recover its draft. Local PDFs can be edited offline. In an Incognito window, Margin keeps the document in memory. Export it before closing the tab.
 
-**Export PDF** creates a separate file with the visible highlights, drawings, and notes. Show every set to include all marks, or use **Export annotations** to keep a complete migration copy before clearing browser data. Your original PDF stays intact. To share a copy with a Margin note removed, delete the note and export again with the current release. Other PDF content, attachments, and metadata can travel with the export. Use a redaction tool for sensitive information in the underlying document.
+**Export PDF** creates a separate file with the visible highlights, drawings, and notes. Restore archived sets and show every set to include all marks, or use **Export annotations** to keep a complete migration copy before clearing browser data. Your original PDF stays intact. To share a copy with a Margin note removed, delete the note and export again with the current release. Other PDF content, attachments, and metadata can travel with the export. Use a redaction tool for sensitive information in the underlying document.
 
 ## Update Margin
 
