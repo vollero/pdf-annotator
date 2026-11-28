@@ -1,4 +1,5 @@
 import { DocumentLimitError, maxPages } from './input.js'
+import { markupLabels } from './markup.js'
 
 export const maxMarkCount = 2000
 
@@ -11,6 +12,11 @@ export function readMark(raw, page, pages = maxPages) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'style')) {
+    if ((type !== 'highlight' && type !== 'comment') || typeof raw.style !== 'string' ||
+        raw.style === 'highlight' || !Object.hasOwn(markupLabels,raw.style)) return
+    mark.style = raw.style
+  }
   if (type === 'note' || type === 'comment') {
     if (Object.hasOwn(raw,'done') && typeof raw.done !== 'boolean') return
     if (type === 'note') {

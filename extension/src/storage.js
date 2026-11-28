@@ -65,16 +65,20 @@ export async function writeChanges(id, before, after) {
       for (const mark of removed) merged.delete(mark.id)
       for (const mark of changed) {
         const prior = old.get(mark.id), latest = merged.get(mark.id)
-        // Text edits and checkbox clicks can land in different tabs before either receives the broadcast.
-        if ((mark.type === 'note' || mark.type === 'comment') && latest?.type === mark.type && prior?.type === mark.type &&
+        // Text, checkbox and style edits can land in different tabs before either receives the broadcast.
+        if (latest?.type === mark.type && prior?.type === mark.type && mark.rects === prior.rects && mark.points === prior.points &&
             mark.point === prior.point && mark.passages === prior.passages && mark.page === prior.page && mark.color === prior.color) {
-          const note = {...latest}
-          if (prior.text !== mark.text) note.text = mark.text
+          const updated = {...latest}
+          if (prior.text !== mark.text) updated.text = mark.text
           if (prior.done !== mark.done) {
-            if (mark.done === undefined) delete note.done
-            else note.done = mark.done
+            if (mark.done === undefined) delete updated.done
+            else updated.done = mark.done
           }
-          merged.set(mark.id,note)
+          if (prior.style !== mark.style) {
+            if (mark.style === undefined) delete updated.style
+            else updated.style = mark.style
+          }
+          merged.set(mark.id,updated)
         } else merged.set(mark.id,mark)
       }
       const result = [...merged.values()]

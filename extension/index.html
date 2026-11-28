@@ -23,7 +23,10 @@
     <span class="divider"></span>
     <div class="tool-group">
       <button class="tool active" data-tool="select" data-icon="select" aria-pressed="true" title="Select text (V)">Select</button>
-      <button class="tool" data-tool="highlight" data-icon="highlight" aria-pressed="false" title="Highlight text or an area (H)">Highlight</button>
+      <div class="markup-tool">
+        <button class="tool" data-tool="highlight" data-icon="highlight" aria-pressed="false" title="Mark text or an area (H)"><span id="tool-style-name">Highlight</span></button>
+        <label class="markup-picker" data-icon="down" title="Choose text markup style"><select id="tool-style" aria-label="Text markup style"></select></label>
+      </div>
       <button class="tool" data-tool="draw" data-icon="draw" aria-pressed="false" title="Draw freehand (D)">Draw</button>
       <button class="tool" data-tool="note" data-icon="note" aria-pressed="false" title="Add a note (N)">Note</button>
     </div>
@@ -47,7 +50,10 @@
       </div>
       <div id="selection-actions" role="group" aria-label="Selected passage" hidden>
         <button class="button primary" data-selection="comment" title="Comment on selection (C)">Comment</button>
-        <button class="button" data-selection="highlight">Highlight</button>
+        <div class="markup-tool">
+          <button class="button" data-selection="highlight" id="selection-style-name">Highlight</button>
+          <label class="markup-picker" data-icon="down" title="Choose selection markup style"><select id="selection-style" aria-label="Selection markup style"></select></label>
+        </div>
         <button class="button" data-selection="copy">Copy</button>
       </div>
     </section>

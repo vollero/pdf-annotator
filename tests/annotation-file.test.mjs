@@ -34,7 +34,7 @@ test('the migration file contains only versioned annotation data and the exact P
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:4}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:5}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
@@ -83,6 +83,32 @@ test('action checkboxes round-trip, update and clear through versioned migration
     const blob = new Blob([JSON.stringify({...plain,version,annotations:[mark]})])
     await assert.rejects(readAnnotations(blob,hash,3),/Invalid/)
   }
+})
+
+test('version 4 preserves each text markup style and imports it once', async () => {
+  const base = sample.find(mark=>mark.type === 'highlight')
+  const note = sample.find(mark=>mark.type === 'note')
+  const styles = ['underline','dashed-underline','dotted-underline','strikethrough','outline-box']
+  const marks = styles.map(style=>({...base,id:style,style}))
+  marks.push({id:'comment',type:'comment',page:1,color:base.color,text:'Check units',done:true,
+    style:'dotted-underline',passages:[{page:1,quote:base.text,rects:base.rects}]})
+  const data = JSON.parse(await file(...marks).text())
+  assert.equal(data.version,4)
+  const imported = await readAnnotations(file(...marks),hash,3)
+  assert.deepEqual(imported,marks)
+  assert.equal(mergeAnnotations(marks,imported).updated,0)
+  const read = patch => readAnnotations(new Blob([JSON.stringify({...data,...patch})]),hash,3)
+  for (const version of [1,2,3]) await assert.rejects(read({version,annotations:[marks[0]]}),/Invalid/)
+  for (const style of ['highlight','unknown','__proto__',12,null]) {
+    await assert.rejects(read({annotations:[{...base,style}]}),/Invalid/)
+  }
+  for (const mark of [note,drawing]) {
+    await assert.rejects(read({annotations:[{...mark,style:'underline'}]}),/Invalid/)
+  }
+  const filled = {...base,id:marks[0].id}
+  const restored = mergeAnnotations([marks[0]],await readAnnotations(file(filled),hash,3))
+  assert.deepEqual(restored.marks,[filled])
+  assert.equal(JSON.parse(await file(...restored.marks).text()).version,1)
 })
 
 test('merging updates by ID, keeps unrelated marks, and is idempotent', async () => {

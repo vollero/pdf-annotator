@@ -1,5 +1,6 @@
 import { readMark, readDraft, maxMarkCount, noteStatus } from './mark-data.js'
 import { DocumentLimitError } from './input.js'
+import { markupStrokes } from './markup.js'
 import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
 
 const N = PDFName.of
@@ -120,9 +121,18 @@ function appearance(doc, mark, viewport) {
       const corners=[[x,y],[x+w,y],[x,y+h],[x+w,y+h]].map(normalized)
       points.push(...corners)
       quads.push(...corners.flat())
-      ops+=polygon([corners[0],corners[1],corners[3],corners[2]])+'\n'
+      if (!mark.style) ops+=polygon([corners[0],corners[1],corners[3],corners[2]])+'\n'
     }
-    fields={Subtype:'Highlight',QuadPoints:quads,CA:.48}
+    if (mark.style) {
+      ops = rgb+' RG\n1 j\n'
+      for (const stroke of markupStrokes(mark.rects,width,height,mark.style)) {
+        const dash = (stroke.dash ?? []).map(n=>num(n/viewport.userUnit)).join(' ')
+        ops += num(stroke.thickness/viewport.userUnit)+' w ['+dash+'] 0 d '+(stroke.dotted ? 1 : 0)+' J\n'
+        ops += stroke.points.map(([x,y],i)=>command(pdfPoint(x,y),i ? 'l' : 'm')).join('\n')+(stroke.closed ? '\nh S\n' : '\nS\n')
+      }
+      fields = mark.style === 'outline-box' ? {Subtype:'Square'} :
+        {Subtype:mark.style === 'strikethrough' ? 'StrikeOut' : 'Underline',QuadPoints:quads}
+    } else fields={Subtype:'Highlight',QuadPoints:quads,CA:.48}
   } else if (mark.type==='draw') {
     for (const point of mark.points) points.push(normalized(point))
     ops+=rgb+' RG\n'+num(strokeWidth)+' w 1 J 1 j\n'+points.map((p,i)=>command(p,i?'l':'m')).join('\n')+'\nS'
@@ -141,8 +151,9 @@ function appearance(doc, mark, viewport) {
     rect[0]=Math.min(rect[0],x-pad); rect[1]=Math.min(rect[1],y-pad)
     rect[2]=Math.max(rect[2],x+pad); rect[3]=Math.max(rect[3],y+pad)
   }
-  const resources=mark.type==='highlight' ? {ExtGState:{GS:{Type:'ExtGState',ca:.48,BM:'Multiply'}}} : {}
-  const stream=doc.context.flateStream('q\n'+(mark.type==='highlight'?'/GS gs\n':'')+ops+'\nQ',{
+  const filled = fields.Subtype === 'Highlight'
+  const resources=filled ? {ExtGState:{GS:{Type:'ExtGState',ca:.48,BM:'Multiply'}}} : {}
+  const stream=doc.context.flateStream('q\n'+(filled?'/GS gs\n':'')+ops+'\nQ',{
     Type:'XObject',Subtype:'Form',FormType:1,BBox:rect,Resources:resources
   })
   return {...fields,Rect:rect,C:color,AP:{N:doc.context.register(stream)}}
@@ -164,7 +175,7 @@ export async function exportDocument(bytes, marks, getViewport) {
     for (const part of mark.passages ?? [mark]) {
       if (!views.has(part.page)) views.set(part.page,await getViewport(part.page))
       const page=pages[part.page-1]
-      const painted = mark.type === 'comment' ? {type:'highlight',color:mark.color,rects:part.rects} : mark
+      const painted = mark.type === 'comment' ? {type:'highlight',color:mark.color,style:mark.style,rects:part.rects} : mark
       const annotation=doc.context.obj({
         Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:contents,
         ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page))

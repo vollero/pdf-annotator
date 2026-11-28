@@ -1,10 +1,15 @@
 import { noteStatus } from './mark-data.js'
+import { markupLabels, markupStrokes } from './markup.js'
 
 export const colors = [
   ['Amber','#efc650'], ['Sage','#9abd9e'], ['Sky','#91b9dd'], ['Rose','#e5a4ae'], ['Lavender','#b3a1d4']
 ]
 export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', comment: 'Passage comment' }
 export const NS = 'http://www.w3.org/2000/svg'
+export function populateMarkupPicker(select, style = 'highlight') {
+  for (const [value,label] of Object.entries(markupLabels)) select.add(new Option(label,value))
+  select.value = style
+}
 export function shape(name, attrs) {
   const el = document.createElementNS(NS,name)
   for (const [key,value] of Object.entries(attrs)) el.setAttribute(key,value)
@@ -12,7 +17,18 @@ export function shape(name, attrs) {
 }
 export function paintMark(mark, width, height, interactive = false, part = mark) {
   const group = shape('g', { 'data-id':mark.id })
-  if (part.rects) {
+  if (part.rects && mark.style) {
+    const ink = shape('g',{fill:'none',stroke:mark.color,'data-markup':mark.style})
+    for (const {points,closed,thickness,dash,dotted} of markupStrokes(part.rects,width,height,mark.style)) {
+      const path = shape(closed ? 'polygon' : 'polyline',{
+        points:points.map(p=>p.join(',')).join(' '),'stroke-width':thickness,'stroke-linejoin':'round',
+        'stroke-linecap':dotted ? 'round' : 'butt'
+      })
+      if (dash) path.setAttribute('stroke-dasharray',dash.join(' '))
+      ink.append(path)
+    }
+    group.append(ink)
+  } else if (part.rects) {
     const fill = shape('g',{})
     for (const [x,y,w,h] of part.rects) fill.append(shape('rect',{
       x:x*width, y:y*height, width:w*width, height:h*height, fill:mark.color, opacity:.48

@@ -1,5 +1,6 @@
 import { icon } from './icons.js'
-import { titles } from './annotations.js'
+import { titles, populateMarkupPicker } from './annotations.js'
+import { markupLabels } from './markup.js'
 import { noteStatus, partOnPage, quotedText } from './mark-data.js'
 
 function el(tag,cls,text) {
@@ -23,7 +24,7 @@ function searchAnnotations(marks, query, pagePrefix) {
   })
 }
 
-export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,setDone}) {
+export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,setDone,setStyle}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
@@ -62,10 +63,11 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
     const symbol=el('span','card-icon')
     symbol.append(icon(mark.type === 'comment' ? 'note' : mark.type))
     const more=el('button','icon-button more')
-    more.setAttribute('aria-label',titles[mark.type]+' actions')
+    const title = mark.type === 'highlight' && mark.style ? markupLabels[mark.style] : titles[mark.type]
+    more.setAttribute('aria-label',title+' actions')
     more.setAttribute('aria-expanded','false')
     more.append(icon('more'))
-    head.append(symbol,el('span','card-title',titles[mark.type]),more)
+    head.append(symbol,el('span','card-title',title),more)
     const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''),mark.text)
     if (mark.type === 'comment') body.prepend(el('span','card-quote',quotedText(mark)))
     body.dataset.id = mark.id
@@ -96,11 +98,23 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
         change.onclick=()=>{closeCardMenus();edit(mark)}
         menu.append(change)
       }
+      if (mark.type === 'highlight' || mark.type === 'comment') {
+        const label = el('label','','Markup style')
+        const picker = el('select')
+        populateMarkupPicker(picker,mark.style)
+        picker.onchange = () => {
+          setStyle(mark,picker.value)
+          const body = [...container.querySelectorAll('.card-body')].find(b=>b.dataset.id===mark.id)
+          body?.closest('.card')?.querySelector('.more')?.focus()
+        }
+        label.append(picker)
+        menu.append(label)
+      }
       const del=el('button','','Delete')
       del.prepend(icon('trash'))
       del.onclick=()=>{remove(mark);document.querySelector('[data-tool].active')?.focus()}
       menu.append(del);card.append(menu)
-      menu.querySelector('button').focus()
+      menu.querySelector('button,select').focus()
     }
     frag.append(card)
   }

@@ -3,7 +3,8 @@ import { checkMarkBudget, readDraft, quotedText } from './mark-data.js'
 import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
 import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
-import { colors,anchor } from './annotations.js'
+import { colors,anchor,populateMarkupPicker } from './annotations.js'
+import { markupLabels, withMarkupStyle } from './markup.js'
 import { Viewer,readPDF } from './viewer.js'
 import { bindGestures } from './gestures.js'
 import { bindNotePreview } from './note-preview.js'
@@ -37,12 +38,13 @@ function state(label,kind='saved') {
 function cards() {
   renderCards({marks,page:viewer.page,currentOnly:$('filter').value==='current',selected,
     jump:jumpTo,edit:openNote,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
-    setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m))})
+    setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m)),
+    setStyle:(mark, style)=>change(marks.map(m=>m.id===mark.id ? withMarkupStyle(m,style) : m))})
 }
 const viewer=new Viewer({onPage:cards,onError:toast})
 const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
 const cancelGesture=bindGestures({
-  viewer,getTool:()=>tool,getColor:()=>color,
+  viewer,getTool:()=>tool,getColor:()=>color,getStyle:()=>$('tool-style').value,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
   note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id)),notify:toast
 })
@@ -119,6 +121,15 @@ function selectTool(value) {
   })
 }
 for(const button of document.querySelectorAll('button[data-tool]')) button.onclick=()=>selectTool(button.dataset.tool)
+for (const picker of [$('tool-style'),$('selection-style')]) {
+  populateMarkupPicker(picker)
+  picker.onchange = () => {
+    const style = picker.value
+    $('tool-style').value = $('selection-style').value = style
+    $('tool-style-name').textContent = $('selection-style-name').textContent = markupLabels[style]
+    if (picker === $('tool-style')) selectTool('highlight')
+  }
+}
 for(const [label,value] of colors) {
   const button=document.createElement('button')
   button.className='swatch';button.title=label

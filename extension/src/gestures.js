@@ -1,4 +1,5 @@
 import { paintMark } from './annotations.js'
+import { withMarkupStyle } from './markup.js'
 
 const clamp = value => Math.min(1, Math.max(0, value))
 
@@ -61,16 +62,19 @@ function selectedPassages(viewer, range) {
   return passages
 }
 
-export function bindGestures({viewer, getTool, getColor, add, note, editNote, notify}) {
+export function bindGestures({viewer, getTool, getColor, getStyle, add, note, editNote, notify}) {
   const stack = document.getElementById('sheets')
   const actions = document.getElementById('selection-actions')
   let range
   function updateSelection() {
-    range = getTool() === 'select' && !document.querySelector('dialog[open]') ? selectedRange()?.cloneRange() : null
+    const inSelect = getTool() === 'select' && !document.querySelector('dialog[open]')
+    const next = inSelect && selectedRange()
+    if (!next && inSelect && actions.contains(document.activeElement) && range && !range.collapsed && range.startContainer.isConnected) return
+    range = next ? next.cloneRange() : null
     actions.hidden = !range
   }
   document.addEventListener('selectionchange',updateSelection)
-  actions.addEventListener('mousedown',event => event.preventDefault())
+  actions.addEventListener('mousedown',event => { if (!event.target.closest('select')) event.preventDefault() })
   function applySelection(action, selected) {
     if (!selected) return
     const passages = selectedPassages(viewer,selected)
@@ -84,9 +88,9 @@ export function bindGestures({viewer, getTool, getColor, add, note, editNote, no
     actions.hidden = true
     range = null
     if (action === 'highlight') {
-      add(passages.map(({page,quote,rects}) => ({id:crypto.randomUUID(),type:'highlight',page,color,text:quote,rects})))
+      add(passages.map(({page,quote,rects}) => withMarkupStyle({id:crypto.randomUUID(),type:'highlight',page,color,text:quote,rects},getStyle())))
     } else {
-      note({id:crypto.randomUUID(),type:'comment',page:passages[0].page,color,text:'',passages})
+      note(withMarkupStyle({id:crypto.randomUUID(),type:'comment',page:passages[0].page,color,text:'',passages},getStyle()))
     }
   }
   actions.addEventListener('click',event => {
@@ -144,7 +148,11 @@ export function bindGestures({viewer, getTool, getColor, add, note, editNote, no
     }
     event.preventDefault()
     if (type === 'draw') { mark.points = [start]; mark.text = 'Freehand drawing' }
-    if (type === 'highlight') { mark.rects = []; mark.text = 'Area highlight' }
+    if (type === 'highlight') {
+      mark.rects = []
+      mark.text = 'Area highlight'
+      if (getStyle() !== 'highlight') { mark.style = getStyle(); mark.text = 'Marked area' }
+    }
     paper.setPointerCapture(event.pointerId)
   })
   stack.addEventListener('pointermove', move)
