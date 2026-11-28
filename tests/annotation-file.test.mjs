@@ -14,6 +14,21 @@ const entries = [...sample, drawing]
 const file = (...annotations) => exportAnnotations(hash,3,annotations)
 const packageData = JSON.parse(await file(...entries).text())
 
+test('comment authors and tags are optional, bounded and portable only on notes',async()=>{
+  const note = sample.find(mark=>mark.type==='note')
+  const authored = {...note,author:'A. Rossi',tags:['Review','unit change']}
+  const serialized = JSON.parse(await file(authored).text())
+  assert.equal(serialized.version,10)
+  const read = patch=>readAnnotations(new Blob([JSON.stringify({...serialized,...patch})]),hash,3)
+  assert.deepEqual(await read({}),[authored])
+  for (const fields of [{author:' '},{author:10},{author:'a\nb'},{tags:['a','A']},{tags:[]},{tags:['#bad']},
+    {tags:['has,comma']},{tags:['x'.repeat(41)]},{tags:Array.from({length:17},(_,i)=>String(i))}]) {
+    await assert.rejects(read({annotations:[{...note,...fields}]}),/Invalid/)
+  }
+  await assert.rejects(read({version:9}),/Invalid/)
+  await assert.rejects(read({annotations:[{...drawing,author:'Jon'}]}),/Invalid/)
+})
+
 test('v9 transfers named sets, including empty sets, and validates membership',async()=>{
   const review = {...drawing,set:'Review'}
   const json = JSON.parse(await exportAnnotations(hash,3,[review],['Review','Empty']).text())
@@ -138,7 +153,7 @@ test('conversion uses the displayed footprint and migrates the same annotation i
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:10}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:11}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}

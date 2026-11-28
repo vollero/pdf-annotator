@@ -195,6 +195,14 @@ Margin remembers your palette in this browser profile. Recipients see the colors
 
 **Export PDF** places your comment and its text markup on each selected page. Reopening it in Margin restores one editable comment. **Export annotations** also keeps the quotation, page positions, comment, and action status together. For a scanned page without selectable text, use **Region** to outline an area or **Note** to comment at a point.
 
+## Tag comments and add an author
+
+In **0.4.0-rc.5**, open a passage comment, point note, or region note. Enter a display name in **Author** and comma-separated labels in **Tags**, for example `Methods, Needs evidence`. Both fields are optional. Choose **Save comment** or **Save note**. The sidebar and pinned preview display the attribution and tags.
+
+Choose **Use this author for future comments** before saving to prefill new comments in this browser. To clear the default, save a blank author with the same box checked. Existing comments keep the name entered on them. The author is an editable display name.
+
+Use **Filter by author** and **Filter by tag** together to find one reviewer’s comments on a topic. You can also type a name or `#Methods` in **Search annotations**. **Export PDF** writes the native PDF author and includes tags in the comment text. **Export annotations** preserves both fields for editing on another computer.
+
 ## Search annotations
 
 In the **Annotations** panel, type in **Search annotations** to find words in notes and highlighted passages. Results update as you type. Click a result, or focus it and press **Enter**, to jump to its mark.

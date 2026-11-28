@@ -106,6 +106,11 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
           if (prior.text !== mark.text && (updated.type !== 'region' || mark.text.trim())) updated.text = mark.text
           if (converted && updated.type === 'region' && !updated.text.trim()) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
+          for (const field of ['tags','author']) {
+            if (prior[field] === mark[field]) continue
+            if (mark[field] === undefined) delete updated[field]
+            else updated[field] = mark[field]
+          }
           if (prior.set !== mark.set) {
             if (mark.set) updated.set = mark.set
             else delete updated.set

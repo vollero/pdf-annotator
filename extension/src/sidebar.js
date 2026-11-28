@@ -2,6 +2,7 @@ import { icon } from './icons.js'
 import { readableNoteText, renderNoteText } from './note-format.js'
 import { wrapNoteAction } from './note-action.js'
 import { defaultSet, setLabel } from './annotation-sets.js'
+import { commentByline } from './comment-details.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
 import { isNote, isPageNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
@@ -23,20 +24,42 @@ function searchAnnotations(marks, query, pagePrefix) {
     if (!words.length || (barePage !== null && partOnPage(mark,barePage))) return true
     const noteText = readableNoteText(mark)
     const content = mark.type === 'comment' ? noteText + '\n' + quotedText(mark) : noteText
-    const text = content.normalize('NFC').toLowerCase()
+    const text = (content+'\n'+commentByline(mark)).normalize('NFC').toLowerCase()
     return words.every(word => text.includes(word))
   })
+}
+
+let filterMarks
+function fillFilter(select,values) {
+  const selected = select.value
+  const labels = new Map()
+  for (const value of values) {
+    if (value && !labels.has(value.toLowerCase())) labels.set(value.toLowerCase(),value)
+  }
+  const options = document.createDocumentFragment()
+  for (const [value,label] of [...labels].sort((a,b)=>a[1].localeCompare(b[1]))) options.append(new Option(label,value))
+  select.replaceChildren(select.options[0],options)
+  select.value = labels.has(selected) ? selected : ''
+  select.parentElement.hidden = !labels.size
 }
 
 export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,notePreview,recolor,remove,setDone,setStyle,sets,moveToSet}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
+  const authorFilter = document.getElementById('author-filter'), tagFilter = document.getElementById('tag-filter')
+  if (filterMarks !== marks) {
+    fillFilter(authorFilter,marks.map(mark=>mark.author))
+    fillFilter(tagFilter,marks.flatMap(mark=>mark.tags ?? []))
+    filterMarks = marks
+  }
   const query = document.getElementById('annotation-search').value.trim().normalize('NFC').toLowerCase()
   const pagePrefix = /^page\s+(\d+)(?:\s+|$)/u.exec(query)
   const pageQuery = pagePrefix ? Number(pagePrefix[1]) : /^\d+$/u.test(query) ? Number(query) : null
   const onPages = currentOnly ? marks.filter(m => partOnPage(m,page)) : marks
-  const matches = currentOnly && pagePrefix && pageQuery !== page ? [] : searchAnnotations(onPages,query,pagePrefix)
+  const found = currentOnly && pagePrefix && pageQuery !== page ? [] : searchAnnotations(onPages,query,pagePrefix)
+  const matches = found.filter(mark=>(!authorFilter.value || mark.author?.toLowerCase()===authorFilter.value) &&
+    (!tagFilter.value || mark.tags?.some(tag=>tag.toLowerCase()===tagFilter.value)))
   const todo = matches.filter(m => m.done === false).length
   const done = matches.filter(m => m.done === true).length
   actionFilter.options[1].textContent = 'To do (' + todo + ')'
@@ -49,7 +72,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     mark, part:partOnPage(mark,currentOnly ? page : pageQuery ?? mark.page) ?? mark.passages?.[0] ?? mark
   })).sort((a,b)=>a.part.page-b.part.page)
   const summary = document.getElementById('search-summary')
-  const resultCount = query ? visible.length + (visible.length === 1 ? ' matching annotation' : ' matching annotations') : ''
+  const searched = query || authorFilter.value || tagFilter.value
+  const resultCount = searched ? visible.length + (visible.length === 1 ? ' matching annotation' : ' matching annotations') : ''
   if (summary.textContent !== resultCount) summary.textContent = resultCount
   const focused = document.activeElement
   const focusedBody = focused.closest('.card-body')
@@ -89,6 +113,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     if (focusedResultId === mark.id) focusedResult = body.querySelectorAll('a')[focusedLink] ?? button
     button.title=label
     card.append(head,body)
+    const byline = commentByline(mark)
+    if (byline) card.append(el('p','comment-byline',byline))
     if (mark.done !== undefined) {
       const label = el('label','check-label')
       const box = el('input','card-check')
@@ -178,7 +204,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     }
     frag.append(card)
   }
-  if (!visible.length && query) {
+  if (!visible.length && searched) {
     frag.append(el('p','empty','Try another search or change the filters.'))
   } else if (!marks.length && sets.hidden.length === sets.names.length+1) {
     frag.append(el('p','empty','All annotation sets are hidden. Open Annotation sets to show one.'))

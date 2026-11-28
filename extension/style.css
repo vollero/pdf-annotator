@@ -201,6 +201,10 @@ dialog::backdrop { background: #26272050 }.dialog-head,.dialog-actions { display
 .check-label input { margin: 0; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer }
 .card .check-label { margin-top: 6px }
 #note-dialog { width: min(var(--note-editor), calc(100vw - 20px)); max-height: calc(100dvh - 20px); overflow: auto }
+.comment-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(170px,100%),1fr)); gap: 8px; margin-top: 8px }
+.comment-fields input { display: block; box-sizing: border-box; width: 100%; margin-top: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 4px; font: inherit }
+#tags-hint { display: block; margin-top: 4px; color: var(--muted) }
+.comment-byline { margin: 5px 0; overflow-wrap: anywhere; font-size: 13px; color: var(--muted) }
 #note-text { padding: .65em .8em; height: min(calc(var(--note-lines) * 1lh + 1.4em), 50dvh); max-height: 65dvh }
 #note-preview, #appearance-example { width: min(var(--note-panel), 100%); max-height: min(calc(var(--note-lines) * 1lh + 24px), 38dvh); overflow: auto; background: #fffdf5; border: 1px solid #cfc8aa; border-radius: 8px; padding: 10px 14px }
 #note-preview { --preview-height: min(calc(var(--note-lines) * var(--note-size) * 1.55 + 56px), 38dvh); position: fixed; z-index: 7; display: flex; flex-direction: column; gap: 5px; overflow: hidden; max-width: calc(100vw - 16px); max-height: var(--preview-height); border-left: 3px solid var(--tone); box-shadow: 0 3px 14px #28271b20 }

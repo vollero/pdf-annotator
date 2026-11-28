@@ -1,6 +1,7 @@
 import { titles } from './annotations.js'
 import { isNote, noteStatus } from './mark-data.js'
 import { renderNoteText } from './note-format.js'
+import { commentByline } from './comment-details.js'
 
 // Listen on the page stack because scrolling and zooming replace its SVG markers.
 export function bindNotePreview(stack, preview, findNote, edit) {
@@ -35,6 +36,8 @@ export function bindNotePreview(stack, preview, findNote, edit) {
     const pinned = pinnedId !== null
     const last = note.passages?.at(-1)?.page ?? note.page
     source.textContent = titles[note.type] + ' · ' + (note.page === last ? 'Page '+note.page : 'Pages '+note.page+'–'+last)
+    const byline = commentByline(note)
+    if (byline) source.append(' · '+byline)
     if (displayed !== note) {
       renderNoteText(body,note,noteStatus(note))
       displayed = note

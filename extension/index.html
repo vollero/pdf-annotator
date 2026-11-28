@@ -82,6 +82,8 @@
       <div class="filter-wrap" id="action-filter-wrap" hidden><label for="action-filter" class="sr-only">Filter by action status</label>
         <select id="action-filter"><option value="all">All annotations</option><option value="todo">To do</option><option value="done">Done</option></select><span data-icon="down"></span>
       </div>
+      <div class="filter-wrap" hidden><select id="author-filter" aria-label="Filter by author"><option value="">All authors</option></select><span data-icon="down"></span></div>
+      <div class="filter-wrap" hidden><select id="tag-filter" aria-label="Filter by tag"><option value="">All tags</option></select><span data-icon="down"></span></div>
       </div>
       <div id="search-summary" role="status"></div>
       <div id="cards"></div>
@@ -174,6 +176,12 @@
       <blockquote id="passage-quote" aria-label="Selected passage" hidden></blockquote>
       <div class="note-label"><label for="note-text" id="note-label">Note</label><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <textarea id="note-text" rows="10" required maxlength="12000" placeholder="Write your note…" autofocus></textarea>
+      <div class="comment-fields">
+        <label>Author <input id="note-author" maxlength="100" placeholder="Display name" autocomplete="off"></label>
+        <label>Tags <input id="note-tags" placeholder="Methods, Needs evidence" aria-describedby="tags-hint" autocomplete="off"></label>
+      </div>
+      <small id="tags-hint">Separate tags with commas.</small>
+      <label class="check-label"><input id="remember-author" type="checkbox"> Use this author for future comments</label>
       <label class="check-label"><input id="note-markdown" type="checkbox"> Format as Markdown</label>
       <details id="markdown-preview" hidden>
         <summary>Preview formatting</summary>

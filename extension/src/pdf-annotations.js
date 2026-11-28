@@ -56,7 +56,7 @@ function purgeDetachedMarks(doc, detached = new Set()) {
   // A reply from another editor can still reference a retired annotation.
   // Preserve the reply relationship while erasing the old payload and geometry.
   for (const dict of detached) {
-    for (const field of ['Contents','MarginData','MarginCommentRoot','AP','RC','InkList','QuadPoints']) dict.delete(N(field))
+    for (const field of ['Contents','T','MarginData','MarginCommentRoot','AP','RC','InkList','QuadPoints']) dict.delete(N(field))
     dict.set(N('Rect'), doc.context.obj([0,0,0,0]))
   }
   removeUnreachable(doc.context)
@@ -188,7 +188,8 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
   for (const mark of marks) {
     const status = noteStatus(mark)
     const readable = readableNoteText(mark)
-    const text = S(status ? status + ': ' + readable : readable)
+    const tagLine = mark.tags ? '\n\nTags: '+mark.tags.join(', ') : ''
+    const text = S((status ? status + ': ' : '') + readable + tagLine)
     const contents = mark.passages?.length > 1 ? doc.context.register(text) : text
     let root
     for (const part of mark.passages ?? [mark]) {
@@ -198,7 +199,7 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
       if (mark.type === 'comment') painted = {type:'highlight',color:mark.color,style:mark.style,rects:part.rects}
       if (mark.type === 'region') painted = {type:'highlight',color:mark.color,style:'outline-box',rects:[[...mark.point,...mark.size]]}
       const annotation=doc.context.obj({
-        Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:contents,
+        Type:'Annot',P:page.ref,F:4,T:S(mark.author ?? 'Margin'),NM:S(mark.id),Contents:contents,
         ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page),noteFont)
       })
       const ref = doc.context.register(annotation)

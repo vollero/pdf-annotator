@@ -14,6 +14,7 @@ import { renderCards,closeCardMenus } from './sidebar.js'
 import { lastDocument,remember,readWorkspace,writeChanges } from './storage.js'
 import { addNamedSet, assignSet, defaultSet, exportSetMarks, importNamedSets, initialSets, renameSet, setLabel, setNames, setView, visibleMarks } from './annotation-sets.js'
 import { bindSetControls } from './set-controls.js'
+import { parseTags, validAuthor } from './comment-details.js'
 
 const $=id=>document.getElementById(id)
 decorate()
@@ -27,6 +28,7 @@ function beginImport() {
 }
 let opening=0, editNumber=0, writes=Promise.resolve(), noteDraft, toastTimer, exporting=false
 const privateWindow = chrome.extension.inIncognitoContext
+let privateAuthor = ''
 const privateStatus = 'Private session · export to keep'
 const {getColor, chooseAnnotationColor} = bindPalette({privateWindow, preference, savePreference, notify:toast})
 const channel=new BroadcastChannel('margin-draft-changes')
@@ -250,6 +252,11 @@ function openNote(mark, marginSheet) {
   $('note-label').textContent = comment ? 'Comment' : 'Note'
   $('note-save').textContent = comment ? 'Save comment' : 'Save note'
   $('note-text').value=mark.text
+  $('note-author').value = existing ? mark.author ?? '' : privateWindow ? privateAuthor : preference('comment-author','')
+  $('note-tags').value = (mark.tags ?? []).join(', ')
+  $('note-author').setCustomValidity('')
+  $('note-tags').setCustomValidity('')
+  $('remember-author').checked = false
   $('note-markdown').checked = mark.textFormat === 'markdown'
   $('markdown-preview').open = false
   $('markdown-preview').hidden = !$('note-markdown').checked
@@ -268,6 +275,7 @@ function previewDraft() {
   if ($('markdown-preview').open && !$('markdown-preview').hidden) renderNoteText($('draft-preview'),draftContent())
 }
 $('note-text').addEventListener('input',previewDraft)
+for (const input of [$('note-author'),$('note-tags')]) input.oninput = ()=>input.setCustomValidity('')
 $('markdown-preview').ontoggle = previewDraft
 $('note-markdown').onchange = () => {
   $('markdown-preview').hidden = !$('note-markdown').checked
@@ -285,6 +293,26 @@ $('note-form').addEventListener('submit',e=>{
       toast('This note is no longer in the document.')
     } else {
       const mark = {...(current ?? original)}
+      const author = $('note-author').value.trim().normalize('NFC')
+      if (author && !validAuthor(author)) {
+        $('note-author').setCustomValidity('Use an author name of up to 100 characters on one line.')
+        $('note-author').reportValidity()
+        return
+      }
+      if (author !== (original.author ?? '')) {
+        if (author) mark.author = author
+        else delete mark.author
+      }
+      let tags
+      try { tags = parseTags($('note-tags').value) } catch (error) {
+        $('note-tags').setCustomValidity(error.message)
+        $('note-tags').reportValidity()
+        return
+      }
+      if (tags.join(',') !== (original.tags ?? []).join(',')) {
+        if (tags.length) mark.tags = tags
+        else delete mark.tags
+      }
       // A textarea normalizes line endings. Preserve imported source on a format-only edit.
       if (draft.text !== original.text.replace(/\r\n?/g,'\n')) {
         mark.text = draft.textFormat ? draft.text : draft.text.trim()
@@ -304,7 +332,7 @@ $('note-form').addEventListener('submit',e=>{
         else mark.done = done
       }
       selected = mark.id
-      if (!current || current.text !== mark.text || current.textFormat !== mark.textFormat || current.done !== mark.done || current.marginSide !== mark.marginSide) {
+      if (!current || ['text','textFormat','done','marginSide','tags','author'].some(field=>current[field]!==mark[field])) {
         const next = current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark]
         if (!change(next,message => {
           const input = $('note-text')
@@ -312,6 +340,10 @@ $('note-form').addEventListener('submit',e=>{
           input.reportValidity()
           input.setCustomValidity('')
         },current ? sets : revealSet(mark.set ?? defaultSet))) return
+      }
+      if ($('remember-author').checked) {
+        if (privateWindow) privateAuthor = author
+        else if (!savePreference('comment-author',author)) toast('The browser could not save your default author.')
       }
     }
   }
@@ -384,6 +416,8 @@ async function load(file,initial=[],ticket=beginImport()) {
     $('filter').value='all'
     $('action-filter').value='all'
     $('annotation-search').value=''
+    $('author-filter').value=''
+    $('tag-filter').value=''
     viewer.setDocument(pdf,visibleMarks(marks,sets))
     selectTool('select');refresh()
     return true
@@ -482,6 +516,8 @@ $('zoom-out').onclick=()=>viewer.changeZoom(-1)
 $('fit').onclick=()=>viewer.changeZoom(0)
 $('filter').onchange=cards
 $('action-filter').onchange=cards
+$('author-filter').onchange=cards
+$('tag-filter').onchange=cards
 $('annotation-search').oninput=()=>{
   cards()
   $('cards').scrollTop = 0

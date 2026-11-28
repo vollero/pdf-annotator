@@ -1,6 +1,7 @@
 import { DocumentLimitError, maxPages } from './input.js'
 import { markupLabels } from './markup.js'
 import { validSetName } from './annotation-sets.js'
+import { validAuthor, validTags } from './comment-details.js'
 
 export const maxMarkCount = 2000
 
@@ -68,6 +69,14 @@ export function readMark(raw, page, pages = maxPages) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'author')) {
+    if (!isNote(mark) || !validAuthor(raw.author)) return
+    mark.author = raw.author
+  }
+  if (Object.hasOwn(raw,'tags')) {
+    if (!isNote(mark) || !validTags(raw.tags)) return
+    mark.tags = raw.tags
+  }
   if (Object.hasOwn(raw,'set')) {
     if (!validSetName(raw.set)) return
     mark.set = raw.set
@@ -139,6 +148,8 @@ export function checkMarkBudget(marks) {
       }
     } else geometry += mark.points?.length ?? mark.rects?.length ?? 1
     characters += mark.text.length
+    characters += mark.author?.length ?? 0
+    for (const tag of mark.tags ?? []) characters += tag.length
     let size = encodedSizes.get(mark)
     if (size === undefined) {
       size = JSON.stringify(mark).length * 4 + 6
