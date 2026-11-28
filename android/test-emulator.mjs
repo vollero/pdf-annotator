@@ -5,20 +5,35 @@ import {execFileSync} from 'node:child_process'
 import {setTimeout as sleep} from 'node:timers/promises'
 const id='io.github.vollero.margin.dev'
 const adb=(...args)=>execFileSync('adb',args,{encoding:'utf8',timeout:20000}).trim()
-async function tapPickerItem(matches) {
-  for(let i=0;i<8;i++) {
-    adb('shell','uiautomator','dump','/sdcard/margin-ui.xml')
-    const xml=adb('shell','cat','/sdcard/margin-ui.xml')
-    for(const [node] of xml.matchAll(/<node\b[^>]*>/g)) {
-      if(!matches(node))continue
+async function tapPickerItem(matches,navigateDownloads=false) {
+  let xml='',openedDrawer=false,openedDownloads=false
+  for(let i=0;i<12;i++) {
+    const file='/data/local/tmp/margin-ui-'+i+'.xml'
+    try {
+      const result=adb('shell','uiautomator','dump',file)
+      if(!result.includes('dumped')){await sleep(600);continue}
+      xml=adb('shell','cat',file)
+    } catch {await sleep(600);continue}
+    const nodes=Array.from(xml.matchAll(/<node\b[^>]*>/g),m=>m[0])
+    const target=nodes.find(matches)
+    let fallback
+    if(!target && navigateDownloads && !openedDownloads) {
+      fallback=nodes.find(n=>/text="Downloads"/i.test(n) && /clickable="true"/.test(n))
+      if(fallback)openedDownloads=true
+      else if(!openedDrawer){fallback=nodes.find(n=>/content-desc="Show roots"/i.test(n));openedDrawer=!!fallback}
+      else {fallback=nodes.find(n=>/text="Downloads"/i.test(n));openedDownloads=!!fallback}
+    }
+    for(const node of [target || fallback].filter(Boolean)) {
       const coords=node.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/)
       if(!coords)continue
       const [,x,y,u,v]=coords.map(Number)
       adb('shell','input','tap',String((x+u)>>1),String((y+v)>>1))
-      return
+      if(target)return
     }
     await sleep(500)
   }
+  console.error(adb('shell','dumpsys','activity','activities').split('\n').filter(line=>line.includes('ResumedActivity')).slice(-3))
+  console.error(xml.match(/text="[^"]+"/g)?.slice(0,70))
   throw Error('Expected document picker control was unavailable')
 }
 async function launch() {
@@ -63,7 +78,7 @@ await tapPickerItem(node=>/text="save"/i.test(node) && /enabled="true"/.test(nod
 await page.locator('.card').filter({hasText:'Emulator derivation'}).locator('.more').click()
 await page.getByRole('button',{name:'Delete',exact:true}).click()
 await page.locator('#import-annotations').click()
-await tapPickerItem(node=>/text="Reading the Alps\.marginbook"/i.test(node))
+await tapPickerItem(node=>/text="Reading the Alps\.marginbook(?:\.bin)?"/i.test(node),true)
 await page.locator('#toast').filter({hasText:'1 added'}).waitFor()
 await page.getByRole('button',{name:'Open notebook · 1 page'}).click()
 await page.locator('#book-sheet path').waitFor()

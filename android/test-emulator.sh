@@ -29,7 +29,13 @@ timeout 10 adb wait-for-device
 timeout 300 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -qx 1; do sleep 2; done'
 adb shell wm size 1600x1200
 adb shell wm density 160
-adb shell input keyevent 82
+adb shell settings put global window_animation_scale 0
+adb shell settings put global transition_animation_scale 0
+adb shell settings put global animator_duration_scale 0
+adb shell settings put system screen_off_timeout 1800000
+adb shell svc power stayon true
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 adb shell dumpsys webviewupdate
 adb install android/app/build/outputs/apk/debug/app-debug.apk
 node android/test-emulator.mjs
