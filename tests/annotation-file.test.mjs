@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { exportAnnotations, readAnnotations, mergeAnnotations } from '../dist/src/annotation-file.js'
+import { convertPageNote } from '../dist/src/mark-data.js'
 
 const pdf = await readFile('extension/assets/reading-the-alps.pdf')
 const hash = createHash('sha256').update(pdf).digest('hex')
@@ -47,6 +48,31 @@ test('region notes require v6, a comment, and a positive rectangle inside the pa
     {size:[.5,.4]},{point:[.3,.99]},{style:'outline-box'},{rects:[[.1,.2,.3,.4]]}]) {
     await assert.rejects(decode(6,[drawing,{...region,...patch}]),/Invalid/)
   }
+})
+
+test('conversion uses the displayed footprint and migrates the same annotation in either direction', async () => {
+  const original = {id:'figure',page:2,type:'note',point:[.25,.5],color:'#1945ab',text:'Check the axis — μm.'}
+  for (const done of [undefined,false,true]) {
+    const point = done===undefined ? original : {...original,done}
+    const region = convertPageNote(point,400,256)
+    assert.deepEqual(region,{...point,type:'region',size:[.24,.25]})
+    const restored = convertPageNote(region,400,256)
+    assert.deepEqual(restored,point)
+    for (const [before,after,version] of [[point,region,6],[region,restored,done===undefined ? 1 : 2]]) {
+      const transfer = file(after)
+      assert.equal(JSON.parse(await transfer.text()).version,version)
+      const incoming = await readAnnotations(transfer,hash,3)
+      assert.deepEqual(mergeAnnotations([before],incoming),{marks:[after],added:0,updated:1})
+    }
+  }
+  const expanded = {...original,size:[.47,.31],point:[.3,.1]}
+  assert.deepEqual(convertPageNote(expanded,400,256),{...expanded,type:'region'})
+  const small = convertPageNote({...original,size:[.01,.01],point:[1,1]},400,256)
+  assert.deepEqual(small.size,[18/400,18/256])
+  assert.deepEqual(small.point,[1-18/400,1-18/256])
+  const edgeRegion = {...original,type:'region',size:[.01,.01],point:[.99,.99]}
+  assert.deepEqual(convertPageNote(edgeRegion,400,256),{...original,point:small.point})
+  assert.deepEqual(convertPageNote(original,40,32),{...original,type:'region',size:[1,1],point:[0,0]})
 })
 
 test('invalid or oversized packages are rejected as a whole', async () => {

@@ -33,13 +33,21 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Attach a note to a region
 
-[Download the 0.3.0-rc.10 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.10/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.11 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.11/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
 
 1. Choose **Region** (or press **R**) and drag from one corner of a diagram, table, or scanned passage to the opposite corner. You can also click once to start with a small rectangle.
 2. Write your note and choose **Save note**. Select **Track as action** if you want a checkbox for the task. The note appears under **Annotations** as a **Region note**.
 3. Switch to **Select**. Click the outline to edit the note, drag an edge to move it, or drag its lower-right grip to resize it. The middle stays clear for reading and selecting text. With the outline focused, **Shift + an arrow key** resizes it. **Esc** cancels a drag and **Undo** reverses a saved change.
 
 **Export PDF** includes the outline and its comment so someone can review them in a PDF reader. To send only the annotations, choose **Export annotations**. The recipient can import them with the same PDF in Margin **0.3.0-rc.10 or later**.
+
+## Convert a point note or region note
+
+1. In **Annotations**, find the note you want to change and open its **…** menu. Choose **Convert to region note** to outline the part of the page your comment describes.
+2. An expanded point note becomes an outline the size of its text box. A compact marker starts with the same small rectangle you get by clicking **Region** once. The outline starts at the marker’s upper-left corner and shifts inward when it needs room at a page edge. In **Select** mode, drag the border to move it or the lower-right grip to resize it.
+3. To collapse a region into a compact marker, open the same menu and choose **Convert to point note**. To recover the exact previous shape, size and position, click **Undo**.
+
+The note keeps its text, color, page and action status. **Export PDF** shows the new shape. **Export annotations** keeps the same annotation ID, so importing the JSON onto the same PDF updates the existing note.
 
 ## Resize a note on the page
 
@@ -112,7 +120,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.10/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.11/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.

@@ -7,8 +7,17 @@ const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
 const rect = r => Array.isArray(r) && r.length === 4 && r.every(unit)
 function unit(v) { return Number.isFinite(v) && v >= 0 && v <= 1 }
 
+export function isPageNote(mark) {
+  return mark?.type === 'note' || mark?.type === 'region'
+}
+
 export function isNote(mark) {
-  return mark.type === 'note' || mark.type === 'region' || mark.type === 'comment'
+  return isPageNote(mark) || mark.type === 'comment'
+}
+
+// Point and region notes share editable text, color and action status.
+export function compatibleMarkTypes(a,b) {
+  return a?.type === b?.type || (isPageNote(a) && isPageNote(b))
 }
 
 export function noteDimensions(mark, width, height) {
@@ -22,6 +31,26 @@ export function noteDimensions(mark, width, height) {
 export function fitNotePoint([x,y], width, height, mark) {
   const [w,h] = noteDimensions(mark,width,height)
   return [Math.max(0,Math.min(x,1-w/width)),Math.max(0,Math.min(y,1-h/height))]
+}
+
+export function defaultRegionSize(width,height) {
+  return [Math.min(1,96/width),Math.min(1,64/height)]
+}
+
+export function convertPageNote(mark,width,height) {
+  const converted = {...mark}
+  if (mark.type === 'note') {
+    converted.type = 'region'
+    if (mark.size) {
+      const [w,h] = noteDimensions(mark,width,height)
+      converted.size = [w/width,h/height]
+    } else converted.size = defaultRegionSize(width,height)
+  } else {
+    converted.type = 'note'
+    delete converted.size
+  }
+  converted.point = fitNotePoint(mark.point,width,height,converted)
+  return converted
 }
 
 export function resizeNote(mark, origin, width, height, dx, dy) {

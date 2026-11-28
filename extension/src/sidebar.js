@@ -1,7 +1,7 @@
 import { icon } from './icons.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
-import { isNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
+import { isNote, isPageNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
 
 function el(tag,cls,text) {
   const e=document.createElement(tag)
@@ -24,7 +24,7 @@ function searchAnnotations(marks, query, pagePrefix) {
   })
 }
 
-export function renderCards({marks,page,currentOnly,selected,jump,edit,recolor,remove,setDone,setStyle}) {
+export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,recolor,remove,setDone,setStyle}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
@@ -101,6 +101,18 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,recolor,r
         change.prepend(icon('draw'))
         change.onclick=()=>{closeCardMenus();edit(mark)}
         menu.append(change)
+      }
+      if (isPageNote(mark)) {
+        const toRegion = mark.type === 'note'
+        const button = el('button','',toRegion ? 'Convert to region note' : 'Convert to point note')
+        button.prepend(icon(toRegion ? 'region' : 'note'))
+        button.onclick=async()=>{
+          closeCardMenus()
+          more.focus({preventScroll:true})
+          await convert(mark)
+          focusActions()
+        }
+        menu.append(button)
       }
       if (mark.type === 'highlight' || mark.type === 'comment') {
         const label = el('label','','Markup style')

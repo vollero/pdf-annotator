@@ -1,5 +1,5 @@
 import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
-import { checkMarkBudget, isNote, readDraft, quotedText } from './mark-data.js'
+import { checkMarkBudget, compatibleMarkTypes, convertPageNote, isNote, readDraft, quotedText } from './mark-data.js'
 import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
 import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
@@ -39,16 +39,34 @@ function state(label,kind='saved') {
 }
 function cards() {
   renderCards({marks,page:viewer.page,currentOnly:$('filter').value==='current',selected,
-    jump:jumpTo,edit:openNote,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
+    jump:jumpTo,edit:openNote,convert:convertNote,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
     setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m)),
     setStyle:(mark, style)=>change(marks.map(m=>m.id===mark.id ? withMarkupStyle(m,style) : m))})
+}
+async function convertNote(mark) {
+  const doc = session
+  let view = viewer.sheets[mark.page-1]?.base
+  if (!view) {
+    // A card can belong to a page that has never been displayed.
+    try { view = (await viewer.pdf.getPage(mark.page)).getViewport({scale:1}) }
+    catch { if (session===doc) toast('Could not read the PDF page dimensions.'); return }
+  }
+  if (session!==doc) return
+  const current = marks.find(m=>m.id===mark.id)
+  if (current?.type!==mark.type || current.page!==mark.page) return
+  if (!current.text.trim()) { toast('Edit the note and add text before converting it to a region.'); return }
+  const converted = convertPageNote(current,view.width,view.height)
+  selected = current.id
+  if (change(marks.map(m=>m===current ? converted : m))) {
+    toast(converted.type==='region' ? 'Converted to a region note.' : 'Converted to a point note.')
+  }
 }
 async function recolor(mark) {
   const doc = session
   const color = await chooseAnnotationColor(mark.color)
   if (!color || session!==doc || color===mark.color.toLowerCase()) return
   const current = marks.find(m=>m.id===mark.id)
-  if (current?.type!==mark.type) { toast('This annotation is no longer in the document.'); return }
+  if (!compatibleMarkTypes(current,mark)) { toast('This annotation is no longer in the document.'); return }
   if (color!==current.color.toLowerCase()) change(marks.map(m=>m===current ? {...m,color} : m))
 }
 const viewer=new Viewer({onPage:cards,onError:toast})
@@ -190,7 +208,7 @@ $('note-form').addEventListener('submit',e=>{
   if(noteDraft?.session===session) {
     const original = noteDraft.mark
     const current = marks.find(m => m.id === original.id)
-    if (noteDraft.existing && current?.type !== original.type) {
+    if (noteDraft.existing && !compatibleMarkTypes(current,original)) {
       toast('This note is no longer in the document.')
     } else {
       const mark = {...(current ?? original)}

@@ -1,5 +1,5 @@
 import { paintMark } from './annotations.js'
-import { fitNotePoint, resizeNote } from './mark-data.js'
+import { defaultRegionSize, fitNotePoint, resizeNote } from './mark-data.js'
 import { withMarkupStyle } from './markup.js'
 
 const clamp = value => Math.min(1, Math.max(0, value))
@@ -240,7 +240,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
       })
     } else if (mark.type === 'region') {
       if (!regionDragged) {
-        mark.size = [Math.min(1,96/width),Math.min(1,64/height)]
+        mark.size = defaultRegionSize(width,height)
         mark.point = fitNotePoint(start,width,height,mark)
       } else if (mark.size[0]*width<2 || mark.size[1]*height<2) return
       note(mark)

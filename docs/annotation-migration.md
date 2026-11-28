@@ -72,4 +72,6 @@ Every region is a single `region` entry with a required `point`, `size`, nonempt
 
 The rectangle identifies the area you commented on. The JSON carries your words and the area’s coordinates. To see the diagram or scan inside it, open the matching source PDF. Importing the same ID updates the existing region. Documents without regions continue to use the lowest format version their marks require.
 
+Converting a point note to a region keeps its ID, page, color, text and action status. Its exported type becomes `region` and its `size` describes the outline. Converting back produces a compact `note` and omits `size`. Import either export onto the same PDF to update the matching note in place. Margin still chooses the lowest format version needed by all marks in the file.
+
 All six versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

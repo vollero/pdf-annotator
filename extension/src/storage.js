@@ -1,4 +1,4 @@
-import { checkMarkBudget } from './mark-data.js'
+import { checkMarkBudget, compatibleMarkTypes } from './mark-data.js'
 
 let connection
 function database() {
@@ -66,22 +66,29 @@ export async function writeChanges(id, before, after) {
       for (const mark of changed) {
         const prior = old.get(mark.id), latest = merged.get(mark.id)
         // Merge field edits independently when tabs change the same annotation before receiving a broadcast.
-        if (prior?.type === mark.type && mark.rects === prior.rects && mark.points === prior.points &&
+        if (compatibleMarkTypes(prior,mark) && mark.rects === prior.rects && mark.points === prior.points &&
             mark.passages === prior.passages && mark.page === prior.page) {
-          if (latest?.type !== mark.type) continue
+          if (!compatibleMarkTypes(latest,mark)) continue
           const updated = {...latest}
-          if (mark.point && (mark.point[0] !== prior.point[0] || mark.point[1] !== prior.point[1])) {
-            updated.point = mark.point
+          const converted = prior.type !== mark.type
+          if (converted) {
+            if (latest.page !== mark.page) continue
+            updated.type = mark.type
           }
-          if (mark.size?.[0] !== prior.size?.[0] || mark.size?.[1] !== prior.size?.[1]) {
-            if (mark.size) updated.size = mark.size
-            else delete updated.size
+          // An edit started before conversion may still update the shared fields below.
+          if (updated.type === mark.type && mark.point) {
+            if (mark.point[0] !== prior.point[0] || mark.point[1] !== prior.point[1]) updated.point = mark.point
+            if (converted || mark.size?.[0] !== prior.size?.[0] || mark.size?.[1] !== prior.size?.[1]) {
+              if (mark.size) updated.size = mark.size
+              else delete updated.size
+            }
           }
           // A move and a resize in separate tabs can each fit, but cross the page edge together.
           if (updated.type === 'region') {
             updated.point = updated.point.map((v,i)=>Math.min(v,1-updated.size[i]))
           }
-          if (prior.text !== mark.text) updated.text = mark.text
+          if (prior.text !== mark.text && (updated.type !== 'region' || mark.text.trim())) updated.text = mark.text
+          if (converted && updated.type === 'region' && !updated.text.trim()) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
           if (prior.done !== mark.done) {
             if (mark.done === undefined) delete updated.done
