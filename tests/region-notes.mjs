@@ -49,8 +49,12 @@ export async function checkRegionNotes(page, downloadAnnotations, importAnnotati
   assert.ok(Math.abs(first.size[0]*bounds.width-150)<2)
   assert.ok(Math.abs(first.size[1]*bounds.height-70)<2)
   const edge = region.locator('.region-edge')
-  const edgeBox = await edge.boundingBox()
-  const ex = edgeBox.x+edgeBox.width/2, ey = edgeBox.y
+  // SVG bounding boxes in Chromium can include the invisible stroke around the visible line.
+  const [ex,ey] = await edge.evaluate(rect=>{
+    const p = new DOMPoint(rect.x.baseVal.value+rect.width.baseVal.value/2,rect.y.baseVal.value).matrixTransform(rect.getScreenCTM())
+    return [p.x,p.y]
+  })
+  assert.ok(await page.evaluate(([x,y])=>document.elementFromPoint(x,y)?.classList.contains('region-edge'),[ex,ey]),'The visible outline accepts the pointer')
   await page.mouse.click(ex,ey)
   await editor.getByRole('heading',{name:'Edit region note'}).waitFor()
   assert.equal(await editor.locator('#note-text').inputValue(),text)

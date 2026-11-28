@@ -54,7 +54,7 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
     const [w,h] = noteDimensions(mark,width,height)
     if (mark.type === 'region') {
       marker.classList.add('region-note')
-      const stroke = markupThickness(w,h)
+      const stroke = markupThickness(w,h,'outline-box')
       const bounds = {x:stroke/2,y:stroke/2,width:w-stroke,height:h-stroke,fill:'none'}
       marker.append(shape('rect',{...bounds,stroke:mark.color,'stroke-width':stroke}))
       if (interactive) marker.append(shape('rect',{...bounds,class:'region-edge',stroke:'transparent','stroke-width':Math.min(8,w/3,h/3)}))
@@ -84,7 +84,7 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
         const hitArea = mark.size ? shape('rect',{x:-grip,y:-grip,width:grip,height:grip,fill:'transparent'}) :
           shape('path',{d:'M-8 0 0 -8V0Z',fill:'transparent'})
         handle.append(hitArea,
-          shape('path',{d:'m-7 -1 6 -6 m-3 6 3 -3',fill:'none',stroke:'#484c43','stroke-width':1.2}))
+          shape('path',{d:'m-7 -1 6 -6 m-3 6 3 -3',transform:'scale('+Math.min(1,grip/8)+')',fill:'none',stroke:'#484c43','stroke-width':1.2}))
         marker.append(handle)
         // Reserve touches on the SVG marker for dragging. The page around it still scrolls.
         marker.addEventListener('touchstart',event=>event.preventDefault(),{passive:false})

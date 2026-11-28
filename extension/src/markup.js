@@ -38,13 +38,13 @@ export function* markupStrokes(rects, width, height, style) {
   if (line) yield stroke(line,style)
 }
 
-export function markupThickness(width,height) {
-  return Math.min(Math.max(.9,height*.09),2.4,height/2,width)
+export function markupThickness(width,height,style) {
+  return Math.min(Math.max(.9,height*.09),2.4,height/2,style==='outline-box' ? width/2 : width)
 }
 
 function stroke({left,right,top,bottom},style) {
   const height = bottom-top
-  const thickness = markupThickness(right-left,height)
+  const thickness = markupThickness(right-left,height,style)
   const inset = thickness/2
   if (style === 'outline-box') {
     return {thickness, closed:true, points:[[left+inset,top+inset],[right-inset,top+inset],
