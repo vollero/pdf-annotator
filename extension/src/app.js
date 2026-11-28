@@ -429,9 +429,11 @@ $('annotation-file').onchange=async event=>{
     if (doc !== session || signal.aborted) return
     const result = mergeAnnotations(marks, incoming.marks, incoming.version < 9)
     const names = setNames([...sets.names,...incoming.names],result.marks)
-    if (result.added || result.updated || names.length !== sets.names.length) {
+    const newSets = names.length - sets.names.length
+    if (result.added || result.updated || newSets) {
       if (!change(result.marks,toast,{...sets,names})) return
-      toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.')
+      const setCount = newSets ? ' Created '+newSets+(newSets === 1 ? ' set.' : ' sets.') : ''
+      toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.' + setCount)
     } else toast(incoming.marks.length || incoming.names.length ? 'These annotations are already in this document.' : 'The file contains no annotations.')
   } catch (error) {
     if (doc === session && !signal.aborted) toast(error.message)

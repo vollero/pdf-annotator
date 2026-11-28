@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFDict, PDFName } from 'pdf-lib'
 import { unpack } from '../dist/src/pdf-annotations.js'
 
 export async function checkAnnotationSets(page,downloadAnnotations,importAnnotations) {
@@ -44,6 +44,7 @@ export async function checkAnnotationSets(page,downloadAnnotations,importAnnotat
   assert.equal(review.set,'Review')
   assert.deepEqual(full.sets,['Empty','Review'])
   assert.equal(full.version,9)
+  const withBothSets = await exportPDF()
   const personal = page.locator('.card').filter({hasText:old.text})
   await personal.locator('.more').click()
   await personal.getByRole('button',{name:'Pin preview'}).click()
@@ -87,4 +88,15 @@ export async function checkAnnotationSets(page,downloadAnnotations,importAnnotat
   await dialog.getByRole('checkbox',{name:'Review',exact:true}).uncheck()
   await done()
   assert.deepEqual((await unpack(await exportPDF())).marks,[])
+  // Re-sharing an annotated PDF must also remove the previously embedded hidden notes.
+  await open('Both sets.pdf',withBothSets)
+  await manage()
+  await dialog.getByRole('checkbox',{name:'My notes',exact:true}).uncheck()
+  await done()
+  const reshared = await PDFDocument.load(await exportPDF())
+  const payloads = reshared.context.enumerateIndirectObjects().flatMap(([,obj])=>{
+    if (!(obj instanceof PDFDict) || !obj.has(PDFName.of('MarginData'))) return []
+    return [JSON.parse(obj.lookup(PDFName.of('MarginData')).decodeText())]
+  })
+  assert.deepEqual(payloads,[review])
 }
