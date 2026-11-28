@@ -19,7 +19,7 @@ export function bindNotePreview(stack, preview, findNote, edit) {
 
   function show(event) {
     const next = event.target.closest('.note-marker')
-    if (next?.classList.contains('expanded-note') || event.target.closest('.note-resize-handle')) { hide(); return }
+    if (next?.classList.contains('expanded-note')) { hide(); return }
     if (!next || (event.type === 'pointerover' && (stack.dataset.tool !== 'select' || event.pointerType === 'touch'))) return
     clearTimeout(closeTimer)
     if (next === marker) return

@@ -73,7 +73,9 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
         marker.classList.add('point-note')
         marker.setAttribute('aria-description','Click to edit, drag to move, or use Shift and the arrow keys to resize.')
         const handle = shape('g',{class:'note-resize-handle',transform:'translate('+w+' '+h+')'})
-        handle.append(shape('rect',{x:-8,y:-8,width:8,height:8,fill:'transparent'}),
+        const hitArea = mark.size ? shape('rect',{x:-10,y:-10,width:10,height:10,fill:'transparent'}) :
+          shape('path',{d:'M-8 0 0 -8V0Z',fill:'transparent'})
+        handle.append(hitArea,
           shape('path',{d:'m-7 -1 6 -6 m-3 6 3 -3',fill:'none',stroke:'#484c43','stroke-width':1.2}))
         marker.append(handle)
         // Reserve touches on the SVG marker for dragging. The page around it still scrolls.

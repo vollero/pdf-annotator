@@ -29,7 +29,7 @@ export async function checkNoteResize(page, downloadAnnotations, importAnnotatio
   const startDrag = async () => {
     await handle.scrollIntoViewIfNeeded()
     const box = await handle.boundingBox()
-    const x = box.x+box.width/2, y = box.y+box.height/2
+    const x = box.x+box.width*.72, y = box.y+box.height*.72
     await page.mouse.move(x,y)
     await page.mouse.down()
     return {x,y}
