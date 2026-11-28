@@ -37,7 +37,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 1. Choose **Select** and select the words you want to discuss. Choose **Comment** at the bottom of the PDF, or press **C** while the text is selected. The same toolbar also offers **Highlight** and **Copy**.
 2. Read the quotation above the editor, write your comment, and click **Save comment**. Select **Track as action** if you want a checkbox. For a passage that crosses a page break, use **Continuous scrolling** and select across both pages.
-3. The **Annotations** panel shows the quotation and your comment on one card. Click the card to return to the passage. To edit, click the note marker beside the passage or choose **… → Edit comment**. Search matches both the quote and your words.
+3. The **Annotations** panel shows a quotation preview and your comment on one card. Click the card to return to the passage. To read the full quote or edit your comment, click the note marker beside the passage or choose **… → Edit comment**. Search matches both the full quote and your words.
 
 **Export PDF** places a highlight with your comment on each selected page. Reopening it in Margin restores one editable comment. **Export annotations** also keeps the quotation, page positions, comment, and action status together. For a scanned page without selectable text, use **Note** to place a comment at a point.
 

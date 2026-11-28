@@ -80,9 +80,9 @@ function apply(next) {
   refresh()
   persist(next)
 }
-function change(next) {
+function change(next,onError=toast) {
   if(!session) return false
-  try { checkMarkBudget(next) } catch (error) { toast(error.message); return false }
+  try { checkMarkBudget(next) } catch (error) { onError(error.message); return false }
   undo.push(marks)
   if(undo.length>100) undo.shift()
   redo=[]
@@ -181,7 +181,13 @@ $('note-form').addEventListener('submit',e=>{
       }
       selected = mark.id
       if (!current || current.text !== mark.text || current.done !== mark.done) {
-        if (!change(current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark])) return
+        const next = current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark]
+        if (!change(next,message => {
+          const input = $('note-text')
+          input.setCustomValidity(message)
+          input.reportValidity()
+          input.setCustomValidity('')
+        })) return
       }
     }
   }
