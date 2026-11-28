@@ -1,7 +1,7 @@
 import {bindPenNavigation} from './pen-navigation.js'
 import {bindNotebook} from './notebook-editor.js'
 import {exportBooks,isBookFile,readBooks} from './notebook-files.js'
-import {notebookStore} from './storage.js'
+import {notebookStore,retainNotebookStorage} from './storage.js'
 import {androidSave} from './platform.js'
 import { bindTimeline } from './timeline.js'
 import { dateEdits, dateLine } from './annotation-dates.js'
@@ -139,7 +139,7 @@ const renderSets = bindSetControls({
 })
 const timeline=bindTimeline({
   current:()=>({doc:session,marks,sets,page:viewer.page,selected,left:$('scroller').scrollLeft,top:$('scroller').scrollTop}),
-  flush:()=>writes,privateWindow,notify:toast,
+  flush:()=>writes,privateWindow,notify:toast,inspectBook:mark=>openBook(mark,true),
   preview(shown,mark) {
     cancelGesture()
     notePreview.clear()
@@ -493,6 +493,7 @@ async function load(file,initial=[],ticket=beginImport()) {
     let saved=initial, savedSets=initialSets, remembered=false
     if (!privateWindow) {
       try {
+        await retainNotebookStorage(file.id)
         const stored=await remember(file,initial)
         saved=stored.marks;savedSets=stored.sets;remembered=true
       } catch { /* A storage failure still permits export. */ }
@@ -528,6 +529,11 @@ async function load(file,initial=[],ticket=beginImport()) {
     viewer.setDocument(pdf,visibleMarks(marks,sets))
     if(lastPage>1 && lastPage<=pdf.numPages)viewer.go(lastPage)
     selectTool('select');refresh()
+    if(globalThis.MarginAndroid){
+      const openId=preference('open-notebook.'+file.id,'')
+      const openMark=marks.find(m=>m.id===openId && m.notebook)
+      if(openMark)await openBook(openMark)
+    }
     return true
   } catch(error) {
     if(pdf && pdf!==viewer.pdf) await pdf.destroy().catch(()=>{})

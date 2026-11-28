@@ -48,6 +48,7 @@ class ReaderActivity : Activity() {
         }
         cacheDir.listFiles()?.filter { it.name.startsWith("margin-export-") }?.forEach { it.delete() }
         val assets = WebViewAssetLoader.Builder().addPathHandler("/assets/",WebViewAssetLoader.AssetsPathHandler(this)).build()
+        if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) WebView.setWebContentsDebuggingEnabled(true)
         web = WebView(this)
         web.settings.apply {
             javaScriptEnabled = true

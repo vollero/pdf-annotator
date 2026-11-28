@@ -18,7 +18,7 @@ function drawSheet(sheet,data) {
 export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,notify}) {
   const dialog=$('dialog'),sheet=$('sheet')
   let doc,book,pageId,data,queue=Promise.resolve(),busy=false,active,clipboard=[],selected=new Set(),failure,sourceJob
-  let histories=new Map(), epoch=0,zoom=1
+  let histories=new Map(), epoch=0,zoom=1,readOnly=false
   const thumbs=new IntersectionObserver(entries=>{
     for(const {target,isIntersecting} of entries) if(isIntersecting) {
       thumbs.unobserve(target)
@@ -50,9 +50,10 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
   }
   $('pages').ontoggle=()=>{ if(dialog.open && data) nav() }
   async function store(page) {
+    page={paper:page.paper,strokes:page.strokes}
     checkPage(page)
     const rev=await pageHash(page)
-    await doc.books.put([[rev,new Blob([JSON.stringify(page)],{type:'application/json'})]])
+    await doc.books.putPage(rev,page)
     return rev
   }
   async function publish(refs) {
@@ -66,7 +67,7 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
     const blob=r && await doc.books.get(r.rev)
     if (!blob) throw Error('This notebook page is unavailable.')
     data=JSON.parse(await blob.text());pageId=id;selected.clear();active=null
-    if(!doc.privateWindow) try {localStorage.setItem('margin.book.'+doc.file.id+'.'+book.id,id)} catch {}
+    if(!readOnly && !doc.privateWindow) try {localStorage.setItem('margin.book.'+doc.file.id+'.'+book.id,id)} catch {}
     drawSheet(sheet,data);nav()
   }
   function action(fn) {
@@ -96,7 +97,10 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
       const log=histories.get(pageId) ?? []
       log.push(data);if(log.length>24)log.shift();histories.set(pageId,log)
     }
-    data=page;selected.clear();drawSheet(sheet,page);nav();save(page)
+    const append=page.paper===data.paper && !selected.size && page.strokes.length===data.strokes.length+1 && page.strokes.slice(0,-1).every((s,i)=>s===data.strokes[i])
+    data=page;selected.clear()
+    if(append)sheet.append(trace(page.strokes.at(-1)));else drawSheet(sheet,page)
+    nav();save(page)
   }
   function paintSelection() {
     drawSheet(sheet,data)
@@ -125,7 +129,7 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
     }
   }
   sheet.onpointerdown=e=>{
-    if(!data || active || busy || failure || (e.pointerType==='touch' && !$('finger').checked)) return
+    if(readOnly || !data || active || busy || failure || (e.pointerType==='touch' && !$('finger').checked)) return
     e.preventDefault();sheet.setPointerCapture(e.pointerId)
     const p=point(e),tool=$('tool').value
     active={pointer:e.pointerId,tool,start:p,path:[p],erase:new Set(),moving:false}
@@ -162,7 +166,7 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
     } catch(error){notify(error.message);drawSheet(sheet,data)}
   }
   sheet.onpointercancel=sheet.onlostpointercapture=e=>{if(active?.pointer===e.pointerId){active.preview?.remove();active=null}}
-  bindPenNavigation(sheet,sheet.parentElement,()=>!$('finger').checked,step=>{
+  bindPenNavigation(sheet,sheet.parentElement,()=>readOnly || !$('finger').checked,step=>{
     zoom=Math.max(100,Math.min(300,zoom+step*20));$('zoom').value=zoom;sheet.style.width=zoom+'%'
   })
   $('finger').onchange=()=>sheet.classList.toggle('finger-ink',$('finger').checked)
@@ -200,28 +204,31 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
   }
   $('print-page').onclick=()=>print([{...book,notebook:[{rev:'current'}]}],()=>new Blob([JSON.stringify(data)])).catch(e=>notify(e.message))
   $('print').onclick=()=>action(async()=>{
-    const ids=new Set([...$('exports').selectedOptions].map(o=>o.value));const list=current().marks.filter(m=>ids.has(m.id) && m.notebook)
+    const ids=new Set([...$('exports').selectedOptions].map(o=>o.value));const list=(readOnly?[book]:current().marks).filter(m=>ids.has(m.id) && m.notebook)
     if(list.length)await print(list)
   })
   $('close').onclick=()=>{if(failure){if(confirm('Discard unsaved handwriting on this page?'))dialog.close()}else action(()=>dialog.close())}
   $('source').onclick=()=>action(()=>{dialog.close();jump(book,book.passages?.[0]??book)})
   $('details').onclick=()=>action(()=>{dialog.close();editDetails(book)})
   dialog.oncancel=e=>{e.preventDefault();$('close').click()}
-  dialog.onclose=()=>{epoch++;sourceJob?.cancel();thumbs.disconnect();data=null;active=null;clipboard=[]}
+  dialog.onclose=()=>{if(globalThis.MarginAndroid && !readOnly)try {localStorage.removeItem('margin.open-notebook.'+doc.file.id)}catch{}
+    epoch++;sourceJob?.cancel();thumbs.disconnect();data=null;active=null;clipboard=[]}
   $('split').oninput=()=>dialog.style.setProperty('--source-width',$('split').value+'%')
   $('zoom').oninput=()=>{zoom=Number($('zoom').value);sheet.style.width=zoom+'%'}
-  async function open(mark) {
+  async function open(mark,historical=false) {
     if(dialog.open)return
     const token=++epoch
+    readOnly=historical;dialog.classList.toggle('historical',historical)
     doc=current().doc;book=mark;histories=new Map();failure=null;clipboard=[]
     if(!book.notebook) {const rev=await store(blankPage());await publish([nextRef(null,rev)])}
-    if(token!==epoch || !live())return
+    if(token!==epoch || doc!==current().doc || (!readOnly && !live()))return
     let last
-    if(!doc.privateWindow)try{last=localStorage.getItem('margin.book.'+doc.file.id+'.'+book.id)}catch{}
+    if(!readOnly && !doc.privateWindow)try{last=localStorage.getItem('margin.book.'+doc.file.id+'.'+book.id)}catch{}
     await loadPage(book.notebook.find(r=>r.id===last)?.id ?? book.notebook[0].id)
-    if(token!==epoch || !live())return
-    $('exports').replaceChildren(...current().marks.filter(m=>m.notebook).map(m=>new Option(m.text,m.id,false,m.id===book.id)))
-    $('status').textContent='';dialog.showModal()
+    if(token!==epoch || doc!==current().doc || (!readOnly && !live()))return
+    $('exports').replaceChildren(...(readOnly?[book]:current().marks).filter(m=>m.notebook).map(m=>new Option(m.text,m.id,false,m.id===book.id)))
+    $('status').classList.remove('error');$('status').textContent=readOnly?'Recorded draft · read only':'';dialog.showModal()
+    if(globalThis.MarginAndroid && !readOnly)try {localStorage.setItem('margin.open-notebook.'+doc.file.id,book.id)}catch{}
     const pdfPage=await current().pdf.getPage(book.page)
     if(token!==epoch || !dialog.open)return
     const viewport=pdfPage.getViewport({scale:1.2}),canvas=$('reference');canvas.width=viewport.width;canvas.height=viewport.height
@@ -231,5 +238,5 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
     const rects=book.passages?.[0].rects ?? [[...book.point,...(book.size??[.025,.025])]]
     ctx.fillStyle='#d9952444';for(const [x,y,w,h] of rects)ctx.fillRect(x*canvas.width,y*canvas.height,w*canvas.width,h*canvas.height)
   }
-  return mark=>open(mark).catch(e=>{if(e.name!=='RenderingCancelledException')notify(e.message)})
+  return (mark,historical)=>open(mark,historical).catch(e=>{if(e.name!=='RenderingCancelledException')notify(e.message)})
 }

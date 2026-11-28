@@ -278,6 +278,7 @@ body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 #book-sheet { background:white;touch-action:pan-x pan-y pinch-zoom }
 #book-sheet.finger-ink { touch-action:none }
 #book-index {width:4em}
+#book-dialog.historical :is(.book-edit,#book-page-action,#book-details,#book-source,#book-retry){display:none}
 #book-thumbs { display:flex; overflow:auto;max-width:100%;gap:4px }
 #book-thumbs button {flex:none;display:grid;width:65px}
 #book-thumbs svg {width:100%;background:white}

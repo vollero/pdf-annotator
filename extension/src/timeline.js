@@ -12,13 +12,16 @@ function dayOf(at) {
 }
 function markTitle(mark) { return titles[mark.type]+' · Page '+mark.page }
 
-export function bindTimeline({current,flush,preview,returnToDraft,privateWindow,notify}) {
+export function bindTimeline({current,flush,preview,inspectBook,returnToDraft,privateWindow,notify}) {
   const dialog=$('timeline-dialog'), mode=$('timeline-mode'), slider=$('timeline-slider'), picker=$('timeline-mark')
   let opened, events=[], index, position, generation=0, snapshotMarks=[]
   const drafts = ()=>mode.value==='drafts'
   const moments = ()=>drafts() ? index.entries : events
   function inspect(mark,text,author) {
     if (mark) preview(drafts() ? snapshotMarks : [mark],mark)
+    const open=$('timeline-book')
+    open.hidden=!drafts() || !mark?.notebook
+    open.onclick=()=>inspectBook(mark)
     const parts = [author,text]
     if (drafts() && mark) {
       parts.push([noteStatus(mark),...(mark.tags ?? []).map(tag=>'#'+tag)].filter(Boolean).join(' · '))
@@ -43,6 +46,7 @@ export function bindTimeline({current,flush,preview,returnToDraft,privateWindow,
     position=Math.min(list.length-1,Math.max(-1,next))
     const moment=list[position]
     renderNavigation(list.length)
+    $('timeline-book').hidden=true
     $('timeline-mark-field').hidden=true
     $('timeline-text').textContent=''
     $('timeline-clear').hidden=!index.entries.length

@@ -26,6 +26,7 @@ export async function checkNotebooks(page) {
   const [pack]=await Promise.all([page.waitForEvent('download'),page.locator('#export-annotations').click()])
   assert.ok(pack.suggestedFilename().endsWith('.marginbook'))
   await page.reload();await page.getByRole('button',{name:'Open notebook · 2 pages'}).click()
+  await sheet.waitFor()
   assert.equal(await page.locator('#book-index').inputValue(),'2')
   assert.equal(await sheet.locator('path').count(),1)
   await page.locator('#book-close').click()

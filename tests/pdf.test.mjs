@@ -21,7 +21,7 @@ test('native comments round-trip with crop, rotation, Unicode and existing annot
   const viewport=(await pdf.getPage(1)).getViewport({scale:1})
   const marks=[
     {id:'h',type:'highlight',color:'#efc650',rects:[[.1,.2,.3,.04],[.2,.3,.2,.04]],text:'Selected text',page:1},
-    {id:'d',type:'draw',color:'#9abd9e',points:[[.12,.3],[.22,.35]],text:'Freehand drawing',page:1},
+    {id:'d',type:'draw',color:'#9abd9e',points:[[.12,.3],[.22,.35]],ink:{width:.004,brush:'pen',pressure:[.2,.85]},text:'Freehand drawing',page:1},
     {id:'n',type:'note',color:'#91b9dd',point:[.4,.5],text:'Caffè — 注釈',page:1}
   ]
   marks.push({...marks[2],id:'a',done:false}, {...marks[2],id:'b',done:true})

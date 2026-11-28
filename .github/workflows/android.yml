@@ -26,3 +26,5 @@ jobs:
           name: margin-android-development
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+      - name: Run the tablet WebView smoke test
+        run: bash android/test-emulator.sh

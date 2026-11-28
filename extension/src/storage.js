@@ -1,4 +1,4 @@
-import {mergePages} from './notebook-data.js'
+import {mergePages,pageHash} from './notebook-data.js'
 import { mergeDates } from './annotation-dates.js'
 import { checkMarkBudget, compatibleMarkTypes, isNote } from './mark-data.js'
 import { initialSets, mergeSetViews } from './annotation-sets.js'
@@ -278,12 +278,48 @@ export async function clearTimeline(id) {
   })
 }
 
-// Immutable page bodies are shared by draft, undo, recovery and timeline references.
+// Page revisions reference content-addressed strokes. Editing the last line of a
+// dense page writes the new ink and a small ordered list of stroke hashes.
 export function notebookStore(documentId,privateWindow) {
-  const memory=new Map()
+  const memory=new Map(), cached=new WeakMap()
   const key=rev=>['handwriting',documentId,rev]
+  const strokeKey=rev=>['handwriting-stroke',documentId,rev]
   return {
-    get:rev=>privateWindow ? memory.get(rev) : read('settings',key(rev)),
+    async get(rev) {
+      if(privateWindow)return memory.get(rev)
+      const page=await read('settings',key(rev))
+      if(!page || page instanceof Blob)return page
+      const db=await database()
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction('settings')
+        const requests=page.ids.map(id=>tx.objectStore('settings').get(strokeKey(id)))
+        tx.oncomplete=()=>{
+          const strokes=requests.map(r=>r.result)
+          if(strokes.some(s=>!s)){reject(Error('A notebook stroke is unavailable.'));return}
+          resolve(new Blob([JSON.stringify({paper:page.paper,strokes})]))
+        }
+        tx.onabort=()=>reject(tx.error)
+      })
+    },
+    async putPage(rev,page) {
+      if(privateWindow){memory.set(rev,new Blob([JSON.stringify(page)]));return}
+      const fresh=[]
+      const ids=await Promise.all(page.strokes.map(async s=>{
+        const known=cached.get(s)
+        if(known)return known
+        const id=await pageHash(s)
+        fresh.push([id,s]);return id
+      }))
+      const db=await database()
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('settings','readwrite'),store=tx.objectStore('settings')
+        for(const [id,s] of fresh)store.put(s,strokeKey(id))
+        store.put({paper:page.paper,ids},key(rev))
+        tx.oncomplete=resolve
+        tx.onabort=()=>reject(tx.error)
+      })
+      for(const [id,s] of fresh)cached.set(s,id)
+    },
     async put(entries) {
       if (privateWindow) { for (const [rev,blob] of entries) memory.set(rev,blob); return }
       const db=await database()
@@ -295,4 +331,48 @@ export function notebookStore(documentId,privateWindow) {
       })
     }
   }
+}
+
+// A tab retains its workspace lock for its lifetime, including its in-memory
+// undo stack. Reclaim unreferenced revisions on the next exclusive open.
+const openNotebooks=new Map()
+export function retainNotebookStorage(id) {
+  if(!navigator.locks)return Promise.resolve()
+  if(!openNotebooks.has(id)) openNotebooks.set(id,(async()=>{
+    const name='margin-notebooks-'+id
+    await navigator.locks.request(name,{ifAvailable:true},async lock=>{if(lock)await compactPages(id)})
+    await new Promise((resolve,reject)=>navigator.locks.request(name,{mode:'shared'},()=>{
+      resolve();return new Promise(()=>{})
+    }).catch(reject))
+  })())
+  return openNotebooks.get(id)
+}
+async function compactPages(id) {
+  const db=await database()
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(['settings','drafts'],'readwrite'),store=tx.objectStore('settings')
+    const keep=new Set(), strokes=new Set()
+    const include=marks=>{for(const m of marks??[])for(const page of m.notebook??[])keep.add(page.rev)}
+    const live=tx.objectStore('drafts').get(id),backup=store.get(['previous-draft',id])
+    live.onsuccess=()=>include(live.result)
+    backup.onsuccess=()=>include(backup.result?.marks)
+    function scan(prefix,inspect,done) {
+      const range=IDBKeyRange.bound([prefix,id],[prefix,id,[]])
+      const request=store.openCursor(range)
+      request.onsuccess=()=>{
+        const cursor=request.result
+        if(!cursor){done?.();return}
+        inspect(cursor);cursor.continue()
+      }
+    }
+    const exists=store.count(IDBKeyRange.bound(['handwriting',id],['handwriting',id,[]]))
+    exists.onsuccess=()=>{if(exists.result) scan('snapshot',cursor=>include(cursor.value.marks),()=>{
+      scan('handwriting',cursor=>{
+        if(!keep.has(cursor.key[2]))cursor.delete()
+        else for(const hash of cursor.value.ids??[])strokes.add(hash)
+      },()=>scan('handwriting-stroke',cursor=>{if(!strokes.has(cursor.key[2]))cursor.delete()}))
+    })}
+    tx.oncomplete=resolve
+    tx.onabort=()=>reject(tx.error)
+  })
 }
