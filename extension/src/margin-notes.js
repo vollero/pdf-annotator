@@ -1,5 +1,5 @@
 import { noteStatus } from './mark-data.js'
-import { renderNoteText } from './note-format.js'
+import { readableNoteText, renderNoteText } from './note-format.js'
 
 export function indexMarginNotes(marks) {
   const pages = new Map()
@@ -64,7 +64,11 @@ export function showMargins(sheet, sides, edit) {
       button.setAttribute('aria-haspopup','dialog')
       button.title = 'Edit margin note'
       const content = document.createElement('span')
-      renderNoteText(content,mark,noteStatus(mark))
+      const status = noteStatus(mark)
+      renderNoteText(content,mark,status)
+      if (content.querySelector('math')) {
+        button.setAttribute('aria-label',(status ? status+' · ' : '')+readableNoteText(mark))
+      }
       button.append(content)
       button.onclick = () => edit(mark, sheet)
       rail.append(button)

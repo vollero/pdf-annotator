@@ -73,6 +73,10 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''))
     renderNoteText(body,mark)
     if (mark.type === 'comment') body.prepend(el('span','card-quote',quotedText(mark)))
+    if (body.querySelector('math')) {
+      const quote = mark.type === 'comment' ? quotedText(mark)+'\n' : ''
+      body.setAttribute('aria-label',quote+readableNoteText(mark))
+    }
     body.dataset.id = mark.id
     if (focusedResultId === mark.id) focusedResult = body
     body.title='Show on page '+part.page
