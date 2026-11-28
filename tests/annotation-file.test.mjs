@@ -34,7 +34,7 @@ test('the migration file contains only versioned annotation data and the exact P
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:3}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:4}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
@@ -44,6 +44,24 @@ test('invalid or oversized packages are rejected as a whole', async () => {
   }
   await assert.rejects(readAnnotations(new Blob(['{']),hash,3),/JSON file/)
   await assert.rejects(readAnnotations({size:16*1024*1024+1},hash,3),/16 MiB/)
+})
+
+test('passage comments preserve quotes and reject incompatible versions or invalid anchors', async () => {
+  const passages = [1,2].map(page => ({page,quote:'Line ' + page,rects:[[.2,.3,.4,.05]]}))
+  const comment = {id:'quote-1',type:'comment',page:1,color:'#91b9dd',text:'Verify the figures.',passages,done:false}
+  const data = JSON.parse(await file(comment).text())
+  assert.equal(data.version,3)
+  const incoming = await readAnnotations(file(comment),hash,3)
+  assert.deepEqual(incoming,[comment])
+  assert.equal(mergeAnnotations([comment],incoming).updated,0)
+  for (const parts of [[], [...passages].reverse(), [passages[0],passages[0]], [{...passages[0],page:4}],
+    [passages[0],{...passages[1],page:4}], [{...passages[0],rects:[]}], [{...passages[0],quote:' '}],
+    [{...passages[0],link:'unknown'}]]) {
+    assert.throws(() => file({...comment,passages:parts}),/Invalid/)
+  }
+  for (const version of [1,2]) {
+    await assert.rejects(readAnnotations(new Blob([JSON.stringify({...data,version})]),hash,3),/Invalid/)
+  }
 })
 
 test('action checkboxes round-trip, update and clear through versioned migrations', async () => {

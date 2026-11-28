@@ -31,9 +31,17 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Search annotations
+## Comment on a passage
 
-[Download the 0.3.0-rc.3 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.3/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin) to use annotation search, action checkboxes, and adjustable note text.
+[Download the 0.3.0-rc.4 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.4/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. Choose **Select** and select the words you want to discuss. Choose **Comment** at the bottom of the PDF, or press **C** while the text is selected. The same toolbar also offers **Highlight** and **Copy**.
+2. Read the quotation above the editor, write your comment, and click **Save comment**. Select **Track as action** if you want a checkbox. For a passage that crosses a page break, use **Continuous scrolling** and select across both pages.
+3. The **Annotations** panel shows the quotation and your comment on one card. Click the card to return to the passage. To edit, click the note marker beside the passage or choose **… → Edit comment**. Search matches both the quote and your words.
+
+**Export PDF** places a highlight with your comment on each selected page. Reopening it in Margin restores one editable comment. **Export annotations** also keeps the quotation, page positions, comment, and action status together. For a scanned page without selectable text, use **Note** to place a comment at a point.
+
+## Search annotations
 
 In the **Annotations** panel, type in **Search annotations** to find words in notes and highlighted passages. Results update as you type. Click a result, or focus it and press **Enter**, to jump to its mark.
 
@@ -51,7 +59,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.3/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.4/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.
@@ -64,7 +72,7 @@ Margin starts with 18 px sans serif text and a Comfortable box. It remembers you
 ## Move annotations to another copy of the same PDF
 
 1. Open the PDF you annotated. In the **Annotations** panel, click **Export annotations**. Margin downloads a file such as `Field notes.margin-annotations.json` with your highlights, drawings, notes, and the PDF’s SHA-256 fingerprint. All pages are included, even when the list is filtered. If the panel is hidden, click **Show workspace** or **Toggle annotations** to bring it back.
-2. On the other computer, or in a later session, open the **exact same PDF**. Use Margin **0.3.0-rc.2 or later** for files containing action checkboxes. Other annotation files work with **0.2.0 or later**. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
+2. On the other computer, or in a later session, open the **exact same PDF**. Files with passage comments require Margin **0.3.0-rc.4 or later**. Files with action checkboxes require at least **0.3.0-rc.2**, and ordinary notes and highlights work with **0.2.0 or later**. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
 3. Click **Import annotations** and select the JSON file. Margin checks the fingerprint before applying changes. It adds new marks, updates matching marks, and keeps other local annotations. Importing an identical file twice adds no duplicates. **Undo** reverses the import in one step.
 
 If Margin reports a fingerprint mismatch, locate the copy that was open when you exported the annotations. A matching filename or page count is insufficient. The JSON contains readable note text and selected highlight text. [Annotation file format and worked example](docs/annotation-migration.md)

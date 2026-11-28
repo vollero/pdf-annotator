@@ -10,6 +10,7 @@ import { checkReadingControls } from './reading-controls.mjs'
 import { checkNoteAppearance } from './note-appearance.mjs'
 import { checkActionNotes } from './action-notes.mjs'
 import { checkAnnotationSearch } from './annotation-search.mjs'
+import { checkPassageComments } from './passage-comments.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -160,6 +161,7 @@ try {
   await page.locator('#toast').filter({hasText:'could not be opened'}).waitFor()
   assert.equal(await page.locator('#filename').textContent(),'Reopened.pdf')
   await checkReadingControls(page)
+  await checkPassageComments(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])

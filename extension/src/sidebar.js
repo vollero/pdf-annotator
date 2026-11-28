@@ -1,6 +1,6 @@
 import { icon } from './icons.js'
 import { titles } from './annotations.js'
-import { noteStatus } from './mark-data.js'
+import { noteStatus, partOnPage, quotedText } from './mark-data.js'
 
 function el(tag,cls,text) {
   const e=document.createElement(tag)
@@ -9,16 +9,16 @@ function el(tag,cls,text) {
   return e
 }
 
-function searchAnnotations(marks, query) {
+function searchAnnotations(marks, query, pagePrefix) {
   if (!query) return marks
-  const pagePrefix = /^page\s+(\d+)(?:\s+|$)/u.exec(query)
   const pageNumber = pagePrefix ? Number(pagePrefix[1]) : null
   const words = query.slice(pagePrefix?.[0].length ?? 0).match(/\S+/gu) ?? []
   const barePage = /^\d+$/u.test(query) ? Number(query) : null
   return marks.filter(mark => {
-    if (pageNumber !== null && mark.page !== pageNumber) return false
-    if (!words.length || mark.page === barePage) return true
-    const text = mark.text.normalize('NFC').toLowerCase()
+    if (pageNumber !== null && !partOnPage(mark,pageNumber)) return false
+    if (!words.length || (barePage !== null && partOnPage(mark,barePage))) return true
+    const content = mark.type === 'comment' ? mark.text + '\n' + quotedText(mark) : mark.text
+    const text = content.normalize('NFC').toLowerCase()
     return words.every(word => text.includes(word))
   })
 }
@@ -27,9 +27,11 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
-  const onPages = marks.filter(m => !currentOnly || m.page === page)
   const query = document.getElementById('annotation-search').value.trim().normalize('NFC').toLowerCase()
-  const matches = searchAnnotations(onPages, query)
+  const pagePrefix = /^page\s+(\d+)(?:\s+|$)/u.exec(query)
+  const pageQuery = pagePrefix ? Number(pagePrefix[1]) : /^\d+$/u.test(query) ? Number(query) : null
+  const onPages = currentOnly ? marks.filter(m => partOnPage(m,page)) : marks
+  const matches = currentOnly && pagePrefix && pageQuery !== page ? [] : searchAnnotations(onPages,query,pagePrefix)
   const todo = matches.filter(m => m.done === false).length
   const done = matches.filter(m => m.done === true).length
   actionFilter.options[1].textContent = 'To do (' + todo + ')'
@@ -38,7 +40,9 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
   if (!hasActions) actionFilter.value = 'all'
   document.getElementById('action-filter-wrap').hidden = !hasActions
   const status = actionFilter.value
-  const visible = matches.filter(m => status === 'all' || m.done === (status === 'done')).sort((a,b)=>a.page-b.page)
+  const visible = matches.filter(m => status === 'all' || m.done === (status === 'done')).map(mark => ({
+    mark, part:partOnPage(mark,currentOnly ? page : pageQuery ?? mark.page) ?? mark.passages?.[0] ?? mark
+  })).sort((a,b)=>a.part.page-b.part.page)
   const summary = document.getElementById('search-summary')
   const resultCount = query ? visible.length + (visible.length === 1 ? ' matching annotation' : ' matching annotations') : ''
   if (summary.textContent !== resultCount) summary.textContent = resultCount
@@ -47,26 +51,27 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
   const focusIndex = focused.matches('.card-check') ? [...container.querySelectorAll('.card-check')].indexOf(focused) : -1
   let focusedResult
   let previous
-  for(const mark of visible) {
-    if(mark.page!==previous) {
-      const header=el('h3','page-label','Page '+mark.page)
+  for(const {mark,part} of visible) {
+    if(part.page!==previous) {
+      const header=el('h3','page-label','Page '+part.page)
       header.prepend(icon('page'))
-      frag.append(header); previous=mark.page
+      frag.append(header); previous=part.page
     }
     const card=el('article','card'+(selected===mark.id?' selected':'')),head=el('div','card-head')
     card.style.setProperty('--tone',mark.color)
     const symbol=el('span','card-icon')
-    symbol.append(icon(mark.type))
+    symbol.append(icon(mark.type === 'comment' ? 'note' : mark.type))
     const more=el('button','icon-button more')
     more.setAttribute('aria-label',titles[mark.type]+' actions')
     more.setAttribute('aria-expanded','false')
     more.append(icon('more'))
     head.append(symbol,el('span','card-title',titles[mark.type]),more)
     const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''),mark.text)
+    if (mark.type === 'comment') body.prepend(el('span','card-quote',quotedText(mark)))
     body.dataset.id = mark.id
     if (focusedResultId === mark.id) focusedResult = body
-    body.title='Show on page '+mark.page
-    body.onclick=()=>jump(mark)
+    body.title='Show on page '+part.page
+    body.onclick=()=>jump(mark,part)
     card.append(head,body)
     if (mark.done !== undefined) {
       const label = el('label','check-label')
@@ -85,8 +90,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
       if(open) return
       more.setAttribute('aria-expanded','true')
       const menu=el('div','card-menu')
-      if(mark.type==='note') {
-        const change=el('button','','Edit note')
+      if(mark.type==='note' || mark.type==='comment') {
+        const change=el('button','',mark.type==='comment' ? 'Edit comment' : 'Edit note')
         change.prepend(icon('draw'))
         change.onclick=()=>{closeCardMenus();edit(mark)}
         menu.append(change)

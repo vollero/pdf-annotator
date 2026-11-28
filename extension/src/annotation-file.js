@@ -11,8 +11,8 @@ function portableMarks(entries, pages, version) {
   const ids = new Set()
   const marks = entries.map((entry, index) => {
     const page = entry?.page
-    const mark = Number.isInteger(page) && page >= 1 && page <= pages && readMark(entry, page)
-    if (!mark || (version === 1 && Object.hasOwn(mark, 'done')) ||
+    const mark = Number.isInteger(page) && page >= 1 && page <= pages && readMark(entry, page, pages)
+    if (!mark || (version < 3 && mark.type === 'comment') || (version === 1 && Object.hasOwn(mark, 'done')) ||
         ids.has(mark.id) || Object.keys(entry).some(key => !Object.hasOwn(mark, key))) {
       throw new Error('Invalid or duplicate annotation at position ' + (index + 1) + '.')
     }
@@ -25,8 +25,8 @@ function portableMarks(entries, pages, version) {
 
 export function exportAnnotations(documentSha256, pages, marks) {
   if (!hashPattern.test(documentSha256)) throw new Error('The PDF fingerprint is unavailable.')
-  const annotations = portableMarks(marks, pages, 2)
-  const version = annotations.some(mark => mark.done !== undefined) ? 2 : 1
+  const annotations = portableMarks(marks, pages, 3)
+  const version = annotations.some(mark => mark.type === 'comment') ? 3 : annotations.some(mark => mark.done !== undefined) ? 2 : 1
   return new Blob([JSON.stringify({format, version, documentSha256, annotations})], {type:'application/json'})
 }
 
@@ -36,7 +36,7 @@ export async function readAnnotations(file, documentSha256, pages) {
   try { data = JSON.parse(await file.text()) }
   catch { throw new Error('Choose a Margin annotations JSON file.') }
   if (data?.format !== format) throw new Error('Choose a Margin annotations JSON file.')
-  if (data.version !== 1 && data.version !== 2) throw new Error('This annotation file version is unsupported.')
+  if (![1,2,3].includes(data.version)) throw new Error('This annotation file version is unsupported.')
   if (typeof data.documentSha256 !== 'string' || !hashPattern.test(data.documentSha256) ||
       Object.keys(data).some(key => !['format','version','documentSha256','annotations'].includes(key))) {
     throw new Error('Invalid Margin annotation file.')

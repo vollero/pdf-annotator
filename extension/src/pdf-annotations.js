@@ -39,7 +39,7 @@ function removeUnreachable(context) {
 
 function purgeDetachedMarks(doc, detached = new Set()) {
   for (const [, object] of doc.context.enumerateIndirectObjects()) {
-    if (object instanceof PDFDict && object.get(N('Type')) === N('Annot') && object.has(N('MarginData'))) {
+    if (object instanceof PDFDict && object.get(N('Type')) === N('Annot') && (object.has(N('MarginData')) || object.has(N('MarginCommentRoot')))) {
       detached.add(object)
     }
   }
@@ -53,7 +53,7 @@ function purgeDetachedMarks(doc, detached = new Set()) {
   // A reply from another editor can still reference a retired annotation.
   // Preserve the reply relationship while erasing the old payload and geometry.
   for (const dict of detached) {
-    for (const field of ['Contents','MarginData','AP','RC','InkList','QuadPoints']) dict.delete(N(field))
+    for (const field of ['Contents','MarginData','MarginCommentRoot','AP','RC','InkList','QuadPoints']) dict.delete(N(field))
     dict.set(N('Rect'), doc.context.obj([0,0,0,0]))
   }
   removeUnreachable(doc.context)
@@ -64,6 +64,7 @@ export async function unpack(bytes) {
   const doc = await PDFDocument.load(bytes,{updateMetadata:false})
   const marks = []
   const detached = new Set()
+  const continuationPages = new Map()
   let encodedSize = 0
   for (const [i,page] of doc.getPages().entries()) {
     const annotations = page.node.Annots()
@@ -71,6 +72,11 @@ export async function unpack(bytes) {
     const kept = []
     for (let j = 0; j < annotations.size(); j++) {
       const dict = annotations.lookup(j)
+      const root = dict instanceof PDFDict && dict.get(N('MarginCommentRoot'))
+      if (root && continuationPages.get(root)?.delete(i + 1)) {
+        detached.add(dict)
+        continue
+      }
       const data = dict instanceof PDFDict && dict.lookup(N('MarginData'))
       let mark
       if (data instanceof PDFHexString || data instanceof PDFString) {
@@ -80,9 +86,10 @@ export async function unpack(bytes) {
         }
         let raw
         try { raw = JSON.parse(data.decodeText()) } catch { /* Preserve unrecognized native annotations. */ }
-        mark = readMark(raw, i + 1)
+        mark = readMark(raw, i + 1, doc.getPageCount())
       }
       if (mark) {
+        if (mark.type === 'comment') continuationPages.set(annotations.get(j),new Set(mark.passages.slice(1).map(part => part.page)))
         marks.push(mark)
         if (marks.length > maxMarkCount) throw new DocumentLimitError('This PDF exceeds the editable annotation limit.')
         detached.add(dict)
@@ -150,14 +157,22 @@ export async function exportDocument(bytes, marks, getViewport) {
   if (!marks.length) return cleaned ? doc.save({updateFieldAppearances:false}) : bytes
   const pages=doc.getPages(), views=new Map()
   for (const mark of marks) {
-    if (!views.has(mark.page)) views.set(mark.page,await getViewport(mark.page))
-    const page=pages[mark.page-1]
     const status = noteStatus(mark)
-    const annotation=doc.context.obj({
-      Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:S(status ? status + ': ' + mark.text : mark.text),
-      MarginData:S(JSON.stringify(mark)),...appearance(doc,mark,views.get(mark.page))
-    })
-    page.node.addAnnot(doc.context.register(annotation))
+    const text = S(status ? status + ': ' + mark.text : mark.text)
+    const contents = mark.passages?.length > 1 ? doc.context.register(text) : text
+    let root
+    for (const part of mark.passages ?? [mark]) {
+      if (!views.has(part.page)) views.set(part.page,await getViewport(part.page))
+      const page=pages[part.page-1]
+      const painted = mark.type === 'comment' ? {type:'highlight',color:mark.color,rects:part.rects} : mark
+      const annotation=doc.context.obj({
+        Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:contents,
+        ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page))
+      })
+      const ref = doc.context.register(annotation)
+      page.node.addAnnot(ref)
+      root ??= ref
+    }
   }
   infoDict(doc).set(N('MarginEditor'),PDFString.of('1'))
   return doc.save({updateFieldAppearances:false})

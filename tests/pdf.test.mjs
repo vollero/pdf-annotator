@@ -56,3 +56,23 @@ test('bundled sample exports as a three-page annotated PDF',async()=>{
   if(process.env.MARGIN_TEST_EXPORT) await writeFile(process.env.MARGIN_TEST_EXPORT,out)
   await pdf.destroy()
 })
+
+test('a passage spanning two PDF pages is one editable comment with native highlights on both pages', async () => {
+  const original = await PDFDocument.create()
+  for (let i=0;i<2;i++) original.addPage([400,600])
+  const marks = [{id:'shared',type:'comment',page:1,color:'#91b9dd',text:'Check units — 注釈',done:true,
+    passages:[1,2].map(page=>({page,quote:'Selected text ' + page,rects:[[.1,.2,.3,.04]]}))}]
+  const pdf = await getDocument({...opts,data:await original.save()}).promise
+  const bytes = await exportDocument(await original.save(),marks,async n=>(await pdf.getPage(n)).getViewport({scale:1}))
+  const reopened = await getDocument({...opts,data:bytes.slice()}).promise
+  for (const number of [1,2]) {
+    const [highlight] = await (await reopened.getPage(number)).getAnnotations()
+    assert.equal(highlight.subtype,'Highlight')
+    assert.equal(highlight.contentsObj.str,'Done: ' + marks[0].text)
+  }
+  const restored = await unpack(bytes)
+  assert.deepEqual(restored.marks,marks)
+  const clean = await PDFDocument.load(restored.bytes)
+  for (const page of clean.getPages()) assert.equal(page.node.Annots().size(),0)
+  await Promise.all([pdf.destroy(),reopened.destroy()])
+})

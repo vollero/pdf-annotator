@@ -1,6 +1,7 @@
 import { getDocument, GlobalWorkerOptions, TextLayer } from '../vendor/pdf.min.mjs'
 import { maxPages, DocumentLimitError } from './input.js'
 import { paintMark, shape } from './annotations.js'
+import { partOnPage } from './mark-data.js'
 
 const asset = file => new URL('../vendor/'+file,import.meta.url).href
 GlobalWorkerOptions.workerSrc=asset('pdf.worker.min.mjs')
@@ -160,8 +161,7 @@ export class Viewer {
 
   paintThumb(entry) {
     if(!entry.svg) return
-    entry.svg.replaceChildren(...this.marks.filter(m=>m.page===entry.number)
-      .map(m=>paintMark(m,entry.base.width,entry.base.height)))
+    this.paintPage(entry.svg,entry,false)
   }
 
   setMarks(marks) {
@@ -173,8 +173,16 @@ export class Viewer {
 
   paint(sheet) {
     if (!sheet.ink) return
-    sheet.ink.replaceChildren(...this.marks.filter(mark => mark.page === sheet.number)
-      .map(mark => paintMark(mark, sheet.base.width, sheet.base.height, true)))
+    this.paintPage(sheet.ink,sheet,true)
+  }
+
+  paintPage(svg,sheet,interactive) {
+    const items = []
+    for (const mark of this.marks) {
+      const part = partOnPage(mark,sheet.number)
+      if (part) items.push(paintMark(mark,sheet.base.width,sheet.base.height,interactive,part))
+    }
+    svg.replaceChildren(...items)
   }
 
   activate(number) {

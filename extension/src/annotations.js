@@ -3,46 +3,52 @@ import { noteStatus } from './mark-data.js'
 export const colors = [
   ['Amber','#efc650'], ['Sage','#9abd9e'], ['Sky','#91b9dd'], ['Rose','#e5a4ae'], ['Lavender','#b3a1d4']
 ]
-export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note' }
+export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', comment: 'Passage comment' }
 export const NS = 'http://www.w3.org/2000/svg'
 export function shape(name, attrs) {
   const el = document.createElementNS(NS,name)
   for (const [key,value] of Object.entries(attrs)) el.setAttribute(key,value)
   return el
 }
-export function paintMark(mark, width, height, interactive = false) {
+export function paintMark(mark, width, height, interactive = false, part = mark) {
   const group = shape('g', { 'data-id':mark.id })
-  if (mark.type === 'highlight') {
-    for (const [x,y,w,h] of mark.rects) group.append(shape('rect',{
+  if (part.rects) {
+    const fill = shape('g',{})
+    for (const [x,y,w,h] of part.rects) fill.append(shape('rect',{
       x:x*width, y:y*height, width:w*width, height:h*height, fill:mark.color, opacity:.48
     }))
-    group.style.mixBlendMode='multiply'
+    fill.style.mixBlendMode='multiply'
+    group.append(fill)
   } else if (mark.type === 'draw') {
     group.append(shape('polyline',{
       points:mark.points.map(([x,y])=>[x*width,y*height].join(',')).join(' '),
       fill:'none',stroke:mark.color,'stroke-width':2.4,'stroke-linejoin':'round','stroke-linecap':'round'
     }))
-  } else {
-    const x=mark.point[0]*width, y=mark.point[1]*height
-    group.setAttribute('transform','translate('+x+' '+y+')')
-    group.setAttribute('class','note-marker')
-    group.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
+  }
+  if (mark.type === 'note' || mark.type === 'comment') {
+    let x, y
+    if (mark.type === 'comment') {
+      const [left,top,w] = part.rects.at(-1)
+      x = Math.max(0,Math.min(width - 18,(left + w)*width + 2))
+      y = Math.max(0,Math.min(height - 18,top*height))
+    } else { x = mark.point[0]*width; y = mark.point[1]*height }
+    const marker = shape('g',{'data-id':mark.id,transform:'translate('+x+' '+y+')',class:'note-marker'})
+    group.append(marker)
+    marker.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
     const status = noteStatus(mark)
     if (status) {
-      group.append(shape('rect',{x:5,y:2.5,width:8,height:8,rx:1,fill:'white',stroke:'#353a32','stroke-width':1}))
-      if (mark.done) group.append(shape('path',{d:'m6.5 6.5 1.8 1.8 3.3-3.8',fill:'none',stroke:'#353a32','stroke-width':1.5}))
-    } else group.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
+      marker.append(shape('rect',{x:5,y:2.5,width:8,height:8,rx:1,fill:'white',stroke:'#353a32','stroke-width':1}))
+      if (mark.done) marker.append(shape('path',{d:'m6.5 6.5 1.8 1.8 3.3-3.8',fill:'none',stroke:'#353a32','stroke-width':1.5}))
+    } else marker.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
     if (interactive) {
-      group.setAttribute('tabindex','0')
-      group.setAttribute('role','button')
-      group.setAttribute('aria-label','Edit note on page ' + mark.page + (status ? ' (' + status + ')' : ''))
-      group.setAttribute('aria-haspopup','dialog')
+      marker.setAttribute('tabindex','0')
+      marker.setAttribute('role','button')
+      marker.setAttribute('aria-label',(mark.type === 'comment' ? 'Edit comment' : 'Edit note') + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))
+      marker.setAttribute('aria-haspopup','dialog')
     }
   }
   return group
 }
-export function anchor(mark) {
-  if (mark.type==='note') return mark.point
-  if (mark.type==='draw') return mark.points[0]
-  return mark.rects[0]
+export function anchor(part) {
+  return part.point ?? part.points?.[0] ?? part.rects[0]
 }

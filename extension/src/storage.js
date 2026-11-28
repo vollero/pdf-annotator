@@ -66,8 +66,8 @@ export async function writeChanges(id, before, after) {
       for (const mark of changed) {
         const prior = old.get(mark.id), latest = merged.get(mark.id)
         // Text edits and checkbox clicks can land in different tabs before either receives the broadcast.
-        if (mark.type === 'note' && latest?.type === 'note' && prior?.type === 'note' &&
-            mark.point === prior.point && mark.page === prior.page && mark.color === prior.color) {
+        if ((mark.type === 'note' || mark.type === 'comment') && latest?.type === mark.type && prior?.type === mark.type &&
+            mark.point === prior.point && mark.passages === prior.passages && mark.page === prior.page && mark.color === prior.color) {
           const note = {...latest}
           if (prior.text !== mark.text) note.text = mark.text
           if (prior.done !== mark.done) {

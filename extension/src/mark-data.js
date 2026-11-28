@@ -1,4 +1,4 @@
-import { DocumentLimitError } from './input.js'
+import { DocumentLimitError, maxPages } from './input.js'
 
 export const maxMarkCount = 2000
 
@@ -6,17 +6,42 @@ const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
 const rect = r => Array.isArray(r) && r.length === 4 && r.every(unit)
 function unit(v) { return Number.isFinite(v) && v >= 0 && v <= 1 }
 
-export function readMark(raw, page) {
+export function readMark(raw, page, pages = maxPages) {
   if (!raw || typeof raw.id !== 'string' || !raw.id || raw.id.length > 128 ||
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
-  if (type === 'note' && point(raw.point)) {
-    if (!Object.hasOwn(raw, 'done')) return {...mark, point:raw.point}
-    if (typeof raw.done === 'boolean') return {...mark, point:raw.point, done:raw.done}
+  if (type === 'note' || type === 'comment') {
+    if (Object.hasOwn(raw,'done') && typeof raw.done !== 'boolean') return
+    if (type === 'note') {
+      if (!point(raw.point)) return
+      mark.point = raw.point
+    } else {
+      if (!text.trim() || !Array.isArray(raw.passages) || raw.passages.length > pages || raw.passages[0]?.page !== page) return
+      let previous = 0
+      for (const part of raw.passages) {
+        if (!Number.isInteger(part?.page) || part.page <= previous || part.page > pages ||
+            typeof part.quote !== 'string' || !part.quote.trim() ||
+            !Array.isArray(part.rects) || !part.rects.length || !part.rects.every(rect) ||
+            Object.keys(part).some(key => !['page','quote','rects'].includes(key))) return
+        previous = part.page
+      }
+      mark.passages = raw.passages.map(({page,quote,rects}) => ({page,quote,rects}))
+    }
+    if (raw.done !== undefined) mark.done = raw.done
+    return mark
   }
   if (type === 'draw' && Array.isArray(raw.points) && raw.points.length > 1 && raw.points.every(point)) return {...mark, points:raw.points}
   if (type === 'highlight' && Array.isArray(raw.rects) && raw.rects.length && raw.rects.every(rect)) return {...mark, rects:raw.rects}
+}
+
+export function partOnPage(mark, page) {
+  if (mark.type === 'comment') return mark.passages.find(part => part.page === page)
+  return mark.page === page ? mark : undefined
+}
+
+export function quotedText(mark) {
+  return mark.passages.map(part => part.quote).join('\n')
 }
 
 export function noteStatus(mark) {
@@ -27,7 +52,12 @@ const encodedSizes = new WeakMap()
 export function checkMarkBudget(marks) {
   let geometry = 0, characters = 0, encoded = 0
   for (const mark of marks) {
-    geometry += mark.points?.length ?? mark.rects?.length ?? 1
+    if (mark.type === 'comment') {
+      for (const part of mark.passages) {
+        geometry += part.rects.length
+        characters += part.quote.length
+      }
+    } else geometry += mark.points?.length ?? mark.rects?.length ?? 1
     characters += mark.text.length
     let size = encodedSizes.get(mark)
     if (size === undefined) {
@@ -48,7 +78,7 @@ export function readDraft(raw, pages) {
   const ids = new Set()
   for (const entry of raw) {
     if (!Number.isInteger(entry?.page) || entry.page < 1 || entry.page > pages) continue
-    const mark = readMark(entry,entry.page)
+    const mark = readMark(entry,entry.page,pages)
     if (!mark) continue
     let suffix = 0
     while (ids.has(mark.id)) mark.id = 'margin-copy-' + marks.length + '-' + ++suffix

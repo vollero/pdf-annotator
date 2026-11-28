@@ -45,6 +45,11 @@
       <div id="scroller" tabindex="0" aria-label="PDF pages">
         <div id="sheets" data-tool="select" data-layout="single"></div>
       </div>
+      <div id="selection-actions" role="group" aria-label="Selected passage" hidden>
+        <button class="button primary" data-selection="comment" title="Comment on selection (C)">Comment</button>
+        <button class="button" data-selection="highlight">Highlight</button>
+        <button class="button" data-selection="copy">Copy</button>
+      </div>
     </section>
     <aside id="annotations-panel" aria-labelledby="annotations-heading">
       <div class="panel-heading"><h2 id="annotations-heading">Annotations</h2><span class="count" id="annotation-count">0</span><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
@@ -97,13 +102,14 @@
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
       <div class="dialog-head"><h2 id="note-title">Add a note</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
-      <div class="note-label"><label for="note-text">Note</label><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
+      <blockquote id="passage-quote" aria-label="Selected passage" hidden></blockquote>
+      <div class="note-label"><label for="note-text" id="note-label">Note</label><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <textarea id="note-text" rows="10" required maxlength="12000" placeholder="Write your note…" autofocus></textarea>
       <div class="note-checks">
         <label class="check-label"><input type="checkbox" id="track-note"> Track as action</label>
         <label class="check-label" id="note-done-label" hidden><input type="checkbox" id="note-done"> Done</label>
       </div>
-      <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Save note</button></div>
+      <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button id="note-save" class="button primary" type="submit">Save note</button></div>
     </form>
   </dialog>
   <dialog id="appearance-dialog" aria-labelledby="appearance-title">

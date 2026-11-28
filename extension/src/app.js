@@ -1,5 +1,5 @@
 import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
-import { checkMarkBudget, readDraft } from './mark-data.js'
+import { checkMarkBudget, readDraft, quotedText } from './mark-data.js'
 import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
 import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
@@ -44,7 +44,7 @@ const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => ma
 const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor:()=>color,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
-  note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id))
+  note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id)),notify:toast
 })
 function refresh() {
   hideNotePreview()
@@ -81,12 +81,13 @@ function apply(next) {
   persist(next)
 }
 function change(next) {
-  if(!session) return
-  try { checkMarkBudget(next) } catch (error) { toast(error.message); return }
+  if(!session) return false
+  try { checkMarkBudget(next) } catch (error) { toast(error.message); return false }
   undo.push(marks)
   if(undo.length>100) undo.shift()
   redo=[]
   apply(next)
+  return true
 }
 function historyMove(from,to) {
   if(!from.length) return
@@ -130,13 +131,13 @@ for(const [label,value] of colors) {
   document.querySelector('.palette').append(button)
 }
 
-async function jumpTo(mark) {
+async function jumpTo(mark,part=mark) {
   selected=mark.id
-  const sheet = viewer.sheets[mark.page - 1]
-  if (viewer.page !== mark.page || sheet.element.dataset.ready !== 'true') await viewer.go(mark.page)
+  const sheet = viewer.sheets[part.page - 1]
+  if (viewer.page !== part.page || sheet.element.dataset.ready !== 'true') await viewer.go(part.page)
   if (!sheet.element.isConnected || selected !== mark.id) return
   cards()
-  const [x,y]=anchor(mark), paper=sheet.element, scroller=$('scroller')
+  const [x,y]=anchor(part), paper=sheet.element, scroller=$('scroller')
   const br=paper.getBoundingClientRect(),sr=scroller.getBoundingClientRect()
   const dx=br.left+x*br.width-sr.left,dy=br.top+y*br.height-sr.top
   if(dy<15 || dy>sr.height-75) scroller.scrollTop+=dy-sr.height*.4
@@ -147,7 +148,12 @@ function openNote(mark) {
   hideNotePreview()
   const existing=marks.some(m=>m.id===mark.id)
   noteDraft={mark,session,existing}
-  $('note-title').textContent=existing?'Edit note':'Add a note'
+  const comment = mark.type === 'comment'
+  $('note-title').textContent = comment ? 'Comment on passage' : existing ? 'Edit note' : 'Add a note'
+  $('passage-quote').textContent = comment ? quotedText(mark) : ''
+  $('passage-quote').hidden = !comment
+  $('note-label').textContent = comment ? 'Comment' : 'Note'
+  $('note-save').textContent = comment ? 'Save comment' : 'Save note'
   $('note-text').value=mark.text
   $('track-note').checked = mark.done !== undefined
   $('note-done').checked = mark.done === true
@@ -163,7 +169,7 @@ $('note-form').addEventListener('submit',e=>{
   if(noteDraft?.session===session) {
     const original = noteDraft.mark
     const current = marks.find(m => m.id === original.id)
-    if (noteDraft.existing && current?.type !== 'note') {
+    if (noteDraft.existing && current?.type !== original.type) {
       toast('This note is no longer in the document.')
     } else {
       const mark = {...(current ?? original)}
@@ -175,7 +181,7 @@ $('note-form').addEventListener('submit',e=>{
       }
       selected = mark.id
       if (!current || current.text !== mark.text || current.done !== mark.done) {
-        change(current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark])
+        if (!change(current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark])) return
       }
     }
   }
@@ -303,7 +309,7 @@ async function download() {
   const {file,base}=session, pdf=viewer.pdf, snapshot=marks
   try {
     const views = new Map()
-    for (const number of new Set(snapshot.map(mark => mark.page))) {
+    for (const number of new Set(snapshot.flatMap(mark => (mark.passages ?? [mark]).map(part => part.page)))) {
       const {width,height,userUnit,transform} = (await pdf.getPage(number)).getViewport({scale:1})
       views.set(number,{width,height,userUnit,transform})
     }
@@ -391,7 +397,8 @@ window.addEventListener('storage', event => {
 for (const button of document.querySelectorAll('[data-note-appearance]')) {
   button.onclick = () => {
     hideNotePreview()
-    const note = marks.find(mark => mark.type === 'note' && mark.id === selected) ?? marks.find(mark => mark.type === 'note')
+    const note = marks.find(mark => (mark.type === 'note' || mark.type === 'comment') && mark.id === selected) ??
+      marks.find(mark => mark.type === 'note' || mark.type === 'comment')
     $('appearance-example').textContent = ($('note-dialog').open ? $('note-text').value : note?.text) || 'Your note will appear at this size.'
     $('appearance-dialog').showModal()
   }
@@ -422,7 +429,7 @@ $('page-layout').onchange = () => {
 }
 
 const mod=navigator.platform.includes('Mac')?'⌘':'Ctrl'
-for(const [action,key] of [['Select','V'],['Highlight','H'],['Draw','D'],['Note','N'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
+for(const [action,key] of [['Select','V'],['Comment on selected text','C'],['Highlight','H'],['Draw','D'],['Note','N'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
   const dt=document.createElement('dt'), dd=document.createElement('dd')
   dt.textContent=action;dd.textContent=key;$('key-list').append(dt,dd)
 }

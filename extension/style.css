@@ -113,6 +113,10 @@ body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 .card-body { padding: 0; margin: 10px 0 0; width: 100%; display: block; text-align: left; border-radius: 0; max-height: calc(var(--note-lines) * 1lh); overflow: auto }
 .card-body:hover { text-decoration: underline; background: none !important }
 .card-body.quoted { padding-left: 9px; border-left: 3px solid var(--tone) }
+#selection-actions { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; gap: 4px; padding: 4px; background: white; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 8px #25261c24 }
+#passage-quote, .card-quote { display: block; color: var(--ink); font: 400 var(--note-size)/1.45 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 10px; border-left: 3px solid var(--tone,var(--accent)); }
+#passage-quote { margin: 0 0 14px; max-height: 20dvh; overflow: auto }
+.card-quote { margin-bottom: 8px }
 .card-menu { position: absolute; z-index: 3; right: 10px; top: 35px; background: #fff; border: 1px solid var(--line); box-shadow: 0 4px 12px #0002; border-radius: 6px; padding: 4px; display: grid }
 .card-menu button { padding: 7px 10px; justify-content: flex-start; font-size: 12px }.card-menu .icon { width: 14px; height: 14px }
 .empty { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 18px 2px }
