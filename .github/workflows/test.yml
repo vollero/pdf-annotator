@@ -80,12 +80,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" margin-pdf-annotator.zip "${release_flags[@]}" \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "Margin ${GITHUB_REF_NAME#v}" \
-            --notes "Margin 0.3.0 is the stable release for desktop Chrome and Chromium 141 or later.
-
-          - Attach notes to passages and rectangular regions. Move and resize notes, convert between point and region notes, or read them beside the page.
-          - Adjust note fonts and box sizes, pin a preview, and format notes with Markdown and fenced code blocks.
-          - Track review tasks with checkboxes and search by text, page, or action status.
-          - Underline, strike through, or outline text. Save custom colors and recolor existing annotations.
-          - Import all eight Margin annotation formats and move editable notes to another copy of the same PDF using its SHA-256 fingerprint.
-
-          Download **margin-pdf-annotator.zip** under **Assets**, extract it, and load the **Margin** folder. To update, replace the contents of your existing Margin folder and reload the extension at chrome://extensions. [Install Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#install-margin) · [Update Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#update-margin)."
+            --notes "Use **Format as Markdown** and **Preview formatting** to write inline or displayed LaTeX equations in notes. The renderer works offline and annotation exports preserve the editable source. Download **margin-pdf-annotator.zip** under **Assets**, extract it, and load the **Margin** folder. [Write an equation in a note]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#write-an-equation-in-a-note) · [Install Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#install-margin) · [Update Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#update-margin)."

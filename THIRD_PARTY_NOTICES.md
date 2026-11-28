@@ -1,6 +1,10 @@
 # Third-party notices for Margin
 
-Margin distributes the browser builds of PDF.js 5.5.207, pdf-lib 1.17.1 and Marked 18.3.0. The following paths are relative to the extracted extension folder. The build preserves the upstream JavaScript license headers and ships the license files alongside the code for offline use.
+Margin distributes the browser builds of PDF.js 5.5.207, pdf-lib 1.17.1, Marked 18.3.0 and KaTeX 0.19.1. The following paths are relative to the extracted extension folder. The build preserves the upstream JavaScript license headers and ships the license files alongside the code for offline use.
+
+## KaTeX
+
+KaTeX converts TeX equations to MathML for Chromium to display using local math fonts. The browser bundle credits Khan Academy and other contributors and includes adapted React utilities under Apache-2.0. The MIT license is in `vendor/KATEX-LICENSE` and the extension includes the Apache license in `LICENSE`. [KaTeX source](https://github.com/KaTeX/KaTeX/tree/v0.19.1)
 
 ## Marked
 

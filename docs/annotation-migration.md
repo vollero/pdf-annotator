@@ -99,6 +99,8 @@ A point note, region note, or passage comment can have `"textFormat": "markdown"
 
 Fenced code blocks use this same version 8 format. The `text` string preserves the fence characters, optional language name, tabs, spaces, and line breaks. Margin 0.3.0-rc.14 can import and edit the source. Margin 0.3.0-rc.15 and later display the block in monospace. [Worked example](https://github.com/vollero/pdf-annotator/blob/v0.3.0/README.md#add-a-multi-line-code-sample)
 
+Inline and displayed equations also use version 8. For example, a note containing `$x^2$` stores those five characters directly in `text`. Export handles JSON escaping for LaTeX backslashes. Importing into 0.4.0-rc.1 or later typesets supported expressions. Version 0.3.0 can still import and edit the Markdown source. [Equation example](https://github.com/vollero/pdf-annotator/blob/v0.4.0-rc.1/README.md#write-an-equation-in-a-note)
+
 Selecting **Format as Markdown** on any note makes the export version 8. Importing a matching ID updates its source and format together. Omitting `textFormat` restores plain text. When all notes use plain text, Margin exports the earliest version their other features require.
 
 All eight versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

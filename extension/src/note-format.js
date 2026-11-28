@@ -1,13 +1,15 @@
-import { Lexer } from '../vendor/marked.mjs'
+import { Marked } from '../vendor/marked.mjs'
+import { appendEquation, maskEquationEmphasis, mathExtensions } from './note-math.js'
 
 const parsed = new WeakMap()
+const markdown = new Marked({gfm:false,extensions:mathExtensions,hooks:{emStrongMask:maskEquationEmphasis}})
 
 function noteTokens(mark) {
   let tokens = parsed.get(mark)
   if (!tokens) {
     // The editor accepts 12,000 characters. Large imported notes remain readable as source.
     if (mark.text.length <= 12000) {
-      try { tokens = Lexer.lex(mark.text,{gfm:false}) }
+      try { tokens = markdown.lexer(mark.text) }
       catch { /* Keep the source if the parser cannot handle its nesting. */ }
     }
     tokens ??= [{type:'text',text:mark.text}]
@@ -16,8 +18,7 @@ function noteTokens(mark) {
   return tokens
 }
 
-// Both the PDF worker and the editor read the same tokens. Only these fixed
-// presentation elements can enter the DOM, and all user strings become text.
+// Both the PDF worker and the editor read the same tokens. Raw HTML stays text.
 function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) {
   function text(value) {
     if (value) { parent?.append(value); write?.(value,style) }
@@ -40,6 +41,10 @@ function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) 
         break
       case 'escape': text(token.text); break
       case 'br': text('\n'); break
+      case 'equation':
+        if (parent) appendEquation(parent,token)
+        write?.(token.raw,style)
+        break
       case 'strong':
       case 'em':
         writeTokens(token.tokens,child(token.type),write,depth+1,indent,{...style,[token.type]:true})

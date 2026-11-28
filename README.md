@@ -63,6 +63,25 @@ Open **Preview formatting** to see the indented sample in monospace. Spaces, tab
 
 **Export PDF** puts the code in the PDF comment and draws it in expanded note boxes. Reopening the PDF in Margin or importing the annotations restores the fences and language name for editing. Use **Margin 0.3.0 or later** to see formatted blocks.
 
+### Write an equation in a note
+
+Equation rendering is available in **0.4.0-rc.1**. The stable download at the top installs **0.3.0**. To try equations, download the candidate ZIP and follow the same installation or update steps. [Download the equation candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.1/margin-pdf-annotator.zip)
+
+1. Open a note and select **Format as Markdown**. Enclose an inline formula in single dollar signs, such as `$E=mc^2$`. For an equation on its own line, use a pair of dollar signs at each end.
+2. Paste the example below and open **Preview formatting**. The first formula appears in the sentence. The fraction appears on its own line.
+
+   ```markdown
+   For a circle of diameter $d$, the area is
+
+   $$
+   A = \frac{\pi d^2}{4}
+   $$
+   ```
+
+3. Save the note to see the equation in the sidebar, the page margin, or a pinned preview. Reopen it to edit the LaTeX. An incomplete or unrecognized formula displays its source. Code spans and fenced code blocks keep dollar signs literal. Type `\$` for a literal dollar sign in prose.
+
+Equations render offline in Margin. **Export annotations** preserves the LaTeX in the existing Markdown format. **Export PDF** writes the LaTeX source in PDF comments and expanded boxes, so recipients can copy the formula. Opening that PDF in the equation candidate typesets it again.
+
 ## Read notes in the page margin
 
 1. Add a note or open an existing one. For a passage comment, select text and choose **Comment**. In the editor, set **Margin placement** to **Left margin** or **Right margin**, then save.
@@ -230,7 +249,7 @@ npx playwright-core install chromium
 npm run test:browser
 ```
 
-Set `CHROMIUM_PATH` to use an installed Chromium binary for the browser test. The source lives in `extension/`. The build bundles PDF.js, pdf-lib, the Marked Markdown parser, fonts, character maps, and image decoders. Margin uses `activeTab` for the tab you click and session-only extension storage to pass its address to the new editor tab.
+Set `CHROMIUM_PATH` to use an installed Chromium binary for the browser test. The source lives in `extension/`. The build bundles PDF.js, pdf-lib, the Marked Markdown parser, KaTeX, fonts, character maps, and image decoders. Margin uses `activeTab` for the tab you click and session-only extension storage to pass its address to the new editor tab.
 
 </details>
 

@@ -21,6 +21,17 @@ test('literal markup and long imported notes keep their source',()=>{
   assert.equal(readableNoteText({text:long,textFormat:'markdown'}),long)
 })
 
+test('equations preserve TeX in PDF text, including Markdown punctuation and display boundaries',()=>{
+  const formula = '$x_1*y_2*z$'
+  const display = '$$\n\\frac{a_1}{b_2}\n$$'
+  const text = 'Use *the '+formula+' value*.\n'+display+'\n**End**'
+  const mark = {text,textFormat:'markdown'}
+  const expected = 'Use the '+formula+' value.\n'+display+'\nEnd'
+  assert.equal(readableNoteText(mark),expected)
+  assert.equal(noteTextRuns(mark).map(run=>run.text).join(''),expected)
+  assert.equal(readableNoteText({text}),text)
+})
+
 test('fenced code keeps literal lines, tabs and block boundaries in text and styled runs',()=>{
   const code = '\tif (a < b) {\n    print("**literal**");  \n\n\t}'
   for (const fence of ['```','~~~~']) {
