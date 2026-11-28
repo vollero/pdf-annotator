@@ -112,4 +112,6 @@ An export with a named set adds a top-level list such as `"sets": ["Review comme
 
 Export includes every set, regardless of visibility. Import combines sets by exact name, keeps local-only sets and marks, and updates the membership of matching mark IDs. When importing a version 1–8 file, matching IDs keep their local set and new marks go into **My notes**. Visibility and the current writing set are local preferences. A transfer with no named sets uses the earliest version its marks require.
 
+Renaming a set in 0.4.0-rc.4 keeps the version 9 format. For example, after renaming **Review** to **Decisions**, a new export lists **Decisions** and writes `"set": "Decisions"` on its marks. On another computer, importing that file moves matching marks into **Decisions**. Marks that exist only in the receiving copy of **Review** stay there. Importing an older version 9 export can bring back **Review** and move the matching marks back into it.
+
 All versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

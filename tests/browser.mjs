@@ -24,6 +24,7 @@ import { checkMarkdownNotes } from './markdown-notes.mjs'
 import { checkMathNotes } from './math-notes.mjs'
 import { checkNoteLinks } from './note-links.mjs'
 import { checkAnnotationSets } from './annotation-sets.mjs'
+import { checkRenameSet } from './rename-set.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -188,6 +189,7 @@ try {
   await checkMathNotes(page,downloadAnnotations,importAnnotations)
   await checkNoteLinks(page,downloadAnnotations,importAnnotations)
   await checkAnnotationSets(page,downloadAnnotations,importAnnotations)
+  await checkRenameSet(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])

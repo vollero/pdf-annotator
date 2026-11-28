@@ -156,6 +156,11 @@
     <label for="active-set">Write new annotations in</label>
     <select id="active-set" autofocus></select>
     <fieldset><legend>Visible sets</legend><div id="visible-sets"></div></fieldset>
+    <form id="rename-set" hidden>
+      <label for="rename-set-name">New name for set</label>
+      <input id="rename-set-name" maxlength="64" required autocomplete="off">
+      <div class="dialog-actions"><button class="button" type="button" id="cancel-rename">Cancel rename</button><button class="button primary" type="submit">Save name</button></div>
+    </form>
     <p class="format-hint">Export PDF includes visible sets. Export annotations includes every set.</p>
     <form id="create-set">
       <label for="set-name">New set name</label>

@@ -75,6 +75,7 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
     const lookup = store.get(id)
     const settings = tx.objectStore('settings')
     const currentSets = settings.get(['sets',id])
+    let savedSets
     currentSets.onsuccess = () => {
       const merged = new Map((lookup.result ?? before).map(mark => [mark.id,mark]))
       for (const mark of removed) merged.delete(mark.id)
@@ -132,13 +133,13 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
       // Concurrent imports can each fit the limit on their own.
       try {
         checkMarkBudget(result)
-        const sets = mergeSetViews(currentSets.result ?? beforeSets,beforeSets,afterSets,result)
-        settings.put(sets,['sets',id])
+        savedSets = mergeSetViews(currentSets.result ?? beforeSets,beforeSets,afterSets,result)
+        settings.put(savedSets,['sets',id])
       }
       catch (error) { tx.abort(); reject(error); return }
       store.put(result, id)
     }
-    tx.oncomplete = resolve
+    tx.oncomplete = ()=>resolve(savedSets)
     tx.onabort = () => reject(tx.error)
   })
 }

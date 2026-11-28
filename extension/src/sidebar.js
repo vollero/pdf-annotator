@@ -1,7 +1,7 @@
 import { icon } from './icons.js'
 import { readableNoteText, renderNoteText } from './note-format.js'
 import { wrapNoteAction } from './note-action.js'
-import { defaultSet } from './annotation-sets.js'
+import { defaultSet, setLabel } from './annotation-sets.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
 import { isNote, isPageNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
@@ -74,7 +74,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     more.setAttribute('aria-expanded','false')
     more.append(icon('more'))
     head.append(symbol,el('span','card-title',title),more)
-    if (sets.names.length) head.insertBefore(el('span','card-set',mark.set ?? defaultSet),more)
+    if (sets.names.length) head.insertBefore(el('span','card-set',setLabel(sets,mark.set ?? defaultSet)),more)
     const content = document.createDocumentFragment()
     renderNoteText(content,mark)
     if (mark.type === 'comment') content.prepend(el('span','card-quote',quotedText(mark)))
@@ -151,7 +151,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
       if (sets.names.length) {
         const label = el('label','','Move to set')
         const picker = el('select')
-        for (const name of [defaultSet,...sets.names]) picker.add(new Option(name,name))
+        for (const key of [defaultSet,...sets.names]) picker.add(new Option(setLabel(sets,key),key))
         picker.value = mark.set ?? defaultSet
         picker.onchange = ()=>{
           moveToSet(mark,picker.value)

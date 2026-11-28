@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { exportAnnotations, readAnnotationFile, readAnnotations, mergeAnnotations } from '../dist/src/annotation-file.js'
-import { initialSets, mergeSetViews } from '../dist/src/annotation-sets.js'
+import { addNamedSet, exportSetMarks, importNamedSets, initialSets, mergeSetViews, renameSet, setLabel } from '../dist/src/annotation-sets.js'
 import { convertPageNote } from '../dist/src/mark-data.js'
 
 const pdf = await readFile('extension/assets/reading-the-alps.pdf')
@@ -38,6 +38,40 @@ test('concurrent changes preserve memberships, empty sets and independent visibi
   const merged = mergeSetViews(first,before,second,[])
   assert.deepEqual(merged,{names:['A','B','First','Second'],active:'First',hidden:['A','B']})
   assert.deepEqual(mergeSetViews(before,before,initialSets,[{set:'A'}]),{names:['A'],active:'My notes',hidden:[]})
+})
+
+test('renames keep local membership and v9 transfers resolve names after reuse',()=>{
+  const before = {names:['Review','Empty'],active:'Review',hidden:['Review']}
+  const view = renameSet(before,'Review','Decisions')
+  const mark = {...drawing,set:'Review'}
+  assert.equal(setLabel(view,view.active),'Decisions')
+  assert.equal(setLabel(view,view.hidden[0]),'Decisions')
+  assert.deepEqual(renameSet(view,'Review','Review'),before)
+  assert.equal(renameSet(view,'Review','Decisions'),view)
+  for (const name of ['', 'My notes','Empty','two\nlines']) assert.throws(()=>renameSet(before,'Review',name))
+  assert.throws(()=>renameSet(before,'My notes','Shared'))
+  const imported = importNamedSets(view,['Review','Decisions'],[{...drawing,set:'Review'},{...mark,id:'second',set:'Decisions'}])
+  assert.notEqual(imported.marks[0].set,'Review')
+  assert.equal(imported.marks[1].set,mark.set)
+  assert.deepEqual(exportSetMarks(imported.view,imported.marks).map(m=>m.set),['Review','Decisions'])
+  const special = addNamedSet(view,'__proto__')
+  assert.equal(setLabel(renameSet(special.view,special.key,'constructor'),special.key),'constructor')
+})
+
+test('concurrent renames preserve independent edits and unique set names',()=>{
+  const base = {names:['A','B'],active:'A',hidden:[]}
+  const first = renameSet(base,'A','Final')
+  const second = renameSet(base,'B','Final')
+  const merged = mergeSetViews(first,base,second,[{set:'A'},{set:'B'}])
+  assert.deepEqual(merged,first)
+  const newMark = {set:'A'}
+  const hidden = mergeSetViews(first,base,{...base,hidden:['A']},[newMark])
+  assert.equal(setLabel(hidden,hidden.hidden[0]),'Final')
+  assert.equal(exportSetMarks(hidden,[newMark])[0].set,'Final')
+  const extra = addNamedSet(base,'Final')
+  const combined = mergeSetViews(first,base,extra.view,[])
+  assert.equal(setLabel(combined,'A'),'Final')
+  assert.equal(setLabel(combined,extra.key),'Final (2)')
 })
 
 test('the guide shipped in the ZIP contains a working import for the bundled sample',async()=>{

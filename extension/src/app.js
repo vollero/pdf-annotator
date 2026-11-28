@@ -12,7 +12,7 @@ import { bindNotePreview } from './note-preview.js'
 import { renderNoteText } from './note-format.js'
 import { renderCards,closeCardMenus } from './sidebar.js'
 import { lastDocument,remember,readWorkspace,writeChanges } from './storage.js'
-import { assignSet, defaultSet, initialSets, setNames, setView, validSetName, visibleMarks } from './annotation-sets.js'
+import { addNamedSet, assignSet, defaultSet, exportSetMarks, importNamedSets, initialSets, renameSet, setLabel, setNames, setView, visibleMarks } from './annotation-sets.js'
 import { bindSetControls } from './set-controls.js'
 
 const $=id=>document.getElementById(id)
@@ -105,12 +105,13 @@ function updateSetView(next) {
   persist(marks,sets)
 }
 const renderSets = bindSetControls({
-  create(name) {
-    if (name === defaultSet || sets.names.includes(name)) return 'Choose a name that this PDF does not already use.'
-    if (!validSetName(name)) return 'Enter a set name of up to 64 characters on one line.'
-    let error
-    change(marks,message=>{error=message},{...sets,names:[...sets.names,name],active:name})
-    return error
+  create(label) {
+    const {key,view} = addNamedSet(sets,label)
+    change(marks,message=>{throw new Error(message)},{...view,active:key})
+  },
+  rename(key,label) {
+    const next = renameSet(sets,key,label)
+    if (next!==sets) change(marks,message=>{throw new Error(message)},next)
   },
   writeIn(name) { updateSetView({...revealSet(name),active:name}) },
   showSet(name,show) {
@@ -137,10 +138,18 @@ function persist(next,nextSets) {
         await remember(doc.file,doc.saved)
         doc.remembered=true
       }
-      await writeChanges(doc.file.id,doc.saved,next,doc.savedSets,nextSets)
+      const savedSets = await writeChanges(doc.file.id,doc.saved,next,doc.savedSets,nextSets)
       doc.saved=next;doc.savedSets=nextSets
       channel.postMessage(doc.file.id)
-      if(doc===session && number===editNumber) state('Saved locally')
+      if(doc===session && number===editNumber) {
+        state('Saved locally')
+        if (JSON.stringify(savedSets)!==JSON.stringify(nextSets)) {
+          await syncStored(doc,number)
+          if (doc===session && number===editNumber && nextSets.names.some(key=>setLabel(savedSets,key)!==setLabel(nextSets,key))) {
+            toast('Another tab changed the annotation sets. The saved names are now shown.')
+          }
+        }
+      }
     } catch {
       if(doc===session) {
         state('Local save failed','error')
@@ -160,7 +169,7 @@ function change(next,onError=toast,nextSets=sets) {
     checkMarkBudget(next)
     if (nextSets !== sets) nextSets = setView(setNames(nextSets.names,next),nextSets)
   } catch (error) { onError(error.message); return false }
-  undo.push({marks,names:sets.names})
+  undo.push({marks,sets})
   if(undo.length>100) undo.shift()
   redo=[]
   apply(next,nextSets)
@@ -168,27 +177,30 @@ function change(next,onError=toast,nextSets=sets) {
 }
 function historyMove(from,to) {
   if(!from.length) return
-  to.push({marks,names:sets.names})
+  to.push({marks,sets})
   const prior = from.pop()
-  apply(prior.marks,setView(prior.names,sets))
+  apply(prior.marks,setView(prior.sets.names,{...sets,labels:prior.sets.labels}))
 }
-channel.onmessage=async event=>{
-  const doc=session
-  if(privateWindow || !doc || event.data!==doc.file.id) return
-  await writes
-  const number=editNumber
+async function syncStored(doc,number) {
   try {
     const stored=await readWorkspace(doc.file.id)
     if (doc!==session || number!==editNumber || !stored.marks) return
     const merged=readDraft(stored.marks,doc.pages)
     const mergedSets=setView(setNames(stored.sets.names,merged),stored.sets)
-    const documentChanged = JSON.stringify(merged)!==JSON.stringify(marks) || JSON.stringify(mergedSets.names)!==JSON.stringify(sets.names)
+    const documentChanged = JSON.stringify(merged)!==JSON.stringify(marks) || JSON.stringify(mergedSets.names)!==JSON.stringify(sets.names) ||
+      JSON.stringify(mergedSets.labels)!==JSON.stringify(sets.labels)
     if (documentChanged || JSON.stringify(mergedSets)!==JSON.stringify(sets)) {
       if (documentChanged) { undo=[];redo=[];doc.saved=marks=merged }
       doc.savedSets=sets=mergedSets
       refresh()
     }
   } catch { /* Leave the current in-memory document editable. */ }
+}
+channel.onmessage=async event=>{
+  const doc=session
+  if(privateWindow || !doc || event.data!==doc.file.id) return
+  await writes
+  await syncStored(doc,editNumber)
 }
 
 function selectTool(value) {
@@ -413,7 +425,7 @@ function downloadFile(blob, filename) {
 $('export-annotations').onclick=()=>{
   if (!session) return
   try {
-    const blob = exportAnnotations(session.file.id, session.pages, marks, sets.names)
+    const blob = exportAnnotations(session.file.id, session.pages, exportSetMarks(sets,marks), sets.names.map(key=>setLabel(sets,key)))
     downloadFile(blob, session.file.name.replace(/\.pdf$/i,'') + '.margin-annotations.json')
   } catch (error) { toast(error.message) }
 }
@@ -427,11 +439,11 @@ $('annotation-file').onchange=async event=>{
   try {
     const incoming = await runPdfJob({operation:'read-annotations', file, documentSha256:doc.file.id, pages:doc.pages}, signal)
     if (doc !== session || signal.aborted) return
-    const result = mergeAnnotations(marks, incoming.marks, incoming.version < 9)
-    const names = setNames([...sets.names,...incoming.names],result.marks)
-    const newSets = names.length - sets.names.length
+    const imported = importNamedSets(sets,incoming.names,incoming.marks)
+    const result = mergeAnnotations(marks, imported.marks, incoming.version < 9)
+    const newSets = imported.view.names.length - sets.names.length
     if (result.added || result.updated || newSets) {
-      if (!change(result.marks,toast,{...sets,names})) return
+      if (!change(result.marks,toast,imported.view)) return
       const setCount = newSets ? ' Created '+newSets+(newSets === 1 ? ' set.' : ' sets.') : ''
       toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.' + setCount)
     } else toast(incoming.marks.length || incoming.names.length ? 'These annotations are already in this document.' : 'The file contains no annotations.')
@@ -445,7 +457,7 @@ $('annotation-file').onchange=async event=>{
 async function download() {
   if(!session || exporting) return
   exporting=true;$('export').disabled=true
-  const {file,base}=session, pdf=viewer.pdf, snapshot=visibleMarks(marks,sets)
+  const {file,base}=session, pdf=viewer.pdf, snapshot=exportSetMarks(sets,visibleMarks(marks,sets))
   try {
     const views = new Map()
     for (const number of new Set(snapshot.flatMap(mark => (mark.passages ?? [mark]).map(part => part.page)))) {
