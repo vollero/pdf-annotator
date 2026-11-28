@@ -2,7 +2,7 @@
 
 Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
-Margin 0.4.0-rc.8 reads versions 1–12. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
+Margin **0.4.0** reads formats 1–12, including every annotation file exported by **0.3.0**. When you share a dated annotation, the recipient needs a reader for format 12. If you use an older installation, the table lists the first compatible release for each format, including candidates.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |

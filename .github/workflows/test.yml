@@ -77,7 +77,18 @@ jobs:
           else
             release_flags+=(--latest)
           fi
+          cat > "$RUNNER_TEMP/margin-release.md" <<EOF
+          Margin 0.4.0 is the stable release for desktop Chrome and Chromium 141 or later.
+
+          - See when a mark was created or edited. Open **Annotations → Timeline** to revisit dated comments and replies. Turn on recording for a PDF to preview earlier drafts, including deleted marks.
+          - Add authors and tags, reply to a specific response, and keep an optional text history for individual notes. **Restore previous draft** recovers the state before the last saved annotation change.
+          - Organize reviews into named sets. Hide or archive a set, or export a PDF showing only the sets you want to share.
+          - Read equations and follow web links in Markdown notes. Move your reviews between copies of the exact same PDF using annotation JSON. This release reads formats 1–12, including files from Margin 0.3.0.
+
+          **Install or update.** Download **margin-pdf-annotator.zip** under **Assets** and extract it. For a first installation, choose **Load unpacked** at **chrome://extensions** and select the **Margin** folder. To update, replace the files in your existing Margin folder and click **Reload** on its extension card.
+
+          [Installation guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#install-margin) · [Update guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#update-margin) · [Timeline guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#travel-through-annotation-dates)
+          EOF
           gh release create "$GITHUB_REF_NAME" margin-pdf-annotator.zip "${release_flags[@]}" \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
-            --title "Margin ${GITHUB_REF_NAME#v}" \
-            --notes "New annotations show their creation and edit dates. Open **Annotations → Timeline** to visit dated marks, replies and versions. Turn on **Recorded drafts** for a PDF to revisit earlier states, including deleted annotations. Download **margin-pdf-annotator.zip** under **Assets**, extract it, and load the **Margin** folder. [Use the timeline]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#travel-through-annotation-dates) · [Install Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#install-margin) · [Update Margin]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/README.md#update-margin)."
+            --title "Margin ${GITHUB_REF_NAME#v}" --notes-file "$RUNNER_TEMP/margin-release.md"
