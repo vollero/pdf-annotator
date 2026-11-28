@@ -12,6 +12,7 @@ import { checkActionNotes } from './action-notes.mjs'
 import { checkAnnotationSearch } from './annotation-search.mjs'
 import { checkPassageComments } from './passage-comments.mjs'
 import { checkTextMarkup } from './text-markup.mjs'
+import { checkPalette } from './palette.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -164,6 +165,7 @@ try {
   await checkReadingControls(page)
   await checkPassageComments(page,downloadAnnotations,importAnnotations)
   await checkTextMarkup(page,downloadAnnotations,importAnnotations)
+  await checkPalette(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])
@@ -224,6 +226,12 @@ try {
   ])
   await privatePage.locator('#save-state').filter({hasText:'Private session'}).waitFor()
   assert.equal(await privatePage.evaluate(()=>chrome.extension.inIncognitoContext),true)
+  await privatePage.getByRole('button',{name:'Edit palette'}).click()
+  await privatePage.getByLabel('Saved colors').selectOption('')
+  await privatePage.getByLabel('Color name').fill('Private review')
+  await privatePage.getByLabel('Hex color').fill('#674489')
+  await privatePage.getByRole('button',{name:'Save and use'}).click()
+  await privatePage.getByRole('button',{name:'Private review annotation color'}).waitFor()
   await privatePage.locator('#file').setInputFiles({name:'Private review.pdf',mimeType:'application/pdf',buffer:remoteBytes})
   await privatePage.locator('#filename').filter({hasText:'Private review.pdf'}).waitFor()
   await privatePage.locator('#file').setInputFiles({name:'Reading the Alps.pdf',mimeType:'application/pdf',
@@ -245,6 +253,7 @@ try {
   await privatePage.reload()
   await privatePage.locator('#filename').filter({hasText:'Reading the Alps.pdf'}).waitFor()
   assert.deepEqual(await privatePage.evaluate(()=>indexedDB.databases()),[])
+  assert.equal(await privatePage.getByRole('button',{name:'Private review annotation color'}).count(),0)
   assert.deepEqual(errors,[])
   console.log('Chromium extension passed import, highlight, drawing, notes, history, autosave, navigation, zoom and PDF export/reopen.')
 } finally {

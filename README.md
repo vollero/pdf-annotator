@@ -31,9 +31,19 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Mark text with different styles
+## Customize your color palette
 
-To try the five new styles, [download the 0.3.0-rc.5 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.5/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.6 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.6/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. Click **Edit palette**, the palette icon next to the colored circles in the annotation toolbar.
+2. Under **Saved colors**, choose **Add a color…**. Give it a name such as *Needs review*. Click the color well to use the browser’s picker, or enter a six-digit **Hex color** such as `#176B87`.
+3. Click **Save and use**. The color moves to the first toolbar position and becomes active for your next highlight, underline, drawing, note, or passage comment. Click another swatch to switch. The toolbar shows five colors at a time. To use another saved color, pick it under **Saved colors** and click **Save and use**.
+
+To edit or remove a color, choose it under **Saved colors**. Change its name or value and click **Save and use**, or click **Remove color**. **Restore defaults** brings back the original five swatches. Each annotation keeps the color it had when you made it, including in an exported PDF or annotation file.
+
+Margin remembers your palette in this browser profile. Recipients see the colors you used even if they have a different palette. In an Incognito tab, palette changes last until you reload or close that tab.
+
+## Mark text with different styles
 
 1. Open the arrow beside **Highlight**. Choose **Solid underline**, **Dashed underline**, **Dotted underline**, **Strikethrough**, or **Outline box**. Choose a color and drag over the words. The tool keeps that style for your next mark. Choose **Highlight** in the same menu to return to a filled highlight.
 2. If you’ve already selected words with **Select**, use the arrow in the selection toolbar at the bottom of the PDF. Click the button showing the style’s name to mark the words, or click **Comment** to attach a note in that style.
@@ -69,7 +79,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.5/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.6/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.

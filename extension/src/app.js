@@ -3,7 +3,8 @@ import { checkMarkBudget, readDraft, quotedText } from './mark-data.js'
 import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
 import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
-import { colors,anchor,populateMarkupPicker } from './annotations.js'
+import { anchor,populateMarkupPicker } from './annotations.js'
+import { bindPalette } from './palette.js'
 import { markupLabels, withMarkupStyle } from './markup.js'
 import { Viewer,readPDF } from './viewer.js'
 import { bindGestures } from './gestures.js'
@@ -13,7 +14,7 @@ import { lastDocument,remember,readMarks,writeChanges } from './storage.js'
 
 const $=id=>document.getElementById(id)
 decorate()
-let session, marks=[], undo=[], redo=[], selected=null, tool='select', color=colors[0][1]
+let session, marks=[], undo=[], redo=[], selected=null, tool='select'
 let activeImport = new AbortController()
 function beginImport() {
   activeImport.abort()
@@ -23,6 +24,7 @@ function beginImport() {
 let opening=0, editNumber=0, writes=Promise.resolve(), noteDraft, toastTimer, exporting=false
 const privateWindow = chrome.extension.inIncognitoContext
 const privateStatus = 'Private session · export to keep'
+const getColor = bindPalette({privateWindow, preference, savePreference, notify:toast})
 const channel=new BroadcastChannel('margin-draft-changes')
 
 function toast(message) {
@@ -44,7 +46,7 @@ function cards() {
 const viewer=new Viewer({onPage:cards,onError:toast})
 const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
 const cancelGesture=bindGestures({
-  viewer,getTool:()=>tool,getColor:()=>color,getStyle:()=>$('tool-style').value,
+  viewer,getTool:()=>tool,getColor,getStyle:()=>$('tool-style').value,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
   note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id)),notify:toast
 })
@@ -129,17 +131,6 @@ for (const picker of [$('tool-style'),$('selection-style')]) {
     $('tool-style-name').textContent = $('selection-style-name').textContent = markupLabels[style]
     if (picker === $('tool-style')) selectTool('highlight')
   }
-}
-for(const [label,value] of colors) {
-  const button=document.createElement('button')
-  button.className='swatch';button.title=label
-  button.style.setProperty('--tone',value);button.setAttribute('aria-label',label+' annotation color')
-  button.setAttribute('aria-pressed',color===value)
-  button.onclick=()=>{
-    color=value
-    for(const b of button.parentNode.children) b.setAttribute('aria-pressed',b===button)
-  }
-  document.querySelector('.palette').append(button)
 }
 
 async function jumpTo(mark,part=mark) {
@@ -373,8 +364,8 @@ function preference(key, fallback) {
   catch { return fallback }
 }
 function savePreference(key, value) {
-  try { localStorage.setItem('margin.' + key, value) }
-  catch { /* The view controls also work when browser storage is unavailable. */ }
+  try { localStorage.setItem('margin.' + key, value); return true }
+  catch { return false }
 }
 const appearanceControls = [...$('appearance-form').querySelectorAll('select')]
 function applyAppearance() {

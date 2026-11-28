@@ -6,6 +6,7 @@ const paths = {
   select: '<path d="m5 3 14 10-7 1-3.5 6z"/>',
   highlight: '<path d="m9 12 8-9 4 4-8 9zm0 0-2 3 3 3 3-2M7 16l-3 4h5l1-2"/>',
   draw: '<path d="m14 5 5 5M4 20l1-6L16 3a1.5 1.5 0 0 1 2 0l3 3a1.5 1.5 0 0 1 0 2L10 19z"/>',
+  palette: '<path d="M21 11a9 9 0 1 0-9 10c2 0 3-1 3-2.5 0-1.1-1.1-1.8-1.1-2.8 0-.9.8-1.7 1.9-1.7H18c2 0 3-1.3 3-3z"/><circle cx="7.5" cy="9" r=".9"/><circle cx="12" cy="6.8" r=".9"/><circle cx="16.5" cy="9" r=".9"/>',
   note: '<path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-5h5M8 9h8M8 12h5"/>',
   undo: '<path d="M9 5 4 10l5 5M5 10h8c4 0 6 2 6 6v2"/>',
   redo: '<path d="m15 5 5 5-5 5m4-5h-8c-4 0-6 2-6 6v2"/>',

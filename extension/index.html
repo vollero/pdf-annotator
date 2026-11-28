@@ -31,7 +31,10 @@
       <button class="tool" data-tool="note" data-icon="note" aria-pressed="false" title="Add a note (N)">Note</button>
     </div>
     <span class="divider"></span>
-    <div class="palette" role="group" aria-label="Annotation color"></div>
+    <div class="palette" role="group" aria-label="Annotation color">
+      <div id="color-swatches"></div>
+      <button id="edit-palette" class="icon-button" data-icon="palette" title="Edit palette" aria-label="Edit palette" aria-haspopup="dialog"></button>
+    </div>
     <div class="toolbar-end">
       <button id="undo" class="icon-button" data-icon="undo" aria-label="Undo" title="Undo (Ctrl+Z)" disabled></button>
       <button id="redo" class="icon-button" data-icon="redo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled></button>
@@ -105,6 +108,26 @@
       <button id="shortcuts" class="text-button" data-icon="keys" aria-label="Shortcuts" title="Shortcuts"><span>Shortcuts</span></button>
     </div>
   </footer>
+  <dialog id="palette-dialog" aria-labelledby="palette-title">
+    <form id="palette-form">
+      <div class="dialog-head"><h2 id="palette-title">Annotation palette</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
+      <label for="palette-entry">Saved colors</label>
+      <select id="palette-entry" autofocus></select>
+      <label for="palette-name">Color name</label>
+      <input id="palette-name" type="text" maxlength="40" autocomplete="off" placeholder="e.g. Needs review">
+      <label for="palette-hex">Hex color</label>
+      <div class="palette-inputs">
+        <input id="palette-picker" type="color" aria-label="Choose a color">
+        <input id="palette-hex" type="text" required pattern="#?[0-9a-fA-F]{6}" title="Enter six hexadecimal digits, such as #176B87" autocomplete="off" spellcheck="false">
+      </div>
+      <p id="palette-error" role="alert" hidden></p>
+      <div class="palette-actions">
+        <button id="palette-remove" class="text-button" type="button">Remove color</button>
+        <button id="palette-reset" class="text-button" type="button">Restore defaults</button>
+        <button class="button primary" type="submit">Save and use</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
       <div class="dialog-head"><h2 id="note-title">Add a note</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>

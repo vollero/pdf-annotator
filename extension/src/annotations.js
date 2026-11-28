@@ -1,9 +1,6 @@
 import { noteStatus } from './mark-data.js'
 import { markupLabels, markupStrokes } from './markup.js'
 
-export const colors = [
-  ['Amber','#efc650'], ['Sage','#9abd9e'], ['Sky','#91b9dd'], ['Rose','#e5a4ae'], ['Lavender','#b3a1d4']
-]
 export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', comment: 'Passage comment' }
 export const NS = 'http://www.w3.org/2000/svg'
 export function populateMarkupPicker(select, style = 'highlight') {

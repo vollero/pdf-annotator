@@ -47,7 +47,19 @@ button,.thumbnail .sheet { transition: background-color .12s, border-color .12s 
 .card-menu select { padding: 4px; border: 1px solid var(--line); border-radius: 4px; background: white }
 .tool { font-size: 13px; font-weight: 500; padding: 0 11px; height: 33px; gap: 7px }
 .tool.active,.tool.active:hover { background: var(--soft-orange); color: #924321 }
-.palette { gap: 7px }
+.palette, #color-swatches { display: flex; align-items: center; gap: 7px }
+.palette { flex: none }
+#edit-palette { color: #656961 }
+#palette-form > label { display: block; margin: 14px 0 5px }
+#palette-form select, #palette-form input { width: 100%; min-width: 0; border: 1px solid #c5c7be; border-radius: 5px; padding: 8px; font: inherit; color: inherit; background: white }
+.palette-inputs { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 8px }
+#palette-picker { height: 100%; cursor: pointer }
+#palette-form #palette-picker { padding: 2px }
+#palette-form #palette-hex { font-family: ui-monospace, monospace }
+#palette-error { color: #8b341d }
+.palette-actions { display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 20px }
+.palette-actions .text-button { font-size: 12px }
+@media(max-width: 650px) { #color-swatches { gap: 3px } }
 .swatch { --tone: #fff; padding: 0; width: 21px; height: 21px; border: 3px solid #fff; border-radius: 50%; background: var(--tone); box-shadow: inset 0 0 0 1px #00000012 }
 .swatch:not(:disabled):hover { background-color: var(--tone); outline: 1px solid #bcbeb6 }
 .swatch[aria-pressed="true"] { outline: 1.5px solid #6b6c61 }
