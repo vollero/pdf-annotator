@@ -9,6 +9,7 @@ import { PDFDocument } from 'pdf-lib'
 import { checkReadingControls } from './reading-controls.mjs'
 import { checkNoteAppearance } from './note-appearance.mjs'
 import { checkActionNotes } from './action-notes.mjs'
+import { checkAnnotationSearch } from './annotation-search.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -93,6 +94,7 @@ try {
   await page.locator('#redo').click();await count(6);await saved()
   await page.reload();await ready();await count(6)
   await checkActionNotes(page)
+  await checkAnnotationSearch(page)
   await page.locator('#next').click();await ready()
   assert.equal(await page.locator('#current').textContent(),'2')
   await page.locator('#filter').selectOption('current')
@@ -102,13 +104,16 @@ try {
 
   const original = await readFile(path.join(dir,'assets/reading-the-alps.pdf'))
   const fingerprint = bytes => createHash('sha256').update(bytes).digest('hex')
+  const search = page.getByRole('searchbox',{name:'Search annotations'})
+  await search.fill('page 99')
   const migration = await downloadAnnotations(page)
   const exportedMarks = JSON.parse(migration.buffer)
   assert.equal(exportedMarks.version,2)
   assert.equal(exportedMarks.annotations.find(m=>m.text.includes('Reviewed in Chromium')).done,true)
   assert.equal(migration.name,'Reading the Alps.margin-annotations.json')
   assert.equal(exportedMarks.documentSha256,fingerprint(original))
-  assert.equal(exportedMarks.annotations.length,6,'The current-page filter does not limit the export')
+  assert.equal(exportedMarks.annotations.length,6,'Search and page filters do not limit the export')
+  await search.fill('')
   await page.locator('.card .more').first().click()
   await page.getByRole('button',{name:'Delete',exact:true}).click()
   await count(5)
@@ -126,9 +131,11 @@ try {
   const data=await readFile(file)
   const exported=await PDFDocument.load(data)
   assert.equal(exported.getPage(0).node.Annots().size(),5)
+  await search.fill('no matching mark')
   await page.locator('#file').setInputFiles({name:'Reopened.pdf',mimeType:'application/pdf',buffer:data})
   await page.waitForFunction(()=>document.querySelector('#filename').textContent==='Reopened.pdf')
   await ready();await count(6)
+  assert.equal(await search.inputValue(),'')
   assert.equal(JSON.parse((await downloadAnnotations(page)).buffer).documentSha256,fingerprint(data),
     'A reopened annotated PDF is identified by its actual input bytes')
   const card=page.locator('.card').filter({hasText:'Reviewed in Chromium'})

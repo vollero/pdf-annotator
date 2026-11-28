@@ -229,6 +229,7 @@ async function load(file,initial=[],ticket=beginImport()) {
     $('import-annotations').disabled=false
     $('filter').value='all'
     $('action-filter').value='all'
+    $('annotation-search').value=''
     viewer.setDocument(pdf,marks)
     selectTool('select');refresh()
     return true
@@ -322,6 +323,17 @@ $('zoom-out').onclick=()=>viewer.changeZoom(-1)
 $('fit').onclick=()=>viewer.changeZoom(0)
 $('filter').onchange=cards
 $('action-filter').onchange=cards
+$('annotation-search').oninput=()=>{
+  cards()
+  $('cards').scrollTop = 0
+}
+$('annotation-search').onkeydown=event=>{
+  if (event.key === 'Escape' && event.target.value) {
+    event.preventDefault()
+    event.target.value = ''
+    cards()
+  }
+}
 function panel(name,visible) {
   $(name+'-panel').hidden=!visible
   $(name+'-toggle').setAttribute('aria-expanded',visible)

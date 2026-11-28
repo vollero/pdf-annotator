@@ -8,22 +8,44 @@ function el(tag,cls,text) {
   if(text) e.textContent=text
   return e
 }
+
+function searchAnnotations(marks, query) {
+  if (!query) return marks
+  const pagePrefix = /^page\s+(\d+)(?:\s+|$)/u.exec(query)
+  const pageNumber = pagePrefix ? Number(pagePrefix[1]) : null
+  const words = query.slice(pagePrefix?.[0].length ?? 0).match(/\S+/gu) ?? []
+  const barePage = /^\d+$/u.test(query) ? Number(query) : null
+  return marks.filter(mark => {
+    if (pageNumber !== null && mark.page !== pageNumber) return false
+    if (!words.length || mark.page === barePage) return true
+    const text = mark.text.normalize('NFC').toLowerCase()
+    return words.every(word => text.includes(word))
+  })
+}
+
 export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,setDone}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
   const onPages = marks.filter(m => !currentOnly || m.page === page)
-  const todo = onPages.filter(m => m.done === false).length
-  const done = onPages.filter(m => m.done === true).length
+  const query = document.getElementById('annotation-search').value.trim().normalize('NFC').toLowerCase()
+  const matches = searchAnnotations(onPages, query)
+  const todo = matches.filter(m => m.done === false).length
+  const done = matches.filter(m => m.done === true).length
   actionFilter.options[1].textContent = 'To do (' + todo + ')'
   actionFilter.options[2].textContent = 'Done (' + done + ')'
   const hasActions = marks.some(m => m.done !== undefined)
   if (!hasActions) actionFilter.value = 'all'
   document.getElementById('action-filter-wrap').hidden = !hasActions
   const status = actionFilter.value
-  const visible = onPages.filter(m => status === 'all' || m.done === (status === 'done')).sort((a,b)=>a.page-b.page)
+  const visible = matches.filter(m => status === 'all' || m.done === (status === 'done')).sort((a,b)=>a.page-b.page)
+  const summary = document.getElementById('search-summary')
+  const resultCount = query ? visible.length + (visible.length === 1 ? ' matching annotation' : ' matching annotations') : ''
+  if (summary.textContent !== resultCount) summary.textContent = resultCount
   const focused = document.activeElement
+  const focusedResultId = focused.closest('.card-body')?.dataset.id
   const focusIndex = focused.matches('.card-check') ? [...container.querySelectorAll('.card-check')].indexOf(focused) : -1
+  let focusedResult
   let previous
   for(const mark of visible) {
     if(mark.page!==previous) {
@@ -41,6 +63,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
     more.append(icon('more'))
     head.append(symbol,el('span','card-title',titles[mark.type]),more)
     const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''),mark.text)
+    body.dataset.id = mark.id
+    if (focusedResultId === mark.id) focusedResult = body
     body.title='Show on page '+mark.page
     body.onclick=()=>jump(mark)
     card.append(head,body)
@@ -75,12 +99,15 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
     }
     frag.append(card)
   }
-  if (!visible.length) {
+  if (!visible.length && query) {
+    frag.append(el('p','empty','Try another search or change the filters.'))
+  } else if (!visible.length) {
     const empty = status === 'all' ? (currentOnly ? 'No annotations on this page.' : 'Choose a tool and mark the page. Your annotations will appear here.')
       : (status === 'todo' ? 'No actions to do' : 'No completed actions') + (currentOnly ? ' on this page.' : '.')
     frag.append(el('p','empty',empty))
   }
   container.replaceChildren(frag)
+  if (focusedResult) focusedResult.focus({preventScroll:true})
   if (focusIndex >= 0) {
     const boxes = [...container.querySelectorAll('.card-check')]
     const next = boxes.find(box => box.dataset.id === focused.dataset.id) ?? boxes[Math.min(focusIndex, boxes.length - 1)]

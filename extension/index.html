@@ -49,6 +49,9 @@
     <aside id="annotations-panel" aria-labelledby="annotations-heading">
       <div class="panel-heading"><h2 id="annotations-heading">Annotations</h2><span class="count" id="annotation-count">0</span><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <div class="filters">
+      <label class="annotation-search"><span class="sr-only">Search annotations</span>
+        <input type="search" id="annotation-search" placeholder="Search annotations" aria-controls="cards" autocomplete="off">
+      </label>
       <div class="filter-wrap"><label for="filter" class="sr-only">Filter annotations by page</label>
         <select id="filter"><option value="all">All pages</option><option value="current">Current page</option></select><span data-icon="down"></span>
       </div>
@@ -56,6 +59,7 @@
         <select id="action-filter"><option value="all">All annotations</option><option value="todo">To do</option><option value="done">Done</option></select><span data-icon="down"></span>
       </div>
       </div>
+      <div id="search-summary" role="status"></div>
       <div id="cards"></div>
       <div class="annotation-files" role="group" aria-label="Annotation files">
         <button id="import-annotations" class="button" disabled>Import annotations</button>

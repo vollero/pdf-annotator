@@ -90,6 +90,10 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 .pdf-only :is(.topbar, .toolbar, #workspace > aside, .local-status, #shortcuts) { display: none }
 .filters { display: flex; gap: 8px; margin: 0 18px 13px; flex-wrap: wrap }
+.annotation-search { flex: 1 0 100%; min-width: 0 }
+.annotation-search input { width: 100%; min-height: 34px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; color: var(--ink); background: white }
+.annotation-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+#search-summary:not(:empty) { margin: 0 18px 6px; font-size: 13px; color: var(--ink) }
 .filter-wrap { position: relative; flex: 1 1 112px; min-width: 0 }
 .filter-wrap select { width: 100%; height: 32px; padding: 0 11px; appearance: none; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; background: #fff; cursor: pointer }
 .filter-wrap span { position: absolute; right: 9px; top: 9px; pointer-events: none }.filter-wrap .icon { width: 14px; height: 14px }

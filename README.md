@@ -31,19 +31,27 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Track actions with note checkboxes
+## Search annotations
 
-To try checkboxes and adjustable note text, [download the 0.3.0-rc.2 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.2/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.3 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.3/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin) to use annotation search, action checkboxes, and adjustable note text.
+
+In the **Annotations** panel, type in **Search annotations** to find words in notes and highlighted passages. Results update as you type. Click a result, or focus it and press **Enter**, to jump to its mark.
+
+- To find an unfinished correction, choose **To do** and type `Figure 2`. Both words must occur in the annotation. Capitalization and word order can vary.
+- To see annotations on a particular page, type `page 12`. Add words, such as `page 12 units`, to narrow the results. Typing just `12` also finds annotations that mention 12 elsewhere.
+- Press **Escape** in the search box to clear it. Your page and action filters stay selected. Exports include every mark in the document.
+
+## Track actions with note checkboxes
 
 1. Add a note, or choose **… → Edit note** on an existing one. Describe the action, for example “Correct the units in Figure 2.” Select **Track as action**, then **Save note**.
 2. In **Annotations**, tick the note’s **To do** checkbox when you finish. The label changes to **Done**. Untick it to reopen the action. You can also change **Done** inside the note editor.
-3. Use the **All annotations** menu to see only **To do** or **Done** actions. The counts follow the **All pages** or **Current page** selection. Choose **All annotations** to see ordinary notes, drawings and highlights again.
+3. Use the **All annotations** menu to see only **To do** or **Done** actions. The counts follow the search and the **All pages** or **Current page** selection. Choose **All annotations** to see ordinary notes, drawings and highlights again.
 
 **Undo** reverses a checkbox change. To keep the comment and remove its checkbox, edit the note and clear **Track as action**. Status is saved with the document. **Export annotations** carries it to another Margin installation, and **Export PDF** includes it in the comment text for readers outside Margin.
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.2/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.3/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.
