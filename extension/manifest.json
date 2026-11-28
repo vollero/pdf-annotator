@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Margin – PDF Annotator",
-  "version": "0.2.1.11",
-  "version_name": "0.3.0-rc.11",
+  "version": "0.2.1.12",
+  "version_name": "0.3.0-rc.12",
   "description": "Highlight, draw and leave notes on PDFs in a private, local workspace.",
   "minimum_chrome_version": "141",
   "permissions": ["activeTab", "storage"],

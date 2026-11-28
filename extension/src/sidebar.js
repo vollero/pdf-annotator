@@ -24,7 +24,7 @@ function searchAnnotations(marks, query, pagePrefix) {
   })
 }
 
-export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,recolor,remove,setDone,setStyle}) {
+export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,notePreview,recolor,remove,setDone,setStyle}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
@@ -101,6 +101,14 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,r
         change.prepend(icon('draw'))
         change.onclick=()=>{closeCardMenus();edit(mark)}
         menu.append(change)
+        const pin=el('button','',notePreview.pinnedId===mark.id ? 'Unpin preview' : 'Pin preview')
+        pin.prepend(icon('pin'))
+        pin.onclick=()=>{
+          closeCardMenus()
+          notePreview.togglePin(mark.id)
+          more.focus({preventScroll:true})
+        }
+        menu.append(pin)
       }
       if (isPageNote(mark)) {
         const toRegion = mark.type === 'note'

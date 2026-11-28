@@ -94,6 +94,7 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       const label = mark.type === 'region' ? 'Edit region note' : mark.type === 'comment' ? 'Edit comment' : 'Edit note'
       marker.setAttribute('aria-label',label + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))
       marker.setAttribute('aria-haspopup','dialog')
+      marker.setAttribute('aria-keyshortcuts','P')
     }
   }
   return group

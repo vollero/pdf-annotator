@@ -52,6 +52,13 @@
       <div id="scroller" tabindex="0" aria-label="PDF pages">
         <div id="sheets" data-tool="select" data-layout="single"></div>
       </div>
+      <div id="note-preview" role="group" aria-label="Note preview" hidden>
+        <div class="preview-bar">
+          <span id="preview-source"></span>
+          <button type="button" id="preview-pin" data-icon="pin"><span>Pin preview</span></button>
+        </div>
+        <div id="preview-text" role="tooltip"></div>
+      </div>
       <div id="selection-actions" role="group" aria-label="Selected passage" hidden>
         <button class="button primary" data-selection="comment" title="Comment on selection (C)">Comment</button>
         <div class="markup-tool">
@@ -167,7 +174,6 @@
       <div class="dialog-actions"><button id="reset-appearance" type="button" class="button">Restore defaults</button><button class="button primary">Done</button></div>
     </form>
   </dialog>
-  <div id="note-preview" role="tooltip" hidden></div>
   <dialog id="keys-dialog" aria-labelledby="keys-title">
     <div class="dialog-head"><h2 id="keys-title">Keyboard shortcuts</h2><button class="icon-button" data-close data-icon="close" aria-label="Close"></button></div>
     <dl id="key-list"></dl>

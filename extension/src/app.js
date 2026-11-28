@@ -39,7 +39,7 @@ function state(label,kind='saved') {
 }
 function cards() {
   renderCards({marks,page:viewer.page,currentOnly:$('filter').value==='current',selected,
-    jump:jumpTo,edit:openNote,convert:convertNote,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
+    jump:jumpTo,edit:openNote,convert:convertNote,notePreview,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
     setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m)),
     setStyle:(mark, style)=>change(marks.map(m=>m.id===mark.id ? withMarkupStyle(m,style) : m))})
 }
@@ -70,11 +70,11 @@ async function recolor(mark) {
   if (color!==current.color.toLowerCase()) change(marks.map(m=>m===current ? {...m,color} : m))
 }
 const viewer=new Viewer({onPage:cards,onError:toast})
-const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
+const notePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)
 const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor,getStyle:()=>$('tool-style').value,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
-  note:openNote,hideNotePreview,notify:toast,
+  note:openNote,hideNotePreview:notePreview.hideHover,notify:toast,
   setNoteBox:(id,point,size)=>{
     selected=id
     change(marks.map(m=>{
@@ -87,7 +87,7 @@ const cancelGesture=bindGestures({
   }
 })
 function refresh() {
-  hideNotePreview()
+  notePreview.refresh()
   $('undo').disabled=!undo.length; $('redo').disabled=!redo.length
   viewer.setMarks(marks)
   cards()
@@ -149,7 +149,7 @@ channel.onmessage=async event=>{
 }
 
 function selectTool(value) {
-  hideNotePreview()
+  notePreview.hideHover()
   tool=value;cancelGesture();window.getSelection().removeAllRanges()
   $('sheets').dataset.tool=value
   document.querySelectorAll('button[data-tool]').forEach(button=>{
@@ -183,7 +183,7 @@ async function jumpTo(mark,part=mark) {
 }
 function openNote(mark) {
   if(!mark || !session) return
-  hideNotePreview()
+  notePreview.hideHover()
   const existing=marks.some(m=>m.id===mark.id)
   noteDraft={mark,session,existing}
   const comment = mark.type === 'comment'
@@ -268,6 +268,7 @@ async function load(file,initial=[],ticket=beginImport()) {
     if(ticket!==opening) {await pdf.destroy();return}
     signal.throwIfAborted()
     saved=readDraft(saved,pdf.numPages)
+    notePreview.clear()
     selected=null;undo=[];redo=[];marks=saved
     session={file,base,saved,remembered,pages:pdf.numPages}
     $('filename').textContent=file.name
@@ -408,7 +409,7 @@ function savePreference(key, value) {
 }
 const appearanceControls = [...$('appearance-form').querySelectorAll('select')]
 function applyAppearance() {
-  hideNotePreview()
+  notePreview.hideHover()
   const root = document.documentElement
   root.dataset.noteFont = $('note-font').value
   root.style.setProperty('--note-size', $('note-size').value + 'px')
@@ -443,7 +444,7 @@ window.addEventListener('storage', event => {
 })
 for (const button of document.querySelectorAll('[data-note-appearance]')) {
   button.onclick = () => {
-    hideNotePreview()
+    notePreview.hideHover()
     const note = marks.find(mark => isNote(mark) && mark.id === selected) ?? marks.find(isNote)
     $('appearance-example').textContent = ($('note-dialog').open ? $('note-text').value : note?.text) || 'Your note will appear at this size.'
     $('appearance-dialog').showModal()
@@ -475,7 +476,7 @@ $('page-layout').onchange = () => {
 }
 
 const mod=navigator.platform.includes('Mac')?'⌘':'Ctrl'
-for(const [action,key] of [['Select','V'],['Comment on selected text','C'],['Highlight','H'],['Draw','D'],['Note','N'],['Region','R'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
+for(const [action,key] of [['Select','V'],['Comment on selected text','C'],['Highlight','H'],['Draw','D'],['Note','N'],['Region','R'],['Pin / unpin focused note','P'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
   const dt=document.createElement('dt'), dd=document.createElement('dd')
   dt.textContent=action;dd.textContent=key;$('key-list').append(dt,dd)
 }

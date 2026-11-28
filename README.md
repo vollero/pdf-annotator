@@ -31,9 +31,17 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to edit it or delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Attach a note to a region
+## Pin a note preview
 
-[Download the 0.3.0-rc.11 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.11/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.12 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.12/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. Hover over a compact note marker or a region’s border in **Select** mode, then click **Pin preview**. You can also open a note’s **…** menu in **Annotations** and choose **Pin preview**. The menu works for expanded notes and passage comments, too.
+2. The preview stays in the upper-right corner of the PDF viewer as you scroll, change pages, zoom, or hide the workspace. Its heading identifies the source page. Edits to the note and changes to its action checkbox appear in the preview.
+3. Click **Unpin preview** or press **Esc** while reading to close it. With a keyboard, focus a note marker and press **P** to pin or unpin it. Pinning a different note replaces the current preview.
+
+The pin lasts for the current PDF in this tab. Reloading, opening another PDF, or deleting the pinned note clears it.
+
+## Attach a note to a region
 
 1. Choose **Region** (or press **R**) and drag from one corner of a diagram, table, or scanned passage to the opposite corner. You can also click once to start with a small rectangle.
 2. Write your note and choose **Save note**. Select **Track as action** if you want a checkbox for the task. The note appears under **Annotations** as a **Region note**.
@@ -120,7 +128,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.11/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.12/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.
