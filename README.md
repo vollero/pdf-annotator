@@ -29,17 +29,25 @@ On your first launch from a new tab, Margin opens *Reading the Alps*. It already
 
 Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exceeds the image limit (32 megapixels), open a lower-resolution copy.
 
-Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to delete it. **Undo** and **Redo** apply to the current editing session.
+Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to edit it or delete it. **Undo** and **Redo** apply to the current editing session.
+
+## Change the color of an existing annotation
+
+[Download the 0.3.0-rc.7 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.7/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. In **Annotations**, find the highlight, drawing, note, or passage comment you want to recolor. Open its **…** menu and choose **Change color**.
+2. Pick one of your **Saved colors**, click the color well, or type a six-digit **Hex color** such as `#176B87`. Click **Apply color**. For a comment spanning several pages, this updates the entire marked passage.
+3. Click **Undo** to restore the previous color. **Export PDF** and **Export annotations** both include the applied color.
+
+The toolbar color still controls your next annotation. You can use a one-off color on a card without adding a swatch to your palette.
 
 ## Customize your color palette
-
-[Download the 0.3.0-rc.6 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.6/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
 
 1. Click **Edit palette**, the palette icon next to the colored circles in the annotation toolbar.
 2. Under **Saved colors**, choose **Add a color…**. Give it a name such as *Needs review*. Click the color well to use the browser’s picker, or enter a six-digit **Hex color** such as `#176B87`.
 3. Click **Save and use**. The color moves to the first toolbar position and becomes active for your next highlight, underline, drawing, note, or passage comment. Click another swatch to switch. The toolbar shows five colors at a time. To use another saved color, pick it under **Saved colors** and click **Save and use**.
 
-To edit or remove a color, choose it under **Saved colors**. Change its name or value and click **Save and use**, or click **Remove color**. **Restore defaults** brings back the original five swatches. Each annotation keeps the color it had when you made it, including in an exported PDF or annotation file.
+To edit or remove a color, choose it under **Saved colors**. Change its name or value and click **Save and use**, or click **Remove color**. **Restore defaults** brings back the original five swatches. Existing marks keep their individual colors when you edit the palette.
 
 Margin remembers your palette in this browser profile. Recipients see the colors you used even if they have a different palette. In an Incognito tab, palette changes last until you reload or close that tab.
 
@@ -81,7 +89,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.6/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.7/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.

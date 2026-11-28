@@ -3,11 +3,33 @@ const defaults = [
 ]
 const hexColor = /^#[0-9a-f]{6}$/
 
+function fillOptions(select, colors, customLabel) {
+  select.replaceChildren()
+  for (const [label,value] of colors) select.add(new Option(label===value ? value : label+' ('+value+')',value))
+  select.add(new Option(customLabel,''))
+}
+
+function bindColorInputs(form, onInput) {
+  const picker = form.querySelector('input[type="color"]'), hex = form.querySelector('input[pattern]')
+  const value = () => '#' + hex.value.replace(/^#/,'').toLowerCase()
+  picker.oninput = picker.onchange = () => {
+    hex.value = picker.value
+    onInput(picker.value)
+  }
+  hex.oninput = () => {
+    const color = value()
+    if (hexColor.test(color)) picker.value = color
+    onInput(color)
+  }
+  return {value, set:color=>{ picker.value = hex.value = color.toLowerCase() }}
+}
+
 export function bindPalette({privateWindow, preference, savePreference, notify}) {
   const byId = id => document.getElementById(id)
   const swatches = byId('color-swatches'), dialog = byId('palette-dialog'), form = byId('palette-form')
-  const entries = byId('palette-entry'), name = byId('palette-name'), picker = byId('palette-picker')
-  const hex = byId('palette-hex'), error = byId('palette-error'), remove = byId('palette-remove')
+  const entries = byId('palette-entry'), name = byId('palette-name')
+  const error = byId('palette-error'), remove = byId('palette-remove')
+  const fields = bindColorInputs(form,()=>{ error.hidden = true })
   let colors = defaults, editingColors, active, original, memoryOnly = privateWindow
 
   function readColors() {
@@ -47,7 +69,7 @@ export function bindPalette({privateWindow, preference, savePreference, notify})
   function edit() {
     original = editingColors.find(([,value])=>value===entries.value)
     name.value = original?.[0] ?? ''
-    picker.value = hex.value = original?.[1] ?? '#176b87'
+    fields.set(original?.[1] ?? '#176b87')
     remove.disabled = !original || editingColors.length===1
     error.hidden = true
   }
@@ -57,22 +79,15 @@ export function bindPalette({privateWindow, preference, savePreference, notify})
   }
   byId('edit-palette').onclick = () => {
     editingColors = colors
-    entries.replaceChildren(...colors.map(([label,value])=>new Option(label===value ? value : label+' ('+value+')',value)),
-      new Option('Add a color…',''))
+    fillOptions(entries,colors,'Add a color…')
     entries.value = active
     edit()
     dialog.showModal()
   }
   entries.onchange = edit
-  picker.oninput = picker.onchange = () => { hex.value = picker.value; error.hidden = true }
-  hex.oninput = () => {
-    const value = '#' + hex.value.trim().replace(/^#/,'').toLowerCase()
-    if (hexColor.test(value)) picker.value = value
-    error.hidden = true
-  }
 
   async function commit(action) {
-    const value = '#' + hex.value.replace(/^#/,'').toLowerCase(), label = name.value.trim() || value
+    const value = fields.value(), label = name.value.trim() || value
     const entry = original
     const apply = () => {
       if (!dialog.open) return
@@ -117,5 +132,26 @@ export function bindPalette({privateWindow, preference, savePreference, notify})
     if (!memoryOnly && (!event.key || event.key==='margin.palette')) load()
   })
   load()
-  return () => active
+
+  const markDialog = byId('mark-color-dialog'), savedColors = byId('mark-color-entry')
+  const selectMatchingColor = value => {
+    savedColors.value = value
+    if (savedColors.selectedIndex < 0) savedColors.value = ''
+  }
+  const markFields = bindColorInputs(markDialog,selectMatchingColor)
+  savedColors.onchange = () => {
+    if (savedColors.value) markFields.set(savedColors.value)
+    else byId('mark-color-hex').select()
+  }
+  function chooseAnnotationColor(current) {
+    fillOptions(savedColors,colors,'Custom color')
+    markFields.set(current)
+    selectMatchingColor(markFields.value())
+    markDialog.returnValue = ''
+    return new Promise(resolve=>{
+      markDialog.addEventListener('close',()=>resolve(markDialog.returnValue==='apply' ? markFields.value() : null),{once:true})
+      markDialog.showModal()
+    })
+  }
+  return {getColor:()=>active,chooseAnnotationColor}
 }

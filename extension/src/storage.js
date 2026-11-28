@@ -65,11 +65,13 @@ export async function writeChanges(id, before, after) {
       for (const mark of removed) merged.delete(mark.id)
       for (const mark of changed) {
         const prior = old.get(mark.id), latest = merged.get(mark.id)
-        // Text, checkbox and style edits can land in different tabs before either receives the broadcast.
-        if (latest?.type === mark.type && prior?.type === mark.type && mark.rects === prior.rects && mark.points === prior.points &&
-            mark.point === prior.point && mark.passages === prior.passages && mark.page === prior.page && mark.color === prior.color) {
+        // Merge field edits independently when tabs change the same annotation before receiving a broadcast.
+        if (prior?.type === mark.type && mark.rects === prior.rects && mark.points === prior.points &&
+            mark.point === prior.point && mark.passages === prior.passages && mark.page === prior.page) {
+          if (latest?.type !== mark.type) continue
           const updated = {...latest}
           if (prior.text !== mark.text) updated.text = mark.text
+          if (prior.color !== mark.color) updated.color = mark.color
           if (prior.done !== mark.done) {
             if (mark.done === undefined) delete updated.done
             else updated.done = mark.done

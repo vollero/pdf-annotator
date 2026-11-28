@@ -13,6 +13,7 @@ import { checkAnnotationSearch } from './annotation-search.mjs'
 import { checkPassageComments } from './passage-comments.mjs'
 import { checkTextMarkup } from './text-markup.mjs'
 import { checkPalette } from './palette.mjs'
+import { checkRecolor } from './recolor.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -166,6 +167,7 @@ try {
   await checkPassageComments(page,downloadAnnotations,importAnnotations)
   await checkTextMarkup(page,downloadAnnotations,importAnnotations)
   await checkPalette(page,downloadAnnotations,importAnnotations)
+  await checkRecolor(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])

@@ -24,7 +24,7 @@ function beginImport() {
 let opening=0, editNumber=0, writes=Promise.resolve(), noteDraft, toastTimer, exporting=false
 const privateWindow = chrome.extension.inIncognitoContext
 const privateStatus = 'Private session · export to keep'
-const getColor = bindPalette({privateWindow, preference, savePreference, notify:toast})
+const {getColor, chooseAnnotationColor} = bindPalette({privateWindow, preference, savePreference, notify:toast})
 const channel=new BroadcastChannel('margin-draft-changes')
 
 function toast(message) {
@@ -39,9 +39,17 @@ function state(label,kind='saved') {
 }
 function cards() {
   renderCards({marks,page:viewer.page,currentOnly:$('filter').value==='current',selected,
-    jump:jumpTo,edit:openNote,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
+    jump:jumpTo,edit:openNote,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
     setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m)),
     setStyle:(mark, style)=>change(marks.map(m=>m.id===mark.id ? withMarkupStyle(m,style) : m))})
+}
+async function recolor(mark) {
+  const doc = session
+  const color = await chooseAnnotationColor(mark.color)
+  if (!color || session!==doc || color===mark.color.toLowerCase()) return
+  const current = marks.find(m=>m.id===mark.id)
+  if (current?.type!==mark.type) { toast('This annotation is no longer in the document.'); return }
+  if (color!==current.color.toLowerCase()) change(marks.map(m=>m===current ? {...m,color} : m))
 }
 const viewer=new Viewer({onPage:cards,onError:toast})
 const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => marks.find(mark => mark.id === id), openNote)

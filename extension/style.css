@@ -50,12 +50,11 @@ button,.thumbnail .sheet { transition: background-color .12s, border-color .12s 
 .palette, #color-swatches { display: flex; align-items: center; gap: 7px }
 .palette { flex: none }
 #edit-palette { color: #656961 }
-#palette-form > label { display: block; margin: 14px 0 5px }
-#palette-form select, #palette-form input { width: 100%; min-width: 0; border: 1px solid #c5c7be; border-radius: 5px; padding: 8px; font: inherit; color: inherit; background: white }
+.color-form > label { display: block; margin: 14px 0 5px }
+.color-form select, .color-form input { width: 100%; min-width: 0; border: 1px solid #c5c7be; border-radius: 5px; padding: 8px; font: inherit; color: inherit; background: white }
 .palette-inputs { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 8px }
-#palette-picker { height: 100%; cursor: pointer }
-#palette-form #palette-picker { padding: 2px }
-#palette-form #palette-hex { font-family: ui-monospace, monospace }
+.palette-inputs input[type="color"] { height: 100%; cursor: pointer; padding: 2px }
+.palette-inputs input[type="text"] { font-family: ui-monospace, monospace }
 #palette-error { color: #8b341d }
 .palette-actions { display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 20px }
 .palette-actions .text-button { font-size: 12px }

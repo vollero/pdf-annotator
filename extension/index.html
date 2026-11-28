@@ -109,7 +109,7 @@
     </div>
   </footer>
   <dialog id="palette-dialog" aria-labelledby="palette-title">
-    <form id="palette-form">
+    <form id="palette-form" class="color-form">
       <div class="dialog-head"><h2 id="palette-title">Annotation palette</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
       <label for="palette-entry">Saved colors</label>
       <select id="palette-entry" autofocus></select>
@@ -126,6 +126,19 @@
         <button id="palette-reset" class="text-button" type="button">Restore defaults</button>
         <button class="button primary" type="submit">Save and use</button>
       </div>
+    </form>
+  </dialog>
+  <dialog id="mark-color-dialog" aria-labelledby="mark-color-title">
+    <form class="color-form" method="dialog">
+      <div class="dialog-head"><h2 id="mark-color-title">Change annotation color</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
+      <label for="mark-color-entry">Saved colors</label>
+      <select id="mark-color-entry" autofocus></select>
+      <label for="mark-color-hex">Hex color</label>
+      <div class="palette-inputs">
+        <input type="color" aria-label="Choose a color">
+        <input id="mark-color-hex" type="text" required pattern="#?[0-9a-fA-F]{6}" title="Enter six hexadecimal digits, such as #176B87" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" value="apply">Apply color</button></div>
     </form>
   </dialog>
   <dialog id="note-dialog" aria-labelledby="note-title">

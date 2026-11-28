@@ -34,7 +34,7 @@ The file is UTF-8 JSON. This complete example adds one note to the *Reading the 
 
 The fingerprint uses 64 lowercase hexadecimal characters. It identifies the PDF bytes. It does not authenticate the author of an annotation file.
 
-Every annotation carries a unique string ID, a one-based page number, a six-digit hexadecimal color beginning with `#`, and a text string. The color is the exact value used on the mark. Custom colors use this same field in every format version. Palette names and saved swatches are browser preferences. Coordinates are fractions of the displayed page measured from its top-left corner. Each coordinate or dimension is between 0 and 1.
+Every annotation carries a unique string ID, a one-based page number, a six-digit hexadecimal color beginning with `#`, and a text string. The color is the exact value used on the mark. Recoloring an existing mark updates its `color` value and keeps its ID, so importing the file updates the corresponding mark on the other computer. All format versions use this same field. Palette names and saved swatches are browser preferences. Coordinates are fractions of the displayed page measured from its top-left corner. Each coordinate or dimension is between 0 and 1.
 
 | Type | Geometry field | Value |
 | --- | --- | --- |

@@ -24,7 +24,7 @@ function searchAnnotations(marks, query, pagePrefix) {
   })
 }
 
-export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,setDone,setStyle}) {
+export function renderCards({marks,page,currentOnly,selected,jump,edit,recolor,remove,setDone,setStyle}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
@@ -92,6 +92,10 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
       if(open) return
       more.setAttribute('aria-expanded','true')
       const menu=el('div','card-menu')
+      const focusActions = () => {
+        const body = [...container.querySelectorAll('.card-body')].find(b=>b.dataset.id===mark.id)
+        body?.closest('.card')?.querySelector('.more')?.focus({preventScroll:true})
+      }
       if(mark.type==='note' || mark.type==='comment') {
         const change=el('button','',mark.type==='comment' ? 'Edit comment' : 'Edit note')
         change.prepend(icon('draw'))
@@ -104,12 +108,21 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,remove,se
         populateMarkupPicker(picker,mark.style)
         picker.onchange = () => {
           setStyle(mark,picker.value)
-          const body = [...container.querySelectorAll('.card-body')].find(b=>b.dataset.id===mark.id)
-          body?.closest('.card')?.querySelector('.more')?.focus()
+          focusActions()
         }
         label.append(picker)
         menu.append(label)
       }
+      const color=el('button','','Change color')
+      color.prepend(icon('palette'))
+      color.setAttribute('aria-haspopup','dialog')
+      color.onclick=async()=>{
+        closeCardMenus()
+        more.focus({preventScroll:true})
+        await recolor(mark)
+        focusActions()
+      }
+      menu.append(color)
       const del=el('button','','Delete')
       del.prepend(icon('trash'))
       del.onclick=()=>{remove(mark);document.querySelector('[data-tool].active')?.focus()}
