@@ -44,7 +44,17 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 3. Save the note. You can read the formatting in **Annotations**, a page margin, a pinned preview, or an expanded note box. Reopen the note to edit its Markdown source. Clear **Format as Markdown** to display the punctuation literally. Quoted PDF text always reads as it appears in the document.
 
-**Export PDF** gives other PDF readers readable comment text and draws styled text in expanded note boxes. Reopening the PDF in Margin restores the editable Markdown. **Export annotations** carries the source and formatting choice to another copy of the same PDF in Margin **0.3.0 or later**. HTML, links, and image syntax display as text.
+**Export PDF** gives other PDF readers readable comment text and draws styled text in expanded note boxes. Reopening the PDF in Margin restores the editable Markdown. **Export annotations** carries the source and formatting choice to another copy of the same PDF in Margin **0.3.0 or later**. HTML and image syntax display as text.
+
+### Open a web link from a note
+
+Clickable links are available in **0.4.0-rc.2**. The standard download installs stable **0.3.0**, which displays link syntax as text. To try links, install or update using the candidate ZIP. [Download 0.4.0-rc.2](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.2/margin-pdf-annotator.zip)
+
+1. Open a note, select **Format as Markdown**, and type `Check the [units table](https://example.org/units).` To show the address itself, write `<https://example.org/units>`. Use a full address beginning with `https://` or `http://`.
+2. Open **Preview formatting** and click the underlined link, or focus it with **Tab** and press **Enter**. The website opens in a new tab. Your PDF and any unsaved note stay open in Margin.
+3. After saving, you can follow the link from **Annotations**, a margin note, or a note preview. In an expanded box on the PDF, use the **Select** tool. Click nearby note text to jump to the annotation or edit the note as usual.
+
+**Export PDF** includes the label and copyable address in the PDF comment and expanded note box. Reopen that PDF in the candidate to follow the link again. **Export annotations** preserves the original Markdown for migration. Plain-text notes, code samples, and quoted PDF passages keep their literal spelling.
 
 ### Add a multi-line code sample
 
@@ -65,7 +75,7 @@ Open **Preview formatting** to see the indented sample in monospace. Spaces, tab
 
 ### Write an equation in a note
 
-Equation rendering is available in **0.4.0-rc.1**. The stable download at the top installs **0.3.0**. To try equations, download the candidate ZIP and follow the same installation or update steps. [Download the equation candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.1/margin-pdf-annotator.zip)
+Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.2/margin-pdf-annotator.zip)
 
 1. Open a note and select **Format as Markdown**. Enclose an inline formula in single dollar signs, such as `$E=mc^2$`. For an equation on its own line, use a pair of dollar signs at each end.
 2. Paste the example below and open **Preview formatting**. The first formula appears in the sentence. The fraction appears on its own line.

@@ -15,10 +15,26 @@ test('note text and styled runs share list order, emphasis, escapes and code lit
 })
 
 test('literal markup and long imported notes keep their source',()=>{
-  const text = 'Read <b>this</b> [example](https://example.org) and ![figure](figure.png).'
+  const text = 'Read <b>this</b> [local](./example) and ![figure](figure.png).'
   assert.equal(readableNoteText({text,textFormat:'markdown'}),text)
   const long = '**note**'.repeat(2000)
   assert.equal(readableNoteText({text:long,textFormat:'markdown'}),long)
+})
+
+test('web destinations are readable in PDF comments, expanded boxes and search',()=>{
+  const read = text=>readableNoteText({text,textFormat:'markdown'})
+  const url = 'https://example.org/docs?q=units&lang=en#mm'
+  const note = {text:'[**Units**]('+url+') or <http://example.org>.',textFormat:'markdown'}
+  assert.equal(read(note.text),'Units ('+url+') or http://example.org.')
+  const runs = noteTextRuns(note)
+  assert.equal(runs.map(run=>run.text).join(''),read(note.text))
+  assert.deepEqual(runs[0],{text:'Units',strong:true})
+  assert.equal(read('[]('+url+')'),url)
+  assert.equal(read('[docs][ref]\n\n[ref]: '+url).trim(),'docs ('+url+')')
+  assert.equal(read('`[Units]('+url+')`'),'[Units]('+url+')')
+  for (const href of ['relative','#page','//example.org','file:///paper.pdf','mailto:me@example.org','data:text/plain,hello','ftp://example.org','https:///broken','https://bad:port']) {
+    assert.equal(read('[text]('+href+')'),'[text]('+href+')')
+  }
 })
 
 test('equations preserve TeX in PDF text, including Markdown punctuation and display boundaries',()=>{

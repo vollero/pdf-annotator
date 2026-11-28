@@ -39,7 +39,7 @@ export function bindNotePreview(stack, preview, findNote, edit) {
       renderNoteText(body,note,noteStatus(note))
       displayed = note
     }
-    body.setAttribute('role',pinned ? 'note' : 'tooltip')
+    body.setAttribute('role',pinned || body.querySelector('a') ? 'note' : 'tooltip')
     button.querySelector('span').textContent = pinned ? 'Unpin preview' : 'Pin preview'
     preview.setAttribute('aria-label',pinned ? 'Pinned note preview' : 'Note preview')
     preview.style.setProperty('--tone',note.color)
@@ -104,6 +104,7 @@ export function bindNotePreview(stack, preview, findNote, edit) {
   preview.addEventListener('focusout',leave)
   button.onclick = () => togglePin(pinnedId ?? marker?.dataset.id)
   stack.addEventListener('keydown',event => {
+    if (event.target.closest('a')) return
     const target = event.target.closest('.note-marker')
     if (!target) return
     if (event.key.toLowerCase()==='p' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.repeat) {

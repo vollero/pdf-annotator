@@ -1,5 +1,6 @@
 import { icon } from './icons.js'
 import { readableNoteText, renderNoteText } from './note-format.js'
+import { wrapNoteAction } from './note-action.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
 import { isNote, isPageNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
@@ -50,7 +51,9 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
   const resultCount = query ? visible.length + (visible.length === 1 ? ' matching annotation' : ' matching annotations') : ''
   if (summary.textContent !== resultCount) summary.textContent = resultCount
   const focused = document.activeElement
-  const focusedResultId = focused.closest('.card-body')?.dataset.id
+  const focusedBody = focused.closest('.card-body')
+  const focusedResultId = focusedBody?.dataset.id
+  const focusedLink = focusedBody ? [...focusedBody.querySelectorAll('a')].indexOf(focused) : -1
   const focusIndex = focused.matches('.card-check') ? [...container.querySelectorAll('.card-check')].indexOf(focused) : -1
   let focusedResult
   let previous
@@ -70,17 +73,19 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     more.setAttribute('aria-expanded','false')
     more.append(icon('more'))
     head.append(symbol,el('span','card-title',title),more)
-    const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''))
-    renderNoteText(body,mark)
-    if (mark.type === 'comment') body.prepend(el('span','card-quote',quotedText(mark)))
-    if (body.querySelector('math')) {
+    const content = document.createDocumentFragment()
+    renderNoteText(content,mark)
+    if (mark.type === 'comment') content.prepend(el('span','card-quote',quotedText(mark)))
+    const label = 'Show on page '+part.page
+    const {element:body,button} = wrapNoteAction(content,label,()=>jump(mark,part))
+    body.className = 'card-body'+(mark.type==='highlight'?' quoted':'')
+    if (body === button && body.querySelector('math')) {
       const quote = mark.type === 'comment' ? quotedText(mark)+'\n' : ''
       body.setAttribute('aria-label',quote+readableNoteText(mark))
     }
     body.dataset.id = mark.id
-    if (focusedResultId === mark.id) focusedResult = body
-    body.title='Show on page '+part.page
-    body.onclick=()=>jump(mark,part)
+    if (focusedResultId === mark.id) focusedResult = body.querySelectorAll('a')[focusedLink] ?? button
+    button.title=label
     card.append(head,body)
     if (mark.done !== undefined) {
       const label = el('label','check-label')

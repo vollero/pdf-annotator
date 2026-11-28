@@ -269,8 +269,9 @@ $('note-dialog').onclose=()=>{
   if (draft?.marginSheet && draft.session === session) {
     const row = draft.marginSheet.row
     const matching = selector => [...row.querySelectorAll(selector)].find(el => el.dataset.id === draft.mark.id)
-    const target = matching('.margin-note') ?? matching('.note-marker') ?? $('scroller')
-    target.focus()
+    const target = matching('.margin-note') ?? matching('.note-marker')
+    const action = target?.querySelector('.note-action,.note-edit-target') ?? target ?? $('scroller')
+    action.focus()
   }
 }
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close())
@@ -487,7 +488,7 @@ for (const button of document.querySelectorAll('[data-note-appearance]')) {
     notePreview.hideHover()
     const note = marks.find(mark => isNote(mark) && mark.id === selected) ?? marks.find(isNote)
     const sample = $('note-dialog').open ? draftContent() : note
-    renderNoteText($('appearance-example'),sample?.text ? sample : {text:'Your note will appear at this size.'})
+    renderNoteText($('appearance-example'),sample?.text ? sample : {text:'Your note will appear at this size.'},'',false)
     $('appearance-dialog').showModal()
   }
 }

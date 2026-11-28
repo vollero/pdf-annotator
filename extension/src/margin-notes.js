@@ -1,5 +1,6 @@
 import { noteStatus } from './mark-data.js'
 import { readableNoteText, renderNoteText } from './note-format.js'
+import { wrapNoteAction } from './note-action.js'
 
 export function indexMarginNotes(marks) {
   const pages = new Map()
@@ -19,7 +20,7 @@ export function indexMarginNotes(marks) {
 function positionCards(rail, entries) {
   const gap = 6
   const height = rail.clientHeight
-  const heights = entries.map(({button}) => button.offsetHeight)
+  const heights = entries.map(({element}) => element.offsetHeight)
   const tops = []
   let bottom = 0
   for (let i = 0; i < entries.length; i++) {
@@ -29,7 +30,7 @@ function positionCards(rail, entries) {
   bottom = Math.max(height, heights.reduce((total,h) => total + h, 0) + gap * (entries.length - 1))
   for (let i = entries.length - 1; i >= 0; i--) {
     const top = Math.min(tops[i], bottom - heights[i])
-    entries[i].button.style.top = top + 'px'
+    entries[i].element.style.top = top + 'px'
     bottom = top - gap
   }
 }
@@ -56,29 +57,27 @@ export function showMargins(sheet, sides, edit) {
     rail.setAttribute('role','group')
     rail.setAttribute('aria-label',(side === 'left' ? 'Left' : 'Right') + ' margin on page ' + sheet.number)
     const entries = notes.slice().sort((a,b) => a.y - b.y).map(({mark,y}) => {
-      const button = document.createElement('button')
-      button.type = 'button'
-      button.className = 'margin-note'
-      button.dataset.id = mark.id
-      button.style.setProperty('--tone',mark.color)
-      button.setAttribute('aria-haspopup','dialog')
-      button.title = 'Edit margin note'
       const content = document.createElement('span')
       const status = noteStatus(mark)
       renderNoteText(content,mark,status)
-      if (content.querySelector('math')) {
+      const label = 'Edit margin note'
+      const {element,button} = wrapNoteAction(content,label,()=>edit(mark,sheet))
+      element.className = 'margin-note'
+      element.dataset.id = mark.id
+      element.style.setProperty('--tone',mark.color)
+      button.setAttribute('aria-haspopup','dialog')
+      button.title = label
+      if (element === button && content.querySelector('math')) {
         button.setAttribute('aria-label',(status ? status+' · ' : '')+readableNoteText(mark))
       }
-      button.append(content)
-      button.onclick = () => edit(mark, sheet)
-      rail.append(button)
-      return {button,y}
+      rail.append(element)
+      return {element,y}
     })
     sheet.row.append(rail)
     positionCards(rail, entries)
     const observer = new ResizeObserver(() => positionCards(rail, entries))
     observer.observe(rail)
-    for (const {button} of entries) observer.observe(button)
+    for (const {element} of entries) observer.observe(element)
     sheet.rails.push({rail,observer})
   }
 }

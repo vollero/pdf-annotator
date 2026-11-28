@@ -103,4 +103,6 @@ Inline and displayed equations also use version 8. For example, a note containin
 
 Selecting **Format as Markdown** on any note makes the export version 8. Importing a matching ID updates its source and format together. Omitting `textFormat` restores plain text. When all notes use plain text, Margin exports the earliest version their other features require.
 
+Web links also use version 8. A note such as `[units table](https://example.org/units)` travels in the `text` field with its original label and address. Import it into **0.4.0-rc.2 or later** to follow the link. Earlier versions that support Markdown display the link source and preserve it on export. [Web link example](https://github.com/vollero/pdf-annotator/blob/v0.4.0-rc.2/README.md#open-a-web-link-from-a-note)
+
 All eight versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

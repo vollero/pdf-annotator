@@ -16,7 +16,7 @@ Regression tests inspect all registered objects in a re-exported PDF, including 
 
 The npm advisory check covers the locked npm package versions. Some decoders and font resources arrive inside upstream distributions and have no independent npm package entry. Margin bundles PDF.js 5.5.207. Mozilla's 2026 PDF.js scripting advisory lists affected versions starting at 5.6.83. Margin loads the rendering API, has no PDF scripting manager, and disables evaluation of generated code. [Mozilla advisory](https://github.com/mozilla/pdf.js/security/advisories/GHSA-hq66-cqwq-w95j)
 
-The editor renders note text as text, constrains annotation colors and coordinates, and loads scripts and workers from the extension. The content security policy blocks frames, embedded objects, external images, and form submissions. Network access remains available for the specific PDF the user opens from the toolbar.
+The editor displays raw HTML in note text literally, constrains annotation colors and coordinates, and loads scripts and workers from the extension. The content security policy blocks frames, embedded objects, external images, and form submissions. The toolbar can fetch the specific PDF the user opens. Markdown notes can link to absolute HTTP and HTTPS addresses. Following a link opens the destination in a separate tab with no opener or referrer.
 
 ## Existing files and local drafts
 

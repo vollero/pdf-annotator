@@ -18,8 +18,13 @@ function noteTokens(mark) {
   return tokens
 }
 
+function isWebAddress(href) {
+  return /^https?:\/\/[^/\\?#\s]/iu.test(href) && !/[\s\\\u0000-\u001f\u007f]/u.test(href) && URL.canParse(href)
+}
+
 // Both the PDF worker and the editor read the same tokens. Raw HTML stays text.
-function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) {
+function writeTokens(tokens, parent, output, depth = 0, indent = '', style = {}) {
+  const {write} = output
   function text(value) {
     if (value) { parent?.append(value); write?.(value,style) }
   }
@@ -35,7 +40,7 @@ function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) 
       case 'paragraph':
       case 'text':
         if (token.tokens) {
-          writeTokens(token.tokens,parent,write,depth+1,indent,style)
+          writeTokens(token.tokens,parent,output,depth+1,indent,style)
           if (token.raw.endsWith('\n') && !token.text.endsWith('\n')) text('\n')
         } else text(token.text)
         break
@@ -45,9 +50,31 @@ function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) 
         if (parent) appendEquation(parent,token)
         write?.(token.raw,style)
         break
+      case 'link': {
+        if (!isWebAddress(token.href)) { text(token.raw); break }
+        const link = output.links ? child('a') : null
+        if (link) {
+          link.href = token.href
+          link.target = '_blank'
+          link.rel = 'noopener noreferrer'
+          link.className = 'note-link'
+        }
+        const label = link ?? parent
+        if (token.text.trim()) {
+          writeTokens(token.tokens,label,output,depth+1,indent,style)
+          if (token.text !== token.href) write?.(' ('+token.href+')',style)
+        } else {
+          label?.append(token.href)
+          write?.(token.href,style)
+        }
+        break
+      }
+      case 'def':
+        if (!isWebAddress(token.href)) text(token.raw)
+        break
       case 'strong':
       case 'em':
-        writeTokens(token.tokens,child(token.type),write,depth+1,indent,{...style,[token.type]:true})
+        writeTokens(token.tokens,child(token.type),output,depth+1,indent,{...style,[token.type]:true})
         break
       case 'codespan':
         child('code')?.append(token.text)
@@ -76,7 +103,7 @@ function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) 
           list?.append(li)
           if (index) write?.('\n',style)
           write?.(indent + (token.ordered ? (token.start+index)+'. ' : '• '),style)
-          writeTokens(item.tokens,li,write,depth+1,indent+'  ',style)
+          writeTokens(item.tokens,li,output,depth+1,indent+'  ',style)
         }
         if (token.raw.endsWith('\n')) text('\n')
         break
@@ -89,19 +116,19 @@ function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) 
 export function readableNoteText(mark) {
   if (mark.textFormat !== 'markdown') return mark.text
   const parts = []
-  writeTokens(noteTokens(mark),null,value => parts.push(value))
+  writeTokens(noteTokens(mark),null,{write:value => parts.push(value)})
   return parts.join('')
 }
 
 export function noteTextRuns(mark, status) {
   const runs = status ? [{text:status+' · '}] : []
   if (mark.textFormat === 'markdown') {
-    writeTokens(noteTokens(mark),null,(text,style) => runs.push({text,...style}))
+    writeTokens(noteTokens(mark),null,{write:(text,style) => runs.push({text,...style})})
   } else runs.push({text:mark.text})
   return runs
 }
 
-export function renderNoteText(target, mark, status = '') {
+export function renderNoteText(target, mark, status = '', links = true) {
   const prefix = status ? status+' · ' : ''
   if (mark.textFormat !== 'markdown') {
     target.textContent = prefix + mark.text
@@ -109,6 +136,6 @@ export function renderNoteText(target, mark, status = '') {
   }
   const fragment = document.createDocumentFragment()
   if (prefix) fragment.append(prefix)
-  writeTokens(noteTokens(mark),fragment,null)
+  writeTokens(noteTokens(mark),fragment,{links})
   target.replaceChildren(fragment)
 }

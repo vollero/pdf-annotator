@@ -50,6 +50,7 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       x = u*width; y = v*height
     }
     const marker = shape('g',{'data-id':mark.id,transform:'translate('+x+' '+y+')',class:'note-marker'})
+    let editTarget = marker
     group.append(marker)
     const status = noteStatus(mark)
     const [w,h] = noteDimensions(mark,width,height)
@@ -65,7 +66,11 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       const body = shape('foreignObject',{x:5,y:4,width:Math.max(0,w-10),height:Math.max(0,h-8)})
       const text = document.createElement('div')
       text.className = 'page-note-text'
-      renderNoteText(text,mark,status)
+      renderNoteText(text,mark,status,interactive)
+      if (text.querySelector('a')) {
+        editTarget = marker.firstElementChild
+        editTarget.classList.add('note-edit-target')
+      }
       body.append(text)
       marker.append(body)
     } else {
@@ -79,7 +84,7 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       if (mark.type !== 'comment') {
         marker.classList.add('movable-note')
         if (mark.type === 'note') marker.classList.add('point-note')
-        marker.setAttribute('aria-description','Click to edit, drag to move, or use Shift and the arrow keys to resize.')
+        editTarget.setAttribute('aria-description','Click to edit, drag to move, or use Shift and the arrow keys to resize.')
         const handle = shape('g',{class:'note-resize-handle',transform:'translate('+w+' '+h+')'})
         const grip = Math.min(10,w/2,h/2)
         const hitArea = mark.size ? shape('rect',{x:-grip,y:-grip,width:grip,height:grip,fill:'transparent'}) :
@@ -88,14 +93,16 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
           shape('path',{d:'m-7 -1 6 -6 m-3 6 3 -3',transform:'scale('+Math.min(1,grip/8)+')',fill:'none',stroke:'#484c43','stroke-width':1.2}))
         marker.append(handle)
         // Reserve touches on the SVG marker for dragging. The page around it still scrolls.
-        marker.addEventListener('touchstart',event=>event.preventDefault(),{passive:false})
+        marker.addEventListener('touchstart',event=>{
+          if (!event.target.closest('a')) event.preventDefault()
+        },{passive:false})
       }
-      marker.setAttribute('tabindex','0')
-      marker.setAttribute('role','button')
+      editTarget.setAttribute('tabindex','0')
+      editTarget.setAttribute('role','button')
       const label = mark.type === 'region' ? 'Edit region note' : mark.type === 'comment' ? 'Edit comment' : 'Edit note'
-      marker.setAttribute('aria-label',label + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))
-      marker.setAttribute('aria-haspopup','dialog')
-      marker.setAttribute('aria-keyshortcuts','P')
+      editTarget.setAttribute('aria-label',label + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))
+      editTarget.setAttribute('aria-haspopup','dialog')
+      editTarget.setAttribute('aria-keyshortcuts','P')
     }
   }
   return group

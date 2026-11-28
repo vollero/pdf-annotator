@@ -181,13 +181,15 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     if (!paper) return
     const sheet = viewer.sheetFor(paper), type = getTool()
     if (type === 'select') {
+      if (event.target.closest('a')) return
       const marker = event.target.closest('.note-marker')
       if (!marker) return
       const mark = viewer.marks.find(m=>m.id===marker.dataset.id)
       if (!mark) return
       if (mark.type==='comment') { note(mark); return }
       event.preventDefault()
-      marker.focus({preventScroll:true})
+      const target = marker.querySelector('.note-edit-target') ?? marker
+      target.focus({preventScroll:true})
       hideNotePreview()
       active = {sheet, ink:sheet.ink, mark, marker, pointer:event.pointerId, transform:marker.getAttribute('transform'),
         start:point(event,paper), origin:fitNotePoint(mark.point,sheet.base.width,sheet.base.height,mark),
@@ -259,7 +261,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
   stack.addEventListener('keydown',event=>{
     const steps = {ArrowRight:[12,0],ArrowLeft:[-12,0],ArrowDown:[0,12],ArrowUp:[0,-12]}
     const marker = event.target.closest('.movable-note')
-    if (active || !marker || getTool()!=='select' || !event.shiftKey || !Object.hasOwn(steps,event.key)) return
+    if (active || !marker || event.target.closest('a') || getTool()!=='select' || !event.shiftKey || !Object.hasOwn(steps,event.key)) return
     event.preventDefault()
     event.stopPropagation()
     const mark = viewer.marks.find(m=>m.id===marker.dataset.id)
@@ -269,7 +271,11 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     if (sameSize(size,mark.size)) return
     setNoteBox(mark.id,origin,size)
     for (const next of paper.querySelectorAll('.movable-note')) {
-      if (next.dataset.id===mark.id) { next.focus({preventScroll:true}); break }
+      if (next.dataset.id===mark.id) {
+        const target = next.querySelector('.note-edit-target') ?? next
+        target.focus({preventScroll:true})
+        break
+      }
     }
   })
   stack.addEventListener('lostpointercapture',event=>{
