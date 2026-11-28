@@ -34,7 +34,7 @@ export async function checkAnnotationSearch(page) {
   await status.selectOption('done')
   assert.equal(await summary.textContent(),'1 matching annotation')
   assert.ok(await cards.getByRole('checkbox').isChecked())
-  await cards.getByRole('checkbox').uncheck()
+  await cards.getByRole('checkbox').click()
   assert.equal(await summary.textContent(),'0 matching annotations')
   await page.getByRole('button',{name:'Undo',exact:true}).click()
   assert.equal(await summary.textContent(),'1 matching annotation')
