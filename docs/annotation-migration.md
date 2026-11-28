@@ -2,7 +2,7 @@
 
 Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
-The newest feature used by any annotation determines which release can open the file.
+Margin 0.3.0 supports all eight versions. The table lists the earliest release, including candidates, that can import each format.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
@@ -97,7 +97,7 @@ Margin placement requires at least version 7. Importing a matching ID with a dif
 
 A point note, region note, or passage comment can have `"textFormat": "markdown"`. The `text` field holds the source exactly as exported, including formatting punctuation and line breaks. For example, ``"text": "Change **both** units to `mm`."`` describes a note with bold text and an inline unit. The selected PDF passage in `passages[].quote` is always literal text. Imported notes longer than the editor’s 12,000-character limit display their full source as plain text.
 
-Fenced code blocks use this same version 8 format. The `text` string preserves the fence characters, optional language name, tabs, spaces, and line breaks. Margin 0.3.0-rc.14 can import and edit the source. Margin 0.3.0-rc.15 and later display the block in monospace. [Worked example](https://github.com/vollero/pdf-annotator/blob/v0.3.0-rc.15/README.md#add-a-multi-line-code-sample)
+Fenced code blocks use this same version 8 format. The `text` string preserves the fence characters, optional language name, tabs, spaces, and line breaks. Margin 0.3.0-rc.14 can import and edit the source. Margin 0.3.0-rc.15 and later display the block in monospace. [Worked example](https://github.com/vollero/pdf-annotator/blob/v0.3.0/README.md#add-a-multi-line-code-sample)
 
 Selecting **Format as Markdown** on any note makes the export version 8. Importing a matching ID updates its source and format together. Omitting `textFormat` restores plain text. When all notes use plain text, Margin exports the earliest version their other features require.
 

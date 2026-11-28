@@ -33,8 +33,6 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Format a note with Markdown
 
-[Download the 0.3.0-rc.15 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.15/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
-
 1. Open a point note, region note, or passage comment and select **Format as Markdown**. Each note starts in plain text.
 2. Try the example below. Open **Preview formatting** to see your changes while you write. Bulleted and numbered lists, bold, italics, and inline code work in the preview and the saved note.
 
@@ -46,7 +44,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 3. Save the note. You can read the formatting in **Annotations**, a page margin, a pinned preview, or an expanded note box. Reopen the note to edit its Markdown source. Clear **Format as Markdown** to display the punctuation literally. Quoted PDF text always reads as it appears in the document.
 
-**Export PDF** gives other PDF readers readable comment text and draws styled text in expanded note boxes. Reopening the PDF in Margin restores the editable Markdown. **Export annotations** carries the source and formatting choice to another copy of the same PDF in Margin **0.3.0-rc.14 or later**. HTML, links, and image syntax display as text.
+**Export PDF** gives other PDF readers readable comment text and draws styled text in expanded note boxes. Reopening the PDF in Margin restores the editable Markdown. **Export annotations** carries the source and formatting choice to another copy of the same PDF in Margin **0.3.0 or later**. HTML, links, and image syntax display as text.
 
 ### Add a multi-line code sample
 
@@ -63,7 +61,7 @@ if unit == "mm":
 
 Open **Preview formatting** to see the indented sample in monospace. Spaces, tabs and blank lines are part of the sample. Long lines wrap to fit the note. You can use three tildes (`~~~`) for a sample that contains triple backticks. The language name after the opening fence is optional.
 
-**Export PDF** puts the code in the PDF comment and draws it in expanded note boxes. Reopening the PDF in Margin or importing the annotations restores the fences and language name for editing. Use **0.3.0-rc.15 or later** to see formatted blocks. The previous candidate can import the same annotation file and displays the fence characters.
+**Export PDF** puts the code in the PDF comment and draws it in expanded note boxes. Reopening the PDF in Margin or importing the annotations restores the fences and language name for editing. Use **Margin 0.3.0 or later** to see formatted blocks.
 
 ## Read notes in the page margin
 
@@ -71,7 +69,7 @@ Open **Preview formatting** to see the indented sample in monospace. Spaces, tab
 2. Read the note beside its passage as you scroll. A comment that spans pages appears on each quoted page. Click a margin note to read its full text, edit it, or switch sides. Choose **No margin copy** to remove the margin copy. **Undo** reverses the change.
 3. Use **Hide workspace** for more reading room. In a narrow window or at high zoom, scroll horizontally to reach the other side. Crowded notes stack in passage order. If a stack is taller than its page, scroll inside that margin.
 
-**Export annotations** carries the chosen side to the same PDF in Margin 0.3.0-rc.13 or later. **Export PDF** keeps the note anchored on the original page. Other PDF readers can show the annotation there, and reopening the export in Margin restores the margin layout.
+**Export annotations** carries the chosen side to the same PDF in Margin 0.3.0 or later. **Export PDF** keeps the note anchored on the original page. Other PDF readers can show the annotation there, and reopening the export in Margin restores the margin layout.
 
 ## Pin a note preview
 
@@ -87,7 +85,7 @@ The pin lasts for the current PDF in this tab. Reloading, opening another PDF, o
 2. Write your note and choose **Save note**. Select **Track as action** if you want a checkbox for the task. The note appears under **Annotations** as a **Region note**.
 3. Switch to **Select**. Click the outline to edit the note, drag an edge to move it, or drag its lower-right grip to resize it. The middle stays clear for reading and selecting text. With the outline focused, **Shift + an arrow key** resizes it. **Esc** cancels a drag and **Undo** reverses a saved change.
 
-**Export PDF** includes the outline and its comment so someone can review them in a PDF reader. To send only the annotations, choose **Export annotations**. The recipient can import them with the same PDF in Margin **0.3.0-rc.10 or later**.
+**Export PDF** includes the outline and its comment so someone can review them in a PDF reader. To send only the annotations, choose **Export annotations**. The recipient can import them with the same PDF in Margin **0.3.0 or later**.
 
 ## Convert a point note or region note
 
@@ -103,7 +101,7 @@ The note keeps its text, color, page and action status. **Export PDF** shows the
 2. Release when you can see the lines you need. The top-left corner stays in place. To make room near a page edge, drag the body of the note toward the middle first. Click the body to open the full text.
 3. To return to a compact marker, drag the corner up and left until both sides reach their smallest size. Press **Esc** during a drag to cancel, or choose **Undo** after releasing.
 
-With a keyboard, use **Tab** to focus a note and **Shift + an arrow key** to adjust its width or height. Zoom scales the box with its page. **Note appearance** controls its font and text size. **Export PDF** includes the visible box and its full note text. To move the editable box to another copy of the same PDF, use **Export annotations** and open the JSON with **Import annotations** in Margin 0.3.0-rc.9 or later.
+With a keyboard, use **Tab** to focus a note and **Shift + an arrow key** to adjust its width or height. Zoom scales the box with its page. **Note appearance** controls its font and text size. **Export PDF** includes the visible box and its full note text. To move the editable box to another copy of the same PDF, use **Export annotations** and open the JSON with **Import annotations** in Margin 0.3.0 or later.
 
 ## Move a note marker
 
@@ -168,8 +166,6 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.15/margin-pdf-annotator.zip).
-
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.
 3. Choose **Done** to return to your note. In **Select** mode, hover over a note marker to read it on the PDF, or focus it with **Tab** and press **Enter** to edit. Press **Escape** to dismiss the preview.
@@ -181,7 +177,7 @@ Margin starts with 18 px sans serif text and a Comfortable box. It remembers you
 ## Move annotations to another copy of the same PDF
 
 1. Open the PDF you annotated. In the **Annotations** panel, click **Export annotations**. Margin downloads a file such as `Field notes.margin-annotations.json` with your highlights, drawings, notes, and the PDF’s SHA-256 fingerprint. All pages are included, even when the list is filtered. If the panel is hidden, click **Show workspace** or **Toggle annotations** to bring it back.
-2. On the other computer, or in a later session, open the **exact same PDF**. For Markdown notes, install **0.3.0-rc.14 or later**. Margin placement requires at least **0.3.0-rc.13**. The file format guide below lists compatible releases for earlier exports. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
+2. On the other computer, or in a later session, open the **exact same PDF**. Use **Margin 0.3.0 or later** to import all eight annotation file versions. The file format guide below also lists compatible earlier releases. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
 3. Click **Import annotations** and select the JSON file. Margin checks the fingerprint before applying changes. It adds new marks, updates matching marks, and keeps other local annotations. Importing an identical file twice adds no duplicates. **Undo** reverses the import in one step.
 
 If Margin reports a fingerprint mismatch, locate the copy that was open when you exported the annotations. A matching filename or page count is insufficient. The JSON contains readable note text and selected highlight text. [Annotation file format and worked example](docs/annotation-migration.md)
