@@ -48,6 +48,7 @@ async function importAnnotations(page, file, message) {
     page.getByRole('button',{name:'Import annotations',exact:true}).click()
   ])
   await chooser.setFiles(file)
+  await page.waitForFunction(()=>!document.querySelector('#import-annotations').disabled)
   await page.locator('#toast').filter({hasText:message}).waitFor()
 }
 

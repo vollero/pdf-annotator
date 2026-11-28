@@ -7,7 +7,14 @@ if [[ "${GITHUB_ACTIONS:-}" = true && $(df -Pm "$ANDROID_HOME" | awk 'NR==2{prin
   sudo rm -rf /usr/share/dotnet
 fi
 sdkmanager 'emulator' "$image"
-echo no | avdmanager create avd -n margin-tablet -k "$image" -d pixel_c --force
+export ANDROID_USER_HOME="$RUNNER_TEMP/margin-android"
+export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+mkdir -p "$ANDROID_AVD_HOME"
+avd="$ANDROID_AVD_HOME/margin-tablet.avd"
+echo no | avdmanager create avd -n margin-tablet -p "$avd" -k "$image" -d pixel_c --force
+test -s "$avd/config.ini"
+printf 'avd.ini.encoding=UTF-8\npath=%s\n' "$avd" > "$ANDROID_AVD_HOME/margin-tablet.ini"
+emulator -list-avds
 sudo chmod 666 /dev/kvm
 emulator @margin-tablet -no-snapshot -no-window -memory 4096 -partition-size 2048 -cores 2 -noaudio -no-boot-anim -gpu software > "$RUNNER_TEMP/margin-emulator.log" 2>&1 &
 emulator_pid=$!
