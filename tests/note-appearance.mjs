@@ -86,7 +86,7 @@ export async function checkNoteAppearance(page) {
     const paper = document.querySelector('.paper.current[data-ready="true"]')
     const text = paper?.querySelector('.textLayer')
     const scale = Number(text?.style.getPropertyValue('--total-scale-factor'))
-    const pageWidth = parseFloat(paper?.style.getPropertyValue('--page-width'))
+    const pageWidth = paper && parseFloat(getComputedStyle(paper).getPropertyValue('--page-width'))
     return text && Math.abs(pageWidth * scale - paper.getBoundingClientRect().width) < 1
   })
   assert.deepEqual(await fontOf(card),['18px','system-ui, sans-serif'])
