@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -102,7 +103,9 @@ export async function checkRecolor(page, downloadAnnotations, importAnnotations)
   await page.reload()
   await card(page,'review').waitFor()
   const migration = await downloadAnnotations(page)
-  assert.deepEqual(JSON.parse(migration.buffer),{...source,annotations:expected})
+  const dated = JSON.parse(migration.buffer)
+  expected.forEach((mark,i)=>{ mark.updatedAt=editTime(dated.annotations[i]) })
+  assert.deepEqual(dated,{...source,version:12,sets:[],annotations:expected})
   await importAnnotations(page,file,'0 added, 4 updated')
   await importAnnotations(page,migration,'0 added, 4 updated')
   const [download] = await Promise.all([page.waitForEvent('download'),page.locator('#export').click()])

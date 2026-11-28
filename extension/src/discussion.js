@@ -1,3 +1,4 @@
+import { validDate } from './annotation-dates.js'
 import { validAuthor } from './comment-details.js'
 
 const limit = 200
@@ -13,8 +14,7 @@ function checkRecords(records,kind) {
   const fields = ['id','at','text','author',...(reply ? ['parent'] : ['textFormat','baseline'])]
   for (const entry of records) {
     if (!entry || !recordId(entry.id) || seen.has(entry.id) ||
-        typeof entry.at !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(entry.at) ||
-        new Date(entry.at).toJSON() !== entry.at || typeof entry.text !== 'string' ||
+        !validDate(entry.at) || typeof entry.text !== 'string' ||
         (reply && (!entry.text.trim() || entry.text.length > 12000)) ||
         (own(entry,'author') && !validAuthor(entry.author)) ||
         (own(entry,'parent') && !seen.has(entry.parent)) ||

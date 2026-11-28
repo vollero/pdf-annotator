@@ -25,6 +25,7 @@ import { checkMathNotes } from './math-notes.mjs'
 import { checkNoteLinks } from './note-links.mjs'
 import { checkAnnotationSets } from './annotation-sets.mjs'
 import { checkRenameSet } from './rename-set.mjs'
+import { checkTimeline } from './timeline.mjs'
 import { checkDiscussion } from './discussion.mjs'
 import { checkCommentDetails } from './comment-details.mjs'
 import { checkArchiveSet } from './archive-set.mjs'
@@ -126,7 +127,7 @@ try {
   await search.fill('page 99')
   const migration = await downloadAnnotations(page)
   const exportedMarks = JSON.parse(migration.buffer)
-  assert.equal(exportedMarks.version,2)
+  assert.equal(exportedMarks.version,12)
   assert.equal(exportedMarks.annotations.find(m=>m.text.includes('Reviewed in Chromium')).done,true)
   assert.equal(migration.name,'Reading the Alps.margin-annotations.json')
   assert.equal(exportedMarks.documentSha256,fingerprint(original))
@@ -196,6 +197,7 @@ try {
   await checkCommentDetails(page,downloadAnnotations,importAnnotations)
   await checkArchiveSet(page,downloadAnnotations,importAnnotations)
   await checkDiscussion(page,downloadAnnotations,importAnnotations)
+  await checkTimeline(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])

@@ -57,7 +57,7 @@ export async function checkPassageComments(page, downloadAnnotations, importAnno
   await editor.getByRole('button',{name:'Save comment'}).click()
   const migration = await downloadAnnotations(page)
   const data = JSON.parse(migration.buffer)
-  assert.equal(data.version,3)
+  assert.equal(data.version,12)
   assert.equal(data.annotations.length,1)
   const [comment] = data.annotations
   assert.deepEqual(comment.passages.map(p=>p.page),[1,2])

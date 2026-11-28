@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -70,7 +71,7 @@ export async function checkNoteMove(page, downloadAnnotations, importAnnotations
   const data = JSON.parse(migrated.buffer), moved = data.annotations[1]
   assert.ok(Math.abs(moved.point[0]-note.point[0]-dx/bounds.width)<.0001)
   assert.ok(Math.abs(moved.point[1]-note.point[1]-dy/bounds.height)<.0001)
-  assert.deepEqual(data,{...source,annotations:[edge,{...note,point:moved.point},comment]})
+  assert.deepEqual(data,{...source,version:12,sets:[],annotations:[edge,{...note,point:moved.point,updatedAt:editTime(moved)},comment]})
   await page.locator('#undo').click()
   assert.equal(await marker.getAttribute('transform'),before)
   assert.ok(await page.locator('#undo').isDisabled(),'One drag adds one history entry')
@@ -131,7 +132,7 @@ export async function checkNoteMove(page, downloadAnnotations, importAnnotations
     await page.mouse.up()
     const updated = (await snapshot()).annotations[1]
     assert.notDeepEqual(updated.point,moved.point)
-    assert.deepEqual(updated,{...moved,text:'Units verified.',point:updated.point})
+    assert.deepEqual(updated,{...moved,text:'Units verified.',point:updated.point,updatedAt:editTime(updated)})
     await saved()
     await other.reload()
     await other.locator('.card-body').filter({hasText:'Units verified.'}).waitFor()

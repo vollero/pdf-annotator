@@ -1,3 +1,5 @@
+import { bindTimeline } from './timeline.js'
+import { dateEdits, dateLine } from './annotation-dates.js'
 import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
 import { checkMarkBudget, compatibleMarkTypes, convertPageNote, isNote, readDraft, quotedText } from './mark-data.js'
 import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
@@ -45,6 +47,7 @@ function state(label,kind='saved') {
   $('save-state').dataset.state=kind
 }
 function cards() {
+  if ($('timeline-dialog').open) return
   renderCards({marks:viewer.marks,sets,page:viewer.page,currentOnly:$('filter').value==='current',selected,
     moveToSet:(mark,name)=>change(marks.map(item=>item.id===mark.id ? assignSet(item,name) : item)),
     jump:jumpTo,edit:openNote,convert:convertNote,notePreview,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
@@ -126,10 +129,27 @@ const renderSets = bindSetControls({
     updateSetView(show ? revealSet(name) : {...sets,hidden:[...sets.hidden,name]})
   }
 })
+const timeline=bindTimeline({
+  current:()=>({doc:session,marks,sets,page:viewer.page,selected,left:$('scroller').scrollLeft,top:$('scroller').scrollTop}),
+  flush:()=>writes,privateWindow,notify:toast,
+  preview(shown,mark) {
+    cancelGesture()
+    notePreview.clear()
+    viewer.setMarks(shown)
+    cards()
+    if (mark) jumpTo(mark,mark.passages?.[0] ?? mark)
+  },
+  returnToDraft(state) {
+    selected=state.selected
+    refresh()
+    viewer.go(state.page)
+    $('scroller').scrollTo(state.left,state.top)
+  }
+})
 function refresh() {
   const visible = visibleMarks(marks,sets)
   if (selected && !visible.some(mark=>mark.id===selected)) selected=null
-  viewer.setMarks(visible)
+  if (!timeline.active) viewer.setMarks(visible)
   notePreview.refresh()
   $('undo').disabled=!undo.length; $('redo').disabled=!redo.length
   renderSets(sets,marks)
@@ -171,9 +191,10 @@ function apply(next,nextSets) {
   refresh()
   persist(next,nextSets)
 }
-function change(next,onError=toast,nextSets=sets) {
+function change(next,onError=toast,nextSets=sets,localEdit=true) {
   if(!session) return false
   try {
+    if (localEdit) next = dateEdits(marks,next)
     checkMarkBudget(next)
     if (nextSets !== sets) nextSets = setView(setNames(nextSets.names,next),nextSets)
   } catch (error) { onError(error.message); return false }
@@ -298,6 +319,7 @@ function openNote(mark, marginSheet) {
   $('passage-quote').hidden = !comment
   $('note-label').textContent = comment ? 'Comment' : 'Note'
   $('note-save').textContent = comment ? 'Save comment' : 'Save note'
+  $('note-dates').replaceChildren(...(existing ? [dateLine(mark)] : []))
   $('note-text').value=mark.text
   $('note-author').value = existing ? mark.author ?? '' : privateWindow ? privateAuthor : preference('comment-author','')
   noteDraft.applyDiscussion = openDiscussion(mark,privateWindow ? privateAuthor : preference('comment-author',''),previewDraft)
@@ -463,6 +485,8 @@ async function load(file,initial=[],ticket=beginImport()) {
     notePreview.clear()
     $('sets-dialog').close()
     $('recovery-dialog').close()
+    timeline.close()
+    $('open-timeline').disabled=false
     $('restore-draft').disabled=privateWindow
     $('restore-draft').hidden=privateWindow
     selected=null;undo=[];redo=[];marks=saved
@@ -542,7 +566,7 @@ $('annotation-file').onchange=async event=>{
     const newSets = imported.view.names.length - sets.names.length
     const newlyArchived = (imported.view.archived?.length ?? 0) - (sets.archived?.length ?? 0)
     if (result.added || result.updated || newSets || newlyArchived) {
-      if (!change(result.marks,toast,imported.view)) return
+      if (!change(result.marks,toast,imported.view,false)) return
       const setCount = newSets ? ' Created '+newSets+(newSets === 1 ? ' set.' : ' sets.') : ''
       const archiveCount = newlyArchived ? ' Archived '+newlyArchived+(newlyArchived === 1 ? ' set.' : ' sets.') : ''
       toast('Annotations imported. ' + result.added + ' added, ' + result.updated + ' updated.' + setCount + archiveCount)

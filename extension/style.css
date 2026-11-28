@@ -257,3 +257,13 @@ body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 #discussion article p { margin: 3px 0 }
 #contributor { width: 100%; padding: 6px; font: inherit }
 #recovery-dialog { max-width: min(420px,95vw) }
+
+.annotation-dates { font-size: 12px; color: var(--muted); margin: 5px 0 }
+#timeline-dialog { margin: auto 12px auto auto; width: min(345px,calc(100vw - 24px)); max-height: 88dvh; overflow: auto }
+#timeline-dialog::backdrop { background: #25292512 }
+#timeline-dialog :is(select,input[type=date],input[type=range]) { width: 100% }
+#timeline-dialog small { display: block }
+#timeline-dialog > p { margin: 10px 0 }
+#timeline-dialog label:not(.check-label,.sr-only) { display: block; margin: 8px 0 3px }
+.timeline-steps { display: flex; align-items: center; justify-content: space-between; margin-top: 12px }
+#timeline-text { font: 400 var(--note-size)/1.45 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 25dvh; overflow: auto; margin: 10px 0 }

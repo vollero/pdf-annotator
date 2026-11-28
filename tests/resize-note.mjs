@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -49,8 +50,8 @@ export async function checkNoteResize(page, downloadAnnotations, importAnnotatio
   const exported = await downloadAnnotations(page)
   const transfer = JSON.parse(exported.buffer)
   const size = transfer.annotations[0].size
-  assert.equal(transfer.version,5)
-  assert.deepEqual(transfer.annotations,[{...note,size},comment])
+  assert.equal(transfer.version,12)
+  assert.deepEqual(transfer.annotations,[{...note,size,updatedAt:editTime(transfer.annotations[0])},comment])
   assert.ok(Math.abs(size[0]-(18/480+.4))<.005 && Math.abs(size[1]-(18/320+.32))<.005)
   await page.locator('#undo').click()
   assert.equal(await marker.locator('.page-note-text').count(),0)
@@ -65,7 +66,8 @@ export async function checkNoteResize(page, downloadAnnotations, importAnnotatio
   start = await startDrag()
   await page.mouse.move(start.x-bounds.width*.7,start.y-bounds.height*.6,{steps:4})
   await page.mouse.up()
-  assert.deepEqual(JSON.parse((await downloadAnnotations(page)).buffer),data)
+  const compact = JSON.parse((await downloadAnnotations(page)).buffer)
+  assert.deepEqual(compact,{...data,version:12,sets:[],annotations:[{...note,updatedAt:editTime(compact.annotations[0])},comment]})
   await importAnnotations(page,exported,'0 added, 1 updated')
   await page.locator('#save-state').getByText('Saved locally',{exact:true}).waitFor()
   await page.reload()

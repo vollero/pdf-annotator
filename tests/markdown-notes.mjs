@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -79,7 +80,7 @@ export async function checkMarkdownNotes(page,downloadAnnotations,importAnnotati
   assert.equal(await page.locator('#note-text').inputValue(),text)
   await page.keyboard.press('Escape')
   const exported = JSON.parse((await downloadAnnotations(page)).buffer)
-  assert.deepEqual(exported,{...transfer,annotations:[{...task,textFormat:'markdown'},quote,area]})
+  assert.deepEqual(exported,{...transfer,version:12,sets:[],annotations:[{...task,textFormat:'markdown',updatedAt:editTime(exported.annotations[0])},quote,area]})
   await menu('Edit note')
   await page.locator('#note-text').fill('Short replacement')
   await page.locator('#note-save').click()

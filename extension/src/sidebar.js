@@ -1,3 +1,4 @@
+import { dateLine } from './annotation-dates.js'
 import { icon } from './icons.js'
 import { readableNoteText, renderNoteText } from './note-format.js'
 import { wrapNoteAction } from './note-action.js'
@@ -114,7 +115,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     body.dataset.id = mark.id
     if (focusedResultId === mark.id) focusedResult = body.querySelectorAll('a')[focusedLink] ?? button
     button.title=label
-    card.append(head,body)
+    card.append(head,body,dateLine(mark))
     if (mark.replies?.length) {
       const replies = el('button','appearance-link',mark.replies.length+(mark.replies.length===1 ? ' reply' : ' replies'))
       replies.onclick = ()=>{ edit(mark); document.getElementById('discussion').open = true }

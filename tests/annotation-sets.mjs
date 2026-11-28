@@ -45,7 +45,7 @@ export async function checkAnnotationSets(page,downloadAnnotations,importAnnotat
   const review = full.annotations.find(mark=>mark.text==='Reviewer feedback')
   assert.equal(review.set,'Review')
   assert.deepEqual(full.sets,['Empty','Review'])
-  assert.equal(full.version,9)
+  assert.equal(full.version,12)
   const withBothSets = await exportPDF()
   const personal = page.locator('.card').filter({hasText:old.text})
   await personal.locator('.more').click()

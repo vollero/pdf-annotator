@@ -72,6 +72,7 @@
       <div class="panel-heading"><h2 id="annotations-heading">Annotations</h2><span class="count" id="annotation-count">0</span><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <div class="filters">
       <button id="manage-sets" class="appearance-link" type="button" aria-haspopup="dialog" disabled>Annotation sets</button>
+      <button id="open-timeline" class="appearance-link" type="button" aria-haspopup="dialog" disabled>Timeline</button>
       <span id="writing-set" hidden></span>
       <label class="annotation-search"><span class="sr-only">Search annotations</span>
         <input type="search" id="annotation-search" placeholder="Search annotations" aria-controls="cards" autocomplete="off">
@@ -172,6 +173,27 @@
     </form>
     <div class="dialog-actions"><button class="button primary" type="button" data-close>Done</button></div>
   </dialog>
+  <dialog id="timeline-dialog" aria-labelledby="timeline-title">
+    <div class="dialog-head"><h2 id="timeline-title">Annotation timeline</h2><button type="button" class="icon-button" data-icon="close" data-close aria-label="Close timeline"></button></div>
+    <label for="timeline-mode">Browse</label>
+    <select id="timeline-mode"><option value="dates">Annotation dates</option><option value="drafts">Recorded drafts</option></select>
+    <div id="timeline-recording" hidden>
+      <label class="check-label"><input type="checkbox" id="timeline-record"> Record future drafts on this device</label>
+      <small>Recording keeps previous wording and deleted marks for this PDF.</small>
+      <button type="button" id="timeline-clear" class="appearance-link" hidden>Clear recorded drafts…</button>
+    </div>
+    <p id="timeline-info"></p>
+    <div class="timeline-navigation">
+      <label for="timeline-day">As of the end of</label><input type="date" id="timeline-day">
+      <div class="timeline-steps"><button class="button" id="timeline-earlier" type="button">Earlier</button>
+        <output id="timeline-position" aria-live="polite"></output><button class="button" id="timeline-later" type="button">Later</button></div>
+      <label for="timeline-slider" class="sr-only">Timeline position</label><input type="range" min="0" id="timeline-slider">
+    </div>
+    <p id="timeline-description" role="status"></p>
+    <div id="timeline-mark-field" hidden><label for="timeline-mark">Inspect an annotation</label><select id="timeline-mark"></select></div>
+    <div id="timeline-text"></div>
+    <button type="button" class="button" data-close>Return to current draft</button>
+  </dialog>
   <dialog id="recovery-dialog" aria-labelledby="recovery-title">
     <form method="dialog">
       <h2 id="recovery-title">Restore previous draft?</h2>
@@ -183,6 +205,7 @@
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
       <div class="dialog-head"><h2 id="note-title">Add a note</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
+      <div id="note-dates"></div>
       <blockquote id="passage-quote" aria-label="Selected passage" hidden></blockquote>
       <div class="note-label"><label for="note-text" id="note-label">Note</label><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <textarea id="note-text" rows="10" required maxlength="12000" placeholder="Write your note…" autofocus></textarea>

@@ -35,7 +35,7 @@ export async function checkDiscussion(page,downloadAnnotations,importAnnotations
   await page.locator('#reply-text').fill('The source checks out.')
   await save()
   const second = await snapshot()
-  assert.equal(second.version,11)
+  assert.equal(second.version,12)
   assert.equal(second.annotations[0].replies[1].parent,second.annotations[0].replies[0].id)
   await edit()
   await page.getByRole('button',{name:'Reply to #2',exact:true}).click()

@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -27,8 +28,9 @@ export async function checkCommentDetails(page,downloadAnnotations,importAnnotat
   await page.locator('#remember-author').check()
   await page.locator('#note-tags').fill('Methods, #needs evidence, METHODS')
   await page.locator('#note-save').click()
-  const withDetails = {...comment,author:'Léa Martin',tags:['Methods','needs evidence']}
-  assert.deepEqual(await snapshot(),{...json,version:10,sets:[],annotations:[withDetails]})
+  const edited = await snapshot()
+  const withDetails = {...comment,updatedAt:editTime(edited.annotations[0]),author:'Léa Martin',tags:['Methods','needs evidence']}
+  assert.deepEqual(edited,{...json,version:12,sets:[],annotations:[withDetails]})
   await page.locator('#undo').click()
   assert.deepEqual(await snapshot(),json)
   await page.locator('#redo').click()
@@ -58,5 +60,6 @@ export async function checkCommentDetails(page,downloadAnnotations,importAnnotat
   await page.locator('#note-tags').fill('')
   await page.locator('#remember-author').check()
   await page.locator('#note-save').click()
-  assert.deepEqual((await snapshot()).annotations.find(mark=>mark.id==='source'),comment)
+  const cleared = (await snapshot()).annotations.find(mark=>mark.id==='source')
+  assert.deepEqual(cleared,{...comment,updatedAt:editTime(cleared)})
 }

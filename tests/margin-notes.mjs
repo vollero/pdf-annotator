@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -74,7 +75,7 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   await page.reload()
   await task.waitFor()
   const exported = JSON.parse((await downloadAnnotations(page)).buffer)
-  assert.deepEqual(exported,{...data,annotations:[{...point,marginSide:'left'},region,comment]})
+  assert.deepEqual(exported,{...data,version:12,sets:[],annotations:[{...point,marginSide:'left',updatedAt:editTime(exported.annotations[0])},region,comment]})
   await page.locator('#workspace-toggle').click()
   await page.setViewportSize({width:400,height:650})
   await page.locator('#fit').click()

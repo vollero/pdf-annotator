@@ -71,7 +71,11 @@ export async function checkPalette(page, downloadAnnotations, importAnnotations)
   const backup = await downloadAnnotations(page)
   const data = JSON.parse(backup.buffer)
   assert.deepEqual(data.annotations.map(m=>m.type),['highlight','draw','note','comment'])
-  assert.equal(data.version,3)
+  assert.equal(data.version,12)
+  for (const mark of data.annotations) {
+    assert.equal(new Date(mark.createdAt).toISOString(),mark.createdAt)
+    assert.equal(mark.updatedAt,mark.createdAt)
+  }
   assert.ok(data.annotations.every(m=>m.color===value))
   assert.ok(!backup.buffer.toString().includes('Needs review'))
 

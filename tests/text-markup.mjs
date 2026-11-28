@@ -80,7 +80,7 @@ export async function checkTextMarkup(page, downloadAnnotations, importAnnotatio
   await comment.waitFor()
   const file = await downloadAnnotations(page)
   const data = JSON.parse(file.buffer)
-  assert.equal(data.version,4)
+  assert.equal(data.version,12)
   assert.deepEqual(data.annotations.map(a=>a.style),['dashed-underline','strikethrough','outline-box'])
   const last = data.annotations.at(-1)
   assert.equal(last.passages[0].quote,second)

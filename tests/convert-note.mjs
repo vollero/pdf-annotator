@@ -1,3 +1,4 @@
+import { editTime } from './dated-edit.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -42,8 +43,8 @@ export async function checkNoteConversion(page, downloadAnnotations, importAnnot
   await otherMenu.click()
   await convert('region note')
   const transfer = await downloadAnnotations(page)
-  const region = {...original,type:'region',size:[96/400,64/240],point:[1-96/400,1-64/240]}
-  assert.deepEqual(JSON.parse(transfer.buffer),{...data,version:6,annotations:[region,highlight]})
+  const region = {...original,updatedAt:editTime(JSON.parse(transfer.buffer).annotations[0]),type:'region',size:[96/400,64/240],point:[1-96/400,1-64/240]}
+  assert.deepEqual(JSON.parse(transfer.buffer),{...data,version:12,sets:[],annotations:[region,highlight]})
   assert.equal(await page.locator('#current').textContent(),'1','Converting a card uses its own page without navigating')
   assert.ok(await card.getByRole('checkbox').isChecked())
   await page.locator('#undo').click()
@@ -58,8 +59,9 @@ export async function checkNoteConversion(page, downloadAnnotations, importAnnot
   assert.deepEqual((await snapshot()).annotations,[highlight,region])
   await open('Scale sheet.pdf',source)
   await convert('point note')
-  const point = {...original,point:region.point}
-  assert.deepEqual(await snapshot(),{...data,annotations:[point,highlight]})
+  const converted = await snapshot()
+  const point = {...original,point:region.point,updatedAt:editTime(converted.annotations[0])}
+  assert.deepEqual(converted,{...data,version:12,sets:[],annotations:[point,highlight]})
   const withPoint = await exportPdf('Text')
   await open('Scale sheet with point.pdf',withPoint)
   assert.deepEqual((await snapshot()).annotations,[highlight,point])
@@ -80,7 +82,8 @@ export async function checkNoteConversion(page, downloadAnnotations, importAnnot
     await other.locator('.card-body[data-id="scale"]').locator('..').getByText('Note',{exact:true}).waitFor()
     await other.locator('#note-save').click()
     await card.getByText(revised,{exact:true}).waitFor()
-    assert.deepEqual((await snapshot()).annotations,[{...point,text:revised},highlight])
+    const {annotations} = await snapshot()
+    assert.deepEqual(annotations,[{...point,text:revised,updatedAt:editTime(annotations[0])},highlight])
   } finally { await other.close() }
 
   // Exercise both transaction orders before either tab has received a broadcast.

@@ -2,10 +2,11 @@
 
 Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
-Margin 0.4.0-rc.7 reads versions 1–11. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
+Margin 0.4.0-rc.8 reads versions 1–12. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
+| Any annotation with a known creation or edit date | 12 | 0.4.0-rc.8 |
 | Threaded replies or retained note history | 11 | 0.4.0-rc.7 |
 | Comment author, tags or archived sets | 10 | 0.4.0-rc.5 |
 | Named annotation sets, including empty sets | 9 | 0.4.0-rc.3 |
@@ -144,5 +145,13 @@ A note or passage comment can include either or both of the following fields. Th
 A reply without a `parent` belongs to the original note. Each parent must precede its children in the same note. Each list contains 1–200 entries with distinct IDs. IDs use up to 128 ASCII letters, digits, underscores or hyphens. Times use UTC with millisecond precision. The optional `author` identifies the contributor who supplied the edit, reply or snapshot. A reply contains up to 12,000 UTF-16 code units of plain text. A version keeps its original text and optional `"textFormat":"markdown"`. A `"baseline":true` version records when someone captured existing wording. A paused history has `"enabled":false` and retains its entries.
 
 When two reviewers import each other’s JSON, the imported note supplies the current wording. Matching entries are combined once by ID. Conflicting contents for a shared entry ID reject the import. Importing an older note without discussion fields keeps its local thread and history. Annotation JSON includes earlier text even after tracking is paused. An exported PDF includes a readable reply transcript and editable reply relationships, and omits version history. The previous local recovery draft stays on the device.
+
+## Version 12 and annotation dates
+
+Any mark can carry `createdAt` and `updatedAt`, for example `"createdAt":"2026-06-18T09:12:30.125Z"`. Both use real UTC dates with three fractional digits. When both are known, creation comes first or the times are equal. A newly made mark starts with both times equal. Editing a legacy mark with unknown creation time adds only `updatedAt`. Both fields are optional and unknown dates stay absent. An undated export still uses the earliest format required by its contents.
+
+A repeated import preserves known dates for identical content. Importing a matching ID keeps the earliest known creation date. The incoming edit date belongs to the imported wording. If an older, undated file changes the contents, the previous edit date no longer describes them and is cleared. Undo and draft recovery restore the dates that belonged to the restored marks.
+
+PDF export writes the native PDF creation and modification dates with second precision and preserves milliseconds when reopened in Margin. UTC timestamps travel with the file and the reader displays local time. A migration contains current annotations and retained note discussions. The per-PDF timeline of recorded drafts, including deleted marks, stays in the local browser profile.
 
 All versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

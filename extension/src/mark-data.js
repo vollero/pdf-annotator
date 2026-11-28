@@ -1,3 +1,4 @@
+import { validMarkDates } from './annotation-dates.js'
 import { DocumentLimitError, maxPages } from './input.js'
 import { markupLabels } from './markup.js'
 import { validSetName } from './annotation-sets.js'
@@ -69,8 +70,11 @@ export function resizeNote(mark, origin, width, height, dx, dy) {
 export function readMark(raw, page, pages = maxPages) {
   if (!raw || typeof raw.id !== 'string' || !raw.id || raw.id.length > 128 ||
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
+  if (!validMarkDates(raw)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (raw.createdAt) mark.createdAt = raw.createdAt
+  if (raw.updatedAt) mark.updatedAt = raw.updatedAt
   if (Object.hasOwn(raw,'history') || Object.hasOwn(raw,'replies')) {
     if (!isNote(mark)) return
     try { checkDiscussion(raw) } catch { return }

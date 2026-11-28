@@ -1,3 +1,4 @@
+import { mergeDates } from './annotation-dates.js'
 import { checkMarkBudget, compatibleMarkTypes, isNote } from './mark-data.js'
 import { initialSets, mergeSetViews } from './annotation-sets.js'
 import { applyDiscussionChanges, importDiscussion } from './discussion.js'
@@ -77,8 +78,9 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
     const lookup = store.get(id)
     const settings = tx.objectStore('settings')
     const currentSets = settings.get(['sets',id])
+    const timeline = settings.get(['timeline',id])
     let savedSets, concurrent
-    currentSets.onsuccess = () => {
+    timeline.onsuccess = () => {
       try { save() } catch (error) { tx.abort(); reject(error) }
     }
     function save() {
@@ -141,6 +143,7 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
             else updated.style = mark.style
           }
           applyDiscussionChanges(updated,prior,mark)
+          mergeDates(updated,latest,prior,mark)
           merged.set(mark.id,updated)
         } else if (latest && isNote(mark) && (latest.history || latest.replies)) {
           if (prior) {
@@ -150,9 +153,14 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
             if (latest.replies) updated.replies = latest.replies
             if (latest.history) updated.history = latest.history
             applyDiscussionChanges(updated,prior,mark)
+            mergeDates(updated,latest,prior,mark)
             merged.set(mark.id,updated)
           } else merged.set(mark.id,importDiscussion(latest,mark))
-        } else merged.set(mark.id,mark)
+        } else {
+          const updated = {...mark}
+          mergeDates(updated,latest,prior,mark)
+          merged.set(mark.id,updated)
+        }
       }
       const result = [...merged.values()]
       // Concurrent imports can each fit the limit on their own.
@@ -164,6 +172,7 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
       if (serialized !== JSON.stringify(previousMarks) || ['names','labels','archived'].some(
         key=>JSON.stringify(savedSets[key]) !== JSON.stringify(previousSets[key]))) {
         putRecovery(settings,id,previousMarks,previousSets)
+        recordSnapshot(settings,id,timeline.result,result,savedSets,serialized)
       }
       settings.put(savedSets,['sets',id])
       store.put(result,id)
@@ -190,17 +199,78 @@ export async function restorePrevious(id,token) {
     const drafts = tx.objectStore('drafts'), settings = tx.objectStore('settings')
     const current = drafts.get(id), sets = settings.get(['sets',id])
     const backup = settings.get(['previous-draft',id])
-    backup.onsuccess = ()=>{
+    const timeline = settings.get(['timeline',id])
+    timeline.onsuccess = ()=>{
       if (!backup.result || backup.result.token !== token) {
         tx.abort()
         reject(new Error('The recovery copy changed. Open Restore previous draft again to review it.'))
         return
       }
       putRecovery(settings,id,current.result,sets.result ?? initialSets)
+      recordSnapshot(settings,id,timeline.result,backup.result.marks,backup.result.sets)
       drafts.put(backup.result.marks,id)
       settings.put(backup.result.sets,['sets',id])
     }
     tx.oncomplete = ()=>resolve()
     tx.onabort = ()=>reject(tx.error)
+  })
+}
+
+// Individual snapshots let the timeline read one draft at a time. The index,
+// retention and workspace change all commit under the same IndexedDB write lock.
+const emptyTimeline = {enabled:false,entries:[]}
+export async function timelineIndex(id) {
+  return await read('settings',['timeline',id]) ?? emptyTimeline
+}
+export const timelineSnapshot = (id,key)=>read('settings',['snapshot',id,key])
+
+function recordSnapshot(settings,id,index,marks,sets,serialized) {
+  if (!index?.enabled) return
+  const last = index.entries.at(-1)
+  const at = new Date().toISOString()
+  const entry = {key:crypto.randomUUID(),at:last && last.at>at ? last.at : at,
+    units:(serialized ?? JSON.stringify(marks)).length+JSON.stringify(sets).length}
+  const entries = [...index.entries,entry]
+  let units = entries.reduce((total,item)=>total+item.units,0)
+  // Keep at most 50 states and 8 million serialized UTF-16 units per PDF.
+  while (entries.length>1 && (entries.length>50 || units>8_000_000)) {
+    const removed = entries.shift()
+    settings.delete(['snapshot',id,removed.key])
+    units -= removed.units
+  }
+  settings.put({marks,sets},['snapshot',id,entry.key])
+  settings.put({enabled:true,entries},['timeline',id])
+}
+
+export async function setTimelineRecording(id,enabled) {
+  const db = await database()
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(['drafts','settings'],'readwrite')
+    const settings = tx.objectStore('settings')
+    const marks = tx.objectStore('drafts').get(id)
+    const sets = settings.get(['sets',id])
+    const lookup = settings.get(['timeline',id])
+    lookup.onsuccess = ()=>{
+      const index = lookup.result ?? emptyTimeline
+      if (enabled === index.enabled) return
+      if (enabled) recordSnapshot(settings,id,{...index,enabled},marks.result ?? [],sets.result ?? initialSets)
+      else settings.put({...index,enabled},['timeline',id])
+    }
+    tx.oncomplete = resolve
+    tx.onabort = ()=>reject(tx.error)
+  })
+}
+
+export async function clearTimeline(id) {
+  const db = await database()
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('settings','readwrite'), settings=tx.objectStore('settings')
+    const lookup=settings.get(['timeline',id])
+    lookup.onsuccess=()=>{
+      for (const entry of lookup.result?.entries ?? []) settings.delete(['snapshot',id,entry.key])
+      settings.delete(['timeline',id])
+    }
+    tx.oncomplete=resolve
+    tx.onabort=()=>reject(tx.error)
   })
 }

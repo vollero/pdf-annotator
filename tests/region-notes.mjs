@@ -78,7 +78,7 @@ export async function checkRegionNotes(page, downloadAnnotations, importAnnotati
   await page.keyboard.press('Shift+ArrowRight')
   const transfer = await downloadAnnotations(page)
   const expected = JSON.parse(transfer.buffer)
-  assert.equal(expected.version,6)
+  assert.equal(expected.version,12)
   assert.ok(Math.abs(expected.annotations[0].size[0]-resized.size[0]-12/500)<.00001)
   await page.locator('#save-state').getByText('Saved locally',{exact:true}).waitFor()
   await page.reload()
