@@ -87,7 +87,7 @@ export async function checkRecolor(page, downloadAnnotations, importAnnotations)
   try {
     await other.goto(page.url())
     await card(other,'note').locator('.more').click()
-    await other.getByRole('button',{name:'Edit note'}).click()
+    await card(other,'note').getByRole('button',{name:'Edit note',exact:true}).click()
     expected[2].text = 'Total verified.'
     expected[2].color = '#138872'
     await other.locator('#note-text').fill(expected[2].text)
