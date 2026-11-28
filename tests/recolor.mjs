@@ -65,8 +65,11 @@ export async function checkRecolor(page, downloadAnnotations, importAnnotations)
     else if (i===1) await dialog.getByLabel('Choose a color').fill(nextColors[i])
     else await hex.fill(nextColors[i].slice(1).toUpperCase())
     await apply()
-    assert.equal(await card(page,mark.id).evaluate(el=>el.style.getPropertyValue('--tone')),nextColors[i])
-    assert.ok(await card(page,mark.id).locator('.more').evaluate(el=>el===document.activeElement))
+    await page.waitForFunction(({id,color})=>{
+      const card = document.activeElement.closest('.card')
+      return document.activeElement.matches('.more') && card.querySelector('.card-body').dataset.id===id &&
+        card.style.getPropertyValue('--tone')===color
+    },{id:mark.id,color:nextColors[i]})
   }
   await undo.click()
   assert.equal((await snapshot()).annotations.at(-1).color,original)
