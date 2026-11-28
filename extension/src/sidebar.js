@@ -1,4 +1,5 @@
 import { icon } from './icons.js'
+import { readableNoteText, renderNoteText } from './note-format.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
 import { isNote, isPageNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
@@ -18,7 +19,8 @@ function searchAnnotations(marks, query, pagePrefix) {
   return marks.filter(mark => {
     if (pageNumber !== null && !partOnPage(mark,pageNumber)) return false
     if (!words.length || (barePage !== null && partOnPage(mark,barePage))) return true
-    const content = mark.type === 'comment' ? mark.text + '\n' + quotedText(mark) : mark.text
+    const noteText = readableNoteText(mark)
+    const content = mark.type === 'comment' ? noteText + '\n' + quotedText(mark) : noteText
     const text = content.normalize('NFC').toLowerCase()
     return words.every(word => text.includes(word))
   })
@@ -68,7 +70,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     more.setAttribute('aria-expanded','false')
     more.append(icon('more'))
     head.append(symbol,el('span','card-title',title),more)
-    const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''),mark.text)
+    const body=el('button','card-body'+(mark.type==='highlight'?' quoted':''))
+    renderNoteText(body,mark)
     if (mark.type === 'comment') body.prepend(el('span','card-quote',quotedText(mark)))
     body.dataset.id = mark.id
     if (focusedResultId === mark.id) focusedResult = body
@@ -81,7 +84,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
       box.type = 'checkbox'
       box.checked = mark.done
       box.dataset.id = mark.id
-      box.setAttribute('aria-label','Mark action as done on page ' + mark.page + ': ' + mark.text.slice(0,100))
+      box.setAttribute('aria-label','Mark action as done on page ' + mark.page + ': ' + readableNoteText(mark).slice(0,100))
       box.onchange = () => setDone(mark, box.checked)
       label.append(box, noteStatus(mark))
       card.append(label)

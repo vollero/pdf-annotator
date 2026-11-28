@@ -9,6 +9,7 @@ import { markupLabels, withMarkupStyle } from './markup.js'
 import { Viewer,readPDF } from './viewer.js'
 import { bindGestures } from './gestures.js'
 import { bindNotePreview } from './note-preview.js'
+import { renderNoteText } from './note-format.js'
 import { renderCards,closeCardMenus } from './sidebar.js'
 import { lastDocument,remember,readMarks,writeChanges } from './storage.js'
 
@@ -194,6 +195,10 @@ function openNote(mark, marginSheet) {
   $('note-label').textContent = comment ? 'Comment' : 'Note'
   $('note-save').textContent = comment ? 'Save comment' : 'Save note'
   $('note-text').value=mark.text
+  $('note-markdown').checked = mark.textFormat === 'markdown'
+  $('markdown-preview').open = false
+  $('markdown-preview').hidden = !$('note-markdown').checked
+  $('draft-preview').replaceChildren()
   $('note-placement').value = mark.marginSide ?? ''
   $('track-note').checked = mark.done !== undefined
   $('note-done').checked = mark.done === true
@@ -201,11 +206,23 @@ function openNote(mark, marginSheet) {
   $('note-dialog').showModal()
   $('note-text').focus()
 }
+function draftContent() {
+  return {text:$('note-text').value,textFormat:$('note-markdown').checked ? 'markdown' : undefined}
+}
+function previewDraft() {
+  if ($('markdown-preview').open && !$('markdown-preview').hidden) renderNoteText($('draft-preview'),draftContent())
+}
+$('note-text').addEventListener('input',previewDraft)
+$('markdown-preview').ontoggle = previewDraft
+$('note-markdown').onchange = () => {
+  $('markdown-preview').hidden = !$('note-markdown').checked
+  previewDraft()
+}
 $('track-note').onchange = () => { $('note-done-label').hidden = !$('track-note').checked }
 $('note-form').addEventListener('submit',e=>{
   e.preventDefault()
-  const text=$('note-text').value.trim()
-  if(!text) { $('note-text').focus();return }
+  const draft = draftContent()
+  if(!draft.text.trim()) { $('note-text').focus();return }
   if(noteDraft?.session===session) {
     const original = noteDraft.mark
     const current = marks.find(m => m.id === original.id)
@@ -213,7 +230,14 @@ $('note-form').addEventListener('submit',e=>{
       toast('This note is no longer in the document.')
     } else {
       const mark = {...(current ?? original)}
-      if (text !== original.text) mark.text = text
+      // A textarea normalizes line endings. Preserve imported source on a format-only edit.
+      if (draft.text !== original.text.replace(/\r\n?/g,'\n')) {
+        mark.text = draft.textFormat ? draft.text : draft.text.trim()
+      }
+      if (draft.textFormat !== original.textFormat) {
+        if (draft.textFormat) mark.textFormat = draft.textFormat
+        else delete mark.textFormat
+      }
       const side = $('note-placement').value
       if (side !== (original.marginSide ?? '')) {
         if (side) mark.marginSide = side
@@ -225,7 +249,7 @@ $('note-form').addEventListener('submit',e=>{
         else mark.done = done
       }
       selected = mark.id
-      if (!current || current.text !== mark.text || current.done !== mark.done || current.marginSide !== mark.marginSide) {
+      if (!current || current.text !== mark.text || current.textFormat !== mark.textFormat || current.done !== mark.done || current.marginSide !== mark.marginSide) {
         const next = current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark]
         if (!change(next,message => {
           const input = $('note-text')
@@ -462,7 +486,8 @@ for (const button of document.querySelectorAll('[data-note-appearance]')) {
   button.onclick = () => {
     notePreview.hideHover()
     const note = marks.find(mark => isNote(mark) && mark.id === selected) ?? marks.find(isNote)
-    $('appearance-example').textContent = ($('note-dialog').open ? $('note-text').value : note?.text) || 'Your note will appear at this size.'
+    const sample = $('note-dialog').open ? draftContent() : note
+    renderNoteText($('appearance-example'),sample?.text ? sample : {text:'Your note will appear at this size.'})
     $('appearance-dialog').showModal()
   }
 }

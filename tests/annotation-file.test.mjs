@@ -77,7 +77,7 @@ test('conversion uses the displayed footprint and migrates the same annotation i
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:8}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:9}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
@@ -87,6 +87,22 @@ test('invalid or oversized packages are rejected as a whole', async () => {
   }
   await assert.rejects(readAnnotations(new Blob(['{']),hash,3),/JSON file/)
   await assert.rejects(readAnnotations({size:16*1024*1024+1},hash,3),/16 MiB/)
+})
+
+test('Markdown source and format round trip once and a plain import restores literal text',async()=>{
+  const note = {id:'draft',type:'note',page:1,point:[.2,.4],color:'#226633',text:'  **Mass**\r\n- `kg`\r\n'}
+  const formatted = {...note,textFormat:'markdown'}
+  const data = JSON.parse(await file(formatted).text())
+  assert.equal(data.version,8)
+  const decode = (version,mark) => readAnnotations(new Blob([JSON.stringify({...data,version,annotations:[mark]})]),hash,3)
+  const imported = await decode(8,formatted)
+  assert.deepEqual(imported,[formatted])
+  assert.equal(mergeAnnotations(imported,imported).updated,0)
+  assert.deepEqual(mergeAnnotations(imported,await decode(1,note)).marks,[note])
+  for (const version of [1,2,3,4,5,6,7]) await assert.rejects(decode(version,formatted),/Invalid/)
+  for (const invalid of [{...note,textFormat:'html'},{...drawing,textFormat:'markdown'},{...note,textFormat:null}]) {
+    await assert.rejects(decode(8,invalid),/Invalid/)
+  }
 })
 
 test('margin sides travel only on notes in version 7 and can be removed by import', async () => {

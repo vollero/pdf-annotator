@@ -6,6 +6,7 @@ The newest feature used by any annotation determines which release can open the 
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
+| Markdown in note text | 8 | 0.3.0-rc.14 |
 | Left or right margin placement | 7 | 0.3.0-rc.13 |
 | Region note | 6 | 0.3.0-rc.10 |
 | Resized point note | 5 | 0.3.0-rc.9 |
@@ -90,6 +91,12 @@ Converting a point note to a region keeps its ID, page, color, text and action s
 
 Choose **Left margin** or **Right margin** under **Margin placement** when editing a note. Its JSON entry gains `"marginSide": "left"` or `"marginSide": "right"`. This optional field applies to point notes, region notes, and passage comments. A multi-page comment uses one side for every quoted page. Its original position, text, and ID travel with it.
 
-Margin writes version 7 whenever any note uses a margin. Importing a matching ID with a different side moves the note. Importing a matching ID without `marginSide` restores **No margin copy**. Once all notes use **No margin copy**, Margin writes the earliest format that supports the document’s remaining marks.
+Margin placement requires at least version 7. Importing a matching ID with a different side moves the note. Importing a matching ID without `marginSide` restores **No margin copy**. Once all notes use **No margin copy**, Margin writes the earliest format that supports the document’s remaining marks.
 
-All seven versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.
+## Version 8 and Markdown notes
+
+A point note, region note, or passage comment can have `"textFormat": "markdown"`. The `text` field holds the source exactly as exported, including formatting punctuation and line breaks. For example, ``"text": "Change **both** units to `mm`."`` describes a note with bold text and an inline unit. The selected PDF passage in `passages[].quote` is always literal text. Imported notes longer than the editor’s 12,000-character limit display their full source as plain text.
+
+Selecting **Format as Markdown** on any note makes the export version 8. Importing a matching ID updates its source and format together. Omitting `textFormat` restores plain text. When all notes use plain text, Margin exports the earliest version their other features require.
+
+All eight versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

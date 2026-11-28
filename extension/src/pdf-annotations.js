@@ -1,5 +1,6 @@
 import { readMark, readDraft, maxMarkCount, noteStatus, fitNotePoint, noteDimensions } from './mark-data.js'
 import { noteTextMask } from './note-text-mask.js'
+import { noteTextRuns, readableNoteText } from './note-format.js'
 import { DocumentLimitError } from './input.js'
 import { markupStrokes } from './markup.js'
 import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
@@ -148,7 +149,7 @@ function appearance(doc, mark, viewport, noteFont) {
     const [bl,br,tl] = [corners[3],corners[2],corners[0]]
     const matrix = [br[0]-bl[0],br[1]-bl[1],tl[0]-bl[0],tl[1]-bl[1],...bl]
     const status = noteStatus(mark)
-    const mask = noteTextMask(status ? status+' · '+mark.text : mark.text,w,h,noteFont)
+    const mask = noteTextMask(noteTextRuns(mark,status),w,h,noteFont)
     const image = doc.context.flateStream(mask.bytes,{Type:'XObject',Subtype:'Image',Width:mask.width,
       Height:mask.height,ImageMask:true,BitsPerComponent:1})
     resources = {XObject:{TextMask:doc.context.register(image)},Font:{Helv:{Type:'Font',Subtype:'Type1',BaseFont:'Helvetica'}}}
@@ -186,7 +187,8 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
   const pages=doc.getPages(), views=new Map()
   for (const mark of marks) {
     const status = noteStatus(mark)
-    const text = S(status ? status + ': ' + mark.text : mark.text)
+    const readable = readableNoteText(mark)
+    const text = S(status ? status + ': ' + readable : readable)
     const contents = mark.passages?.length > 1 ? doc.context.register(text) : text
     let root
     for (const part of mark.passages ?? [mark]) {

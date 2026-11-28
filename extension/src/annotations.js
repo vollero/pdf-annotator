@@ -1,5 +1,6 @@
 import { fitNotePoint, isNote, noteDimensions, noteStatus } from './mark-data.js'
 import { markupLabels, markupStrokes, markupThickness } from './markup.js'
+import { renderNoteText } from './note-format.js'
 
 export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', region: 'Region note', comment: 'Passage comment' }
 export const NS = 'http://www.w3.org/2000/svg'
@@ -64,7 +65,7 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       const body = shape('foreignObject',{x:5,y:4,width:Math.max(0,w-10),height:Math.max(0,h-8)})
       const text = document.createElement('div')
       text.className = 'page-note-text'
-      text.textContent = status ? status + ' · ' + mark.text : mark.text
+      renderNoteText(text,mark,status)
       body.append(text)
       marker.append(body)
     } else {

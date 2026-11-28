@@ -1,5 +1,6 @@
 import { titles } from './annotations.js'
 import { isNote, noteStatus } from './mark-data.js'
+import { renderNoteText } from './note-format.js'
 
 // Listen on the page stack because scrolling and zooming replace its SVG markers.
 export function bindNotePreview(stack, preview, findNote, edit) {
@@ -7,6 +8,7 @@ export function bindNotePreview(stack, preview, findNote, edit) {
   const body = preview.querySelector('#preview-text'), source = preview.querySelector('#preview-source')
   const button = preview.querySelector('#preview-pin')
   let marker, pinnedId = null, closeTimer
+  let displayed
   const redraws = new MutationObserver(() => {
     if (marker && !marker.isConnected) hideHover()
   })
@@ -23,6 +25,7 @@ export function bindNotePreview(stack, preview, findNote, edit) {
     if (preview.contains(document.activeElement)) scroller.focus({preventScroll:true})
     preview.hidden = true
     body.textContent = ''
+    displayed = null
     source.textContent = ''
   }
   function hideHover() {
@@ -32,9 +35,10 @@ export function bindNotePreview(stack, preview, findNote, edit) {
     const pinned = pinnedId !== null
     const last = note.passages?.at(-1)?.page ?? note.page
     source.textContent = titles[note.type] + ' · ' + (note.page === last ? 'Page '+note.page : 'Pages '+note.page+'–'+last)
-    const status = noteStatus(note)
-    const text = status ? status+' · '+note.text : note.text
-    if (body.textContent !== text) body.textContent = text
+    if (displayed !== note) {
+      renderNoteText(body,note,noteStatus(note))
+      displayed = note
+    }
     body.setAttribute('role',pinned ? 'note' : 'tooltip')
     button.querySelector('span').textContent = pinned ? 'Unpin preview' : 'Pin preview'
     preview.setAttribute('aria-label',pinned ? 'Pinned note preview' : 'Note preview')

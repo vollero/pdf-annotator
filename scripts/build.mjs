@@ -12,6 +12,8 @@ for (const name of ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'licenses']) 
 await cp(path.join(root, 'docs/annotation-migration.md'), path.join(out, 'ANNOTATIONS.md'))
 const vendor = path.join(out, 'vendor')
 await mkdir(vendor)
+await cp(path.join(root,'node_modules/marked/lib/marked.esm.js'),path.join(vendor,'marked.mjs'))
+await cp(path.join(root,'node_modules/marked/LICENSE'),path.join(vendor,'MARKED-LICENSE'))
 const pdfjs = path.join(root, 'node_modules/pdfjs-dist')
 for (const name of ['build/pdf.min.mjs', 'build/pdf.worker.min.mjs', 'cmaps', 'standard_fonts', 'wasm', 'iccs']) {
   await cp(path.join(pdfjs, name), path.join(vendor, path.basename(name)), { recursive: true })

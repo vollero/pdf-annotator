@@ -155,6 +155,12 @@
       <blockquote id="passage-quote" aria-label="Selected passage" hidden></blockquote>
       <div class="note-label"><label for="note-text" id="note-label">Note</label><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <textarea id="note-text" rows="10" required maxlength="12000" placeholder="Write your note…" autofocus></textarea>
+      <label class="check-label"><input id="note-markdown" type="checkbox"> Format as Markdown</label>
+      <details id="markdown-preview" hidden>
+        <summary>Preview formatting</summary>
+        <p class="format-hint">Try <code>**bold**</code>, <code>*italic*</code>, or <code>`code`</code>. Start a list with <code>- </code> or <code>1. </code>.</p>
+        <div id="draft-preview"></div>
+      </details>
       <label class="note-placement">Margin placement
         <select id="note-placement">
           <option value="">No margin copy</option>
@@ -177,7 +183,7 @@
         <div><label for="note-size">Text size</label><select id="note-size"><option value="14">14 px</option><option value="16">16 px</option><option value="18" selected>18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option></select></div>
         <div><label for="note-box">Box size</label><select id="note-box"><option value="compact">Compact</option><option value="comfortable" selected>Comfortable</option><option value="spacious">Spacious</option></select></div>
       </div>
-      <p id="appearance-example" aria-label="Note preview"></p>
+      <div id="appearance-example" aria-label="Note preview"></div>
       <div class="dialog-actions"><button id="reset-appearance" type="button" class="button">Restore defaults</button><button class="button primary">Done</button></div>
     </form>
   </dialog>

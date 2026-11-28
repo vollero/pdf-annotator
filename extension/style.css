@@ -87,7 +87,7 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 .margin-rail.left { grid-column: 1; margin-right: 6px }
 .margin-rail.right { grid-column: 3; margin-left: 6px }
 .margin-note { position: absolute; inset-inline: 3px; display: block; text-align: left; padding: 7px 10px; border: 1px solid #d5d1bd; border-left: 4px solid var(--tone); background: #fffdf5; font: 400 var(--note-size)/1.45 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere }
-.margin-note span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--note-lines); overflow: hidden }
+.margin-note > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--note-lines); overflow: hidden; max-height: calc(var(--note-lines) * 1lh) }
 .margin-note:focus-visible { outline-offset: -2px }
 .paper { width: 100%; aspect-ratio: var(--page-ratio, 612 / 792); position: relative; background: white; box-shadow: 0 2px 8px #25261c20, 0 0 0 1px #5b5c4016; margin: 0 auto; isolation: isolate; overflow: hidden }
 .page-canvas,.ink { display: block; width: 100%; height: 100%; position: absolute; inset: 0 }
@@ -146,7 +146,12 @@ body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 .card-icon .icon { width: 15px; height: 15px }
 .card-title { font-size: 13px; font-weight: 650 }
 .card .more { margin-left: auto; width: 22px; height: 21px; color: #85867f }.more .icon { width: 16px }
-.card-body, #note-text, #preview-text, #appearance-example { font: 400 var(--note-size)/1.55 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink) }
+.card-body, #note-text, #preview-text, #appearance-example, #draft-preview { font: 400 var(--note-size)/1.55 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink) }
+:is(.card-body,.margin-note,.page-note-text,#preview-text,#appearance-example,#draft-preview) :is(ol,ul) { margin: 0; padding-inline-start: 1.8em }
+:is(.card-body,.margin-note,.page-note-text,#preview-text,#appearance-example,#draft-preview) code { background-color: #efede6; border-radius: 3px; padding-inline: .16em; font: .9em ui-monospace,monospace }
+#markdown-preview summary { cursor: pointer; font-weight: 600; margin-block: 4px }
+.format-hint { font-size: 13px; line-height: 1.5; margin: 6px 0; color: var(--muted) }
+#draft-preview { padding: 8px 12px; max-height: 24dvh; overflow: auto; background: #fffdf5; border: 1px solid var(--line); border-radius: 6px }
 .card-body { padding: 0; margin: 10px 0 0; width: 100%; display: block; text-align: left; border-radius: 0; max-height: calc(var(--note-lines) * 1lh); overflow: auto }
 .card-body:hover { text-decoration: underline; background: none !important }
 .card-body.quoted { padding-left: 9px; border-left: 3px solid var(--tone) }

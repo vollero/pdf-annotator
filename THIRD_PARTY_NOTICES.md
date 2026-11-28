@@ -1,6 +1,10 @@
 # Third-party notices for Margin
 
-Margin distributes the browser builds of PDF.js 5.5.207 and pdf-lib 1.17.1. The following paths are relative to the extracted extension folder. The build preserves the upstream JavaScript license headers and ships the license files alongside the code for offline use.
+Margin distributes the browser builds of PDF.js 5.5.207, pdf-lib 1.17.1 and Marked 18.3.0. The following paths are relative to the extracted extension folder. The build preserves the upstream JavaScript license headers and ships the license files alongside the code for offline use.
+
+## Marked
+
+Margin uses Marked to tokenize Markdown note text. Its license and upstream notices are included in `vendor/MARKED-LICENSE`. [Marked source](https://github.com/markedjs/marked/tree/v18.3.0)
 
 ## PDF.js
 
