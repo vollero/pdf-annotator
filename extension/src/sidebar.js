@@ -117,7 +117,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     button.title=label
     card.append(head,body,dateLine(mark))
     if (mark.notebook) {
-      const button=el('button','appearance-link','Open notebook · '+mark.notebook.length+' pages')
+      const button=el('button','appearance-link','Open notebook · '+mark.notebook.length+(mark.notebook.length===1?' page':' pages'))
       button.onclick=()=>edit(mark);card.append(button)
     }
     if (mark.replies?.length) {

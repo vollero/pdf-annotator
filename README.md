@@ -13,6 +13,12 @@ For pictures of the **Load unpacked** button and pin menu, see [Chrome’s illus
 
 Already using Margin? Keep the existing installation folder when you upgrade so Chromium can reopen your drafts. [Update Margin](#update-margin)
 
+## Handwritten notebooks on Android and desktop
+
+For a long proof or several pages of handwritten comments, open a note on the source PDF, give it a title and choose **Save and open notebook**. Write on grid, ruled or blank pages. In landscape on a tablet you can keep the PDF beside the notebook. Export the handwriting as a printable PDF or transfer the editable pages with **Export annotations**.
+
+Handwriting requires the **desktop 0.5.0-rc.1 candidate** or the **Android tablet development build**. The stable desktop download above is version 0.4.0. Android requires version 12 or later and WebView 141 or later. The tablet guide walks through APK installation, pen controls and a notebook transfer. [Desktop candidate](https://github.com/vollero/pdf-annotator/releases/tag/v0.5.0-rc.1) · [Android installation and notebook guide](docs/android-tablet.md)
+
 ## Try it on the sample
 
 On your first launch from a new tab, Margin opens *Reading the Alps*. It already contains a few example marks.

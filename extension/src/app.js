@@ -315,7 +315,7 @@ async function jumpTo(mark,part=mark) {
   if(dy<15 || dy>sr.height-75) scroller.scrollTop+=dy-sr.height*.4
   if(dx<0 || dx>sr.width-25) scroller.scrollLeft+=dx-sr.width*.5
 }
-bindPenNavigation($('sheets'),$('scroller'),()=>!!globalThis.MarginAndroid && ['draw','highlight','region','note'].includes(tool),step=>viewer.changeZoom(step))
+bindPenNavigation($('sheets'),$('scroller'),()=>!!globalThis.MarginAndroid && ['draw','highlight'].includes(tool),step=>viewer.changeZoom(step))
 const openBook=bindNotebook({
   flush:async doc=>{await writes;if(!privateWindow && doc.saveFailed)throw Error('Local save failed.')},
 

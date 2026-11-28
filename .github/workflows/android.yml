@@ -28,3 +28,52 @@ jobs:
           if-no-files-found: error
       - name: Run the tablet WebView smoke test
         run: bash android/test-emulator.sh
+  publish:
+    if: startsWith(github.ref, 'refs/tags/android-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+          cache: npm
+      - name: Check release versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          desktop=$(node -p "require('./package.json').version")
+          gh release view "v$desktop" --repo "$GITHUB_REPOSITORY"
+          version=$(sed -n "s/.*versionName '\(.*\)'/\1/p" android/app/build.gradle)
+          test "$GITHUB_REF_NAME" = "android-v$version"
+      - run: npm ci --ignore-scripts && npm run build
+      - name: Sign the pilot APK
+        working-directory: android
+        env:
+          KEY_MATERIAL: ${{ secrets.MARGIN_KEYSTORE_BASE64 }}
+          MARGIN_STORE_PASSWORD: ${{ secrets.MARGIN_STORE_PASSWORD }}
+          MARGIN_KEY_ALIAS: ${{ secrets.MARGIN_KEY_ALIAS }}
+          MARGIN_KEY_PASSWORD: ${{ secrets.MARGIN_KEY_PASSWORD }}
+        run: |
+          umask 077
+          export MARGIN_KEYSTORE="$RUNNER_TEMP/margin-release.jks"
+          trap 'rm -f "$MARGIN_KEYSTORE"' EXIT
+          test -n "$KEY_MATERIAL"
+          printf '%s' "$KEY_MATERIAL" | base64 --decode > "$MARGIN_KEYSTORE"
+          unset KEY_MATERIAL
+          JAVA_HOME="$JAVA_HOME_17_X64" ./gradlew --no-daemon :app:assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/margin-android.apk"
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --verbose --print-certs "$GITHUB_WORKSPACE/margin-android.apk"
+      - name: Publish installable APK and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha256sum margin-android.apk > margin-android.apk.sha256
+          gh release create "$GITHUB_REF_NAME" margin-android.apk margin-android.apk.sha256 --verify-tag --prerelease --latest=false \
+            --title "Margin Android ${GITHUB_REF_NAME#android-v}" \
+            --notes "Install margin-android.apk on Android 12 or later with WebView 141 or later. [Tablet and pen guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/android-tablet.md)."

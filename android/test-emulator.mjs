@@ -13,7 +13,7 @@ async function launch() {
     try {if((await fetch('http://127.0.0.1:9222/json/version')).ok)break}catch{}
     await sleep(500)
   }
-  const browser=await chromium.connectOverCDP('http://127.0.0.1:9222')
+  const browser=await chromium.connectOverCDP('ws://127.0.0.1:9222/devtools/browser')
   const page=browser.contexts()[0].pages()[0]
   page.on('console',msg=>{if(msg.type()==='error')console.error(msg.text())})
   await page.locator('.paper.current[data-ready="true"]').waitFor()

@@ -13,7 +13,7 @@ export async function printNotebooks(books,source,getBlob) {
       canvas.width=1190;canvas.height=70
       const ctx=canvas.getContext('2d');ctx.scale(2,2)
       ctx.font='bold 14px sans-serif';ctx.fillText(book.text,0,14,W)
-      ctx.font='10px sans-serif';ctx.fillText(source+' · PDF page '+book.page+' · Notebook '+(i+1)+' / '+book.notebook.length,0,30,W)
+      ctx.font='10px sans-serif';ctx.fillText(source+' · PDF page '+book.page+' · Notebook '+(i+(book.startPage??1))+' / '+(book.pageCount??book.notebook.length),0,30,W)
       const heading=await pdf.embedPng(canvas.toDataURL())
       page.drawImage(heading,{x:16,y:H+22,width:W,height:35})
       for(const [x,y,u,v] of paperLines(data.paper)) page.drawLine({start:{x:x+16,y:H+16-y},end:{x:u+16,y:H+16-v},thickness:.35,color:rgb(.83,.86,.89)})

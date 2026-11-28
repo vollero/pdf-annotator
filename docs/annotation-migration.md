@@ -1,11 +1,12 @@
 # Move Margin annotations between sessions or computers
 
-Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
+Choose **Export annotations** in the **Annotations** panel. Documents with handwritten notebooks produce a `.marginbook` package. Other documents produce a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
 Margin **0.4.0** reads formats 1–12, including every annotation file exported by **0.3.0**. When you share a dated annotation, the recipient needs a reader for format 12. If you use an older installation, the table lists the first compatible release for each format, including candidates.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
+| Handwritten notebooks or pressure-aware PDF ink | 13 | 0.5.0-rc.1 or Android tablet build |
 | Any annotation with a known creation or edit date | 12 | 0.4.0-rc.8 |
 | Threaded replies or retained note history | 11 | 0.4.0-rc.7 |
 | Comment author, tags or archived sets | 10 | 0.4.0-rc.5 |
@@ -155,3 +156,13 @@ A repeated import preserves known dates for identical content. Importing a match
 PDF export writes the native PDF creation and modification dates with second precision and preserves milliseconds when reopened in Margin. UTC timestamps travel with the file and the reader displays local time. A migration contains current annotations and retained note discussions. The per-PDF timeline of recorded drafts, including deleted marks, stays in the local browser profile.
 
 All versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.
+
+## Format 13 and handwritten notebooks
+
+Desktop Margin 0.5.0-rc.1 and the Android tablet build read formats 1–13. A PDF with pressure-aware drawing alone can use ordinary format 13 JSON. A document with notebooks needs the complete binary `.marginbook` package. Both formats carry the source PDF’s SHA-256. Send the PDF separately.
+
+The package starts with the UTF-8 signature `MARGIN-NOTEBOOKS/1` and a newline. Each following record has a four-byte unsigned big-endian length. The first record is the annotation JSON manifest. Every distinct current notebook page revision then appears once, in first-reference order in the manifest. Its JSON records the paper and ordered vector strokes, each with a stable ID, brush, width, color and normalized x, y and pressure samples. Margin validates every record and its SHA-256 before installing the page data. Limits are 256 MiB per package, 16 MiB for the manifest and 12 MiB per page record.
+
+Incoming pages are matched by page ID and revision. A known descendant supersedes its ancestor. Divergent changes preserve the local edition plus a labeled conflict page. Reimporting the same package keeps the existing conflict copy. Locally added pages survive import. The ancestry window is 32 revisions per page, so edits from devices that have been apart for longer can also produce a conflict copy. **Undo** reverses the imported changes in the workspace.
+
+The package carries current editable pages. A device’s timeline, recovery state, reading position and earlier page bodies stay local. To print a notebook, use **Export notebooks** inside the writing view. Source **Export PDF** includes the linked comment as an annotation on its source page. [Notebook guide](android-tablet.md)

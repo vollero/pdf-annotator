@@ -1,3 +1,4 @@
+import {notebookPen} from './notebook-pen.js'
 import {bindPenNavigation} from './pen-navigation.js'
 import {blankPage,checkPage,inside,nextRef,pageHash,pageLimit} from './notebook-data.js'
 import {inkPath,paperLines,W,H} from './notebook-ink.js'
@@ -28,8 +29,9 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
       }).catch(()=>{})
     }
   },{root:$('thumbs')})
+  const pen=notebookPen(sheet,$('bindings'),globalThis.chrome?.extension?.inIncognitoContext===true)
   $('diagnostics').hidden=!globalThis.MarginAndroid
-  $('diagnostics').onclick=()=>globalThis.MarginAndroid?.penReport()
+  $('diagnostics').onclick=()=>globalThis.MarginAndroid?.penReport(pen.report())
   const live=()=>current().doc===doc && current().marks.find(m=>m.id===book?.id)
   const position=()=>book.notebook.findIndex(r=>r.id===pageId)
   function nav() {
@@ -131,7 +133,7 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
   sheet.onpointerdown=e=>{
     if(readOnly || !data || active || busy || failure || (e.pointerType==='touch' && !$('finger').checked)) return
     e.preventDefault();sheet.setPointerCapture(e.pointerId)
-    const p=point(e),tool=$('tool').value
+    const p=point(e),tool=pen.tool(e) || $('tool').value
     active={pointer:e.pointerId,tool,start:p,path:[p],erase:new Set(),moving:false}
     if(tool==='lasso' && selected.size) active.moving=data.strokes.some(s=>selected.has(s.id) && s.points.some(q=>Math.hypot(q[0]-p[0],(q[1]-p[1])*H/W)<.04))
     if(tool==='eraser') eraseAt(p)
@@ -149,8 +151,13 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
       active.path.push(p)
       if(active.tool==='eraser') eraseAt(p)
     }
-    if(active.stroke) active.preview.setAttribute('d',inkPath(active.stroke))
-    else if(active.preview) active.preview.setAttribute('points',active.path.map(p=>p[0]*W+','+p[1]*H).join(' '))
+    const a=active
+    if(a.preview && !a.frame)a.frame=requestAnimationFrame(()=>{
+      a.frame=0
+      if(a!==active)return
+      if(a.stroke)a.preview.setAttribute('d',inkPath(a.stroke))
+      else a.preview.setAttribute('points',a.path.map(p=>p[0]*W+','+p[1]*H).join(' '))
+    })
   }
   sheet.onpointerup=e=>{
     if(active?.pointer!==e.pointerId) return
@@ -202,7 +209,7 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
     const {printNotebooks}=await import('./notebook-pdf.js')
     await saveFile(await printNotebooks(books,doc.file.name,getBlob),books[0].text.slice(0,60).replace(/[^\p{L}\p{N} -]/gu,'_')+'-notes.pdf')
   }
-  $('print-page').onclick=()=>print([{...book,notebook:[{rev:'current'}]}],()=>new Blob([JSON.stringify(data)])).catch(e=>notify(e.message))
+  $('print-page').onclick=()=>print([{...book,startPage:position()+1,pageCount:book.notebook.length,notebook:[{rev:'current'}]}],()=>new Blob([JSON.stringify(data)])).catch(e=>notify(e.message))
   $('print').onclick=()=>action(async()=>{
     const ids=new Set([...$('exports').selectedOptions].map(o=>o.value));const list=(readOnly?[book]:current().marks).filter(m=>ids.has(m.id) && m.notebook)
     if(list.length)await print(list)

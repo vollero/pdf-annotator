@@ -38,6 +38,9 @@ class ReaderActivity : Activity() {
     private var low = Float.POSITIVE_INFINITY
     private var high = 0f
     private var buttons = 0
+    private var hovering = 0L
+    private var historical = 0L
+    private var tilt = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,21 +101,32 @@ class ReaderActivity : Activity() {
         web.loadUrl("$ORIGIN/assets/index.html")
     }
 
-    override fun dispatchTouchEvent(e:MotionEvent):Boolean {
-        for(i in 0 until e.pointerCount) if(e.getToolType(i)==MotionEvent.TOOL_TYPE_STYLUS) {
+    private fun observePen(e:MotionEvent) {
+        for(i in 0 until e.pointerCount) if(e.getToolType(i) in listOf(MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)) {
             penSamples++;buttons=buttons or e.buttonState
+            historical+=e.historySize
+            if(e.actionMasked==MotionEvent.ACTION_HOVER_MOVE) hovering++
+            tilt=maxOf(tilt, e.getAxisValue(MotionEvent.AXIS_TILT,i))
             if(e.getPressure(i)>0) {low=minOf(low,e.getPressure(i));high=maxOf(high,e.getPressure(i))}
         }
+    }
+    override fun dispatchGenericMotionEvent(e:MotionEvent):Boolean {
+        observePen(e)
+        return super.dispatchGenericMotionEvent(e)
+    }
+    override fun dispatchTouchEvent(e:MotionEvent):Boolean {
+        observePen(e)
         return super.dispatchTouchEvent(e)
     }
 
     inner class Bridge {
-        @JavascriptInterface fun penReport() { runOnUiThread {
+        @JavascriptInterface fun penReport(editor:String) { runOnUiThread {
             AlertDialog.Builder(this@ReaderActivity).setTitle("Pen diagnostics")
                 .setMessage("Model: "+android.os.Build.MODEL+"\nAndroid: "+android.os.Build.VERSION.RELEASE+
                     "\nWebView: "+WebView.getCurrentWebViewPackage()?.versionName+"\nPen events: "+penSamples+
                     "\nContact pressure: "+(if(low.isFinite()) low.toString() else "—")+" to "+high+
-                    "\nObserved button mask: "+buttons).setPositiveButton("Close",null).show()
+                    "\nObserved button mask: "+buttons+"\nHover events: "+hovering+" · Historical samples: "+historical+
+                    "\nLargest tilt (radians): "+tilt+"\n\n"+editor.take(450)).setPositiveButton("Close",null).show()
         } }
         @JavascriptInterface fun beginSave(name:String,type:String,bytes:Long):Boolean = synchronized(this@ReaderActivity) {
             if(spool!=null || bytes !in 1..MAX_EXPORT) return@synchronized false
@@ -178,7 +192,7 @@ class ReaderActivity : Activity() {
     @Deprecated("System Back")
     override fun onBackPressed() {
         if(!::web.isInitialized){super.onBackPressed();return}
-        web.evaluateJavascript("(()=>{const d=document.querySelector('dialog[open]');if(!d)return false;if(d.id==='book-dialog')document.getElementById('book-close').click();else d.close();return true})()") {
+        web.evaluateJavascript("(()=>{const d=document.querySelector('#book-dialog[open]') || document.querySelector('dialog[open]');if(!d)return false;if(d.id==='book-dialog')document.getElementById('book-close').click();else d.close();return true})()") {
             if(it!="true") moveTaskToBack(true)
         }
     }
