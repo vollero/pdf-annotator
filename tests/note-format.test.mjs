@@ -20,3 +20,22 @@ test('literal markup and long imported notes keep their source',()=>{
   const long = '**note**'.repeat(2000)
   assert.equal(readableNoteText({text:long,textFormat:'markdown'}),long)
 })
+
+test('fenced code keeps literal lines, tabs and block boundaries in text and styled runs',()=>{
+  const code = '\tif (a < b) {\n    print("**literal**");  \n\n\t}'
+  for (const fence of ['```','~~~~']) {
+    const text = ['Intro',fence+'js',code,fence,'Next'].join('\n')
+    const mark = {text,textFormat:'markdown'}
+    const expected = 'Intro\n'+code+'\nNext'
+    assert.equal(readableNoteText(mark),expected)
+    assert.equal(readableNoteText({text}),text)
+    const runs = noteTextRuns(mark)
+    assert.deepEqual(runs.filter(run=>run.codeBlock),[{text:code,code:true,codeBlock:true}])
+    assert.equal(runs.map(run=>run.text).join(''),expected)
+  }
+  const read = text=>readableNoteText({text,textFormat:'markdown'})
+  assert.equal(read('```\nx\n```\n~~~\ny\n~~~'),'x\ny')
+  assert.equal(read('```\nx\n\n```\ny'),'x\n\ny')
+  assert.equal(read('~~~\n  incomplete\n'),'  incomplete\n')
+  assert.equal(read('    previously literal'),'    previously literal')
+})

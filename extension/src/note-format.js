@@ -48,6 +48,21 @@ function writeTokens(tokens, parent, write, depth = 0, indent = '', style = {}) 
         child('code')?.append(token.text)
         write?.(token.text,{...style,code:true})
         break
+      case 'code': {
+        if (token.codeBlockStyle === 'indented') { text(token.raw); break }
+        const pre = child('pre')
+        if (pre) {
+          pre.className = 'note-code-block'
+          const code = document.createElement('code')
+          code.textContent = token.text
+          pre.append(code)
+        }
+        write?.(token.text,{...style,code:true,codeBlock:true})
+        // The block element separates the next paragraph on screen. Plain PDF
+        // comments and canvas text need an explicit line break at that boundary.
+        if (token.raw.endsWith('\n') && !token.text.endsWith('\n')) write?.('\n',style)
+        break
+      }
       case 'list': {
         const list = child(token.ordered ? 'ol' : 'ul')
         if (list && token.ordered) list.start = token.start

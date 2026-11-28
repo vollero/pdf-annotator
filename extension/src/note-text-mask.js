@@ -1,3 +1,14 @@
+// Canvas has no tab-size setting. Expand tabs before wrapping each source line.
+function expandCodeTabs(text) {
+  let result = '', column = 0
+  for (const character of text) {
+    const width = character === '\t' ? 4 - column % 4 : 1
+    result += character === '\t' ? ' '.repeat(width) : character
+    column = character === '\n' ? 0 : column + width
+  }
+  return result
+}
+
 // PDF standard fonts do not cover every script a note can contain. Use the
 // browser's font fallback for the visible glyphs and keep full Unicode Contents.
 export function noteTextMask(runs, width, height, {fontSize, fontFamily}) {
@@ -23,16 +34,18 @@ export function noteTextMask(runs, width, height, {fontSize, fontFamily}) {
   const available = width-10
   for (const run of runs) {
     if (baseline-fontSize >= height-4) break
+    if (run.codeBlock && used) finishLine()
     const font = (run.em ? 'italic ' : '') + (run.strong ? 'bold ' : '') +
       (run.code ? fontSize*.9+'px monospace' : fontSize+'px '+fontFamily)
     if (font !== ctx.font) { flush(); ctx.font = font }
-    for (const [token] of run.text.matchAll(/\n|[^\S\n]{1,256}|[^\s]{1,256}/gu)) {
+    const text = run.codeBlock && run.text.includes('\t') ? expandCodeTabs(run.text) : run.text
+    for (const [token] of text.matchAll(/\n|[^\S\n]{1,256}|[^\s]{1,256}/gu)) {
       if (baseline-fontSize >= height-4) break
       if (token==='\n') { finishLine(); continue }
       const measured = ctx.measureText(token).width
       if (used && used+measured>available) {
         finishLine()
-        if (!token.trim()) continue
+        if (!run.codeBlock && !token.trim()) continue
       }
       if (measured<=available) {
         line.push(token)

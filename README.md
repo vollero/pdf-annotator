@@ -33,7 +33,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Format a note with Markdown
 
-[Download the 0.3.0-rc.14 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.14/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.15 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.15/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
 
 1. Open a point note, region note, or passage comment and select **Format as Markdown**. Each note starts in plain text.
 2. Try the example below. Open **Preview formatting** to see your changes while you write. Bulleted and numbered lists, bold, italics, and inline code work in the preview and the saved note.
@@ -47,6 +47,23 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 3. Save the note. You can read the formatting in **Annotations**, a page margin, a pinned preview, or an expanded note box. Reopen the note to edit its Markdown source. Clear **Format as Markdown** to display the punctuation literally. Quoted PDF text always reads as it appears in the document.
 
 **Export PDF** gives other PDF readers readable comment text and draws styled text in expanded note boxes. Reopening the PDF in Margin restores the editable Markdown. **Export annotations** carries the source and formatting choice to another copy of the same PDF in Margin **0.3.0-rc.14 or later**. HTML, links, and image syntax display as text.
+
+### Add a multi-line code sample
+
+In a note with **Format as Markdown** selected, type three backticks on a line, paste your code below, then close it with three backticks on their own line. Here is a complete note you can paste into the editor.
+
+````markdown
+Check the unit before plotting.
+
+```python
+if unit == "mm":
+    plot(values)
+```
+````
+
+Open **Preview formatting** to see the indented sample in monospace. Spaces, tabs and blank lines are part of the sample. Long lines wrap to fit the note. You can use three tildes (`~~~`) for a sample that contains triple backticks. The language name after the opening fence is optional.
+
+**Export PDF** puts the code in the PDF comment and draws it in expanded note boxes. Reopening the PDF in Margin or importing the annotations restores the fences and language name for editing. Use **0.3.0-rc.15 or later** to see formatted blocks. The previous candidate can import the same annotation file and displays the fence characters.
 
 ## Read notes in the page margin
 
@@ -151,7 +168,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.14/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.15/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.
