@@ -92,7 +92,7 @@
         <button id="import-annotations" class="button" disabled>Import annotations</button>
         <button id="export-annotations" class="button" disabled>Export annotations</button>
         <button id="restore-draft" class="button" disabled>Restore previous draft…</button>
-        <input id="annotation-file" type="file" accept=".json,application/json" hidden>
+        <input id="annotation-file" type="file" accept=".json,.marginbook,application/json,application/octet-stream" hidden>
       </div>
     </aside>
   </main>
@@ -202,6 +202,25 @@
       <div class="dialog-actions"><button class="button" value="cancel" autofocus>Cancel</button><button class="button primary" type="button" id="confirm-restore">Restore draft</button></div>
     </form>
   </dialog>
+  <dialog id="book-dialog" aria-labelledby="book-title">
+    <header><strong id="book-title"></strong><button id="book-diagnostics" hidden>Pen diagnostics</button><button id="book-details">Title and tags</button><button id="book-source">Go to source</button><button id="book-close">Close notebook</button></header>
+    <div class="book-layout"><aside><label>Source width <input id="book-split" type="range" min="20" max="60" value="35"></label><canvas id="book-reference"></canvas></aside>
+    <section><div class="book-controls">
+      <label>Tool <select id="book-tool"><option value="pen">Pen</option><option value="highlight">Highlighter</option><option value="eraser">Stroke eraser</option><option value="lasso">Lasso</option></select></label>
+      <label>Color <input id="book-color" type="color" value="#263849"></label>
+      <label>Width <select id="book-width"><option>1</option><option selected>2</option><option>4</option></select></label>
+      <label><input type="checkbox" id="book-finger"> Finger ink</label>
+      <button id="book-undo">Undo ink</button><button id="book-copy">Copy selection</button><button id="book-paste">Paste</button><button id="book-cut">Delete selection</button>
+    </div>
+    <div class="book-scroll"><svg id="book-sheet" viewBox="0 0 595 842" role="img" aria-label="Handwriting page"></svg></div>
+    <div class="book-controls"><button id="book-previous">Previous</button><label>Page <input id="book-index" type="number" min="1"></label><span id="book-position"></span><button id="book-next">Next</button>
+    <select id="book-page-action" aria-label="Manage notebook pages"><option value="">Page actions…</option><option value="append">Add at end</option><option value="before">Insert before</option><option value="duplicate">Duplicate</option><option value="up">Move earlier</option><option value="down">Move later</option><option value="delete">Delete page</option></select>
+    <label>Paper <select id="book-paper"><option>grid</option><option>ruled</option><option>blank</option></select></label>
+    <label>Zoom <input id="book-zoom" type="range" min="100" max="300" value="100"></label></div>
+    <details id="book-pages"><summary>Page thumbnails</summary><div id="book-thumbs"></div></details>
+    <details><summary>Export notebooks</summary><label>Notebooks <select multiple id="book-exports"></select></label><button id="book-print">Save selected as PDF</button><button id="book-print-page">Save page PDF</button></details>
+    <output id="book-status" role="status"></output><button id="book-retry">Retry page save</button>
+    </section></div></dialog>
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
       <div class="dialog-head"><h2 id="note-title">Add a note</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
@@ -246,7 +265,7 @@
         <small>Save records text and formatting changes while tracking is on. Annotation JSON includes saved versions.</small>
         <details id="versions"><summary id="versions-title">Saved versions</summary><div id="version-list"></div></details>
       </details>
-      <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button id="note-save" class="button primary" type="submit">Save note</button></div>
+      <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button id="note-save" class="button primary" type="submit">Save note</button><button id="write-book" class="button" type="submit">Save and open notebook</button></div>
     </form>
   </dialog>
   <dialog id="appearance-dialog" aria-labelledby="appearance-title">

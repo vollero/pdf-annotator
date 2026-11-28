@@ -1,3 +1,7 @@
+import {bindNotebook} from './notebook-editor.js'
+import {exportBooks,isBookFile,readBooks} from './notebook-files.js'
+import {notebookStore} from './storage.js'
+import {androidSave} from './platform.js'
 import { bindTimeline } from './timeline.js'
 import { dateEdits, dateLine } from './annotation-dates.js'
 import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
@@ -30,7 +34,7 @@ function beginImport() {
   return ++opening
 }
 let opening=0, editNumber=0, writes=Promise.resolve(), noteDraft, toastTimer, exporting=false
-const privateWindow = chrome.extension.inIncognitoContext
+const privateWindow = globalThis.chrome?.extension?.inIncognitoContext === true
 let privateAuthor = ''
 const privateStatus = 'Private session · export to keep'
 const {getColor, chooseAnnotationColor} = bindPalette({privateWindow, preference, savePreference, notify:toast})
@@ -306,8 +310,14 @@ async function jumpTo(mark,part=mark) {
   if(dy<15 || dy>sr.height-75) scroller.scrollTop+=dy-sr.height*.4
   if(dx<0 || dx>sr.width-25) scroller.scrollLeft+=dx-sr.width*.5
 }
-function openNote(mark, marginSheet) {
+const openBook=bindNotebook({
+  current:()=>({doc:session,marks,pdf:viewer.pdf}),editDetails:mark=>openNote(mark,null,true),jump:jumpTo,
+  commit:(doc,mark)=>session===doc && change(marks.map(m=>m.id===mark.id?mark:m)),
+  saveFile:downloadFile,notify:toast
+})
+function openNote(mark, marginSheet, details=false) {
   if(!mark || !session) return
+  if(mark.notebook && !details) {openBook(mark);return}
   notePreview.hideHover()
   const existing=marks.some(m=>m.id===mark.id)
   if (!existing) mark=assignSet(mark,sets.active)
@@ -430,6 +440,7 @@ $('note-form').addEventListener('submit',e=>{
     }
   }
   $('note-dialog').close()
+  if(e.submitter===$('write-book')) {const mark=marks.find(m=>m.id===noteDraft?.mark.id);if(mark)openBook(mark)}
 })
 $('note-dialog').onclose=()=>{
   const draft = noteDraft
@@ -491,7 +502,7 @@ async function load(file,initial=[],ticket=beginImport()) {
     $('restore-draft').hidden=privateWindow
     selected=null;undo=[];redo=[];marks=saved
     sets=savedSets
-    session={file,base,saved,savedSets,remembered,pages:pdf.numPages}
+    session={file,base,saved,savedSets,remembered,pages:pdf.numPages,books:notebookStore(file.id,privateWindow),privateWindow}
     $('filename').textContent=file.name
     $('filename').title=file.name
     document.title=file.name+' · Margin'
@@ -535,7 +546,8 @@ document.addEventListener('drop',e=>{
   if(e.dataTransfer.files.length) openFile(e.dataTransfer.files[0])
 })
 
-function downloadFile(blob, filename) {
+async function downloadFile(blob, filename) {
+  if(globalThis.MarginAndroid) return androidSave(blob,filename)
   const url=URL.createObjectURL(blob)
   const link=document.createElement('a')
   link.href=url;link.download=filename
@@ -543,12 +555,14 @@ function downloadFile(blob, filename) {
   setTimeout(()=>URL.revokeObjectURL(url),60000)
 }
 
-$('export-annotations').onclick=()=>{
+$('export-annotations').onclick=async()=>{
   if (!session) return
   try {
+    const doc=session, snapshot=marks
     const blob = exportAnnotations(session.file.id, session.pages, exportSetMarks(sets,marks), sets.names.map(key=>setLabel(sets,key)),
       sets.archived?.map(key=>setLabel(sets,key)))
-    downloadFile(blob, session.file.name.replace(/\.pdf$/i,'') + '.margin-annotations.json')
+    const books=snapshot.some(m=>m.notebook)
+    await downloadFile(books ? await exportBooks(blob,snapshot,doc.books.get) : blob,doc.file.name.replace(/\.pdf$/i,'')+(books ? '.marginbook' : '.margin-annotations.json'))
   } catch (error) { toast(error.message) }
 }
 
@@ -559,7 +573,7 @@ $('annotation-file').onchange=async event=>{
   if (!file || !doc || $('import-annotations').disabled) return
   $('import-annotations').disabled = true
   try {
-    const incoming = await runPdfJob({operation:'read-annotations', file, documentSha256:doc.file.id, pages:doc.pages}, signal)
+    const incoming = await isBookFile(file) ? await readBooks(file,doc.file.id,doc.pages,doc.books.put) : await runPdfJob({operation:'read-annotations', file, documentSha256:doc.file.id, pages:doc.pages}, signal)
     if (doc !== session || signal.aborted) return
     const imported = importNamedSets(sets,incoming.names,incoming.marks,incoming.archived)
     const result = mergeAnnotations(marks, imported.marks, incoming.version < 9)
@@ -591,7 +605,7 @@ async function download() {
     const style = getComputedStyle($('note-text'))
     const noteFont = {fontSize:parseFloat(style.fontSize),fontFamily:style.fontFamily}
     const bytes=await runPdfJob({operation:'export',bytes:base,marks:snapshot,views,noteFont})
-    downloadFile(new Blob([bytes],{type:'application/pdf'}), file.name.replace(/(?:-annotated)?\.pdf$/i,'')+'-annotated.pdf')
+    await downloadFile(new Blob([bytes],{type:'application/pdf'}), file.name.replace(/(?:-annotated)?\.pdf$/i,'')+'-annotated.pdf')
   } catch {toast('This PDF could not be exported. Try an unlocked copy of the original file.')}
   finally {exporting=false;$('export').disabled=!session}
 }
@@ -744,7 +758,7 @@ document.addEventListener('keydown',e=>{
 async function start() {
   const ticket=beginImport()
   const signal = activeImport.signal
-  if (location.hash) {
+  if (location.hash && !globalThis.MarginAndroid) {
     const clicked = location.hash === '#open'
     try {
       const source = clicked ? await chrome.runtime.sendMessage('open-clicked-pdf') : null

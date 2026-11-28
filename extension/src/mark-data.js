@@ -1,3 +1,4 @@
+import {validRefs} from './notebook-data.js'
 import { validMarkDates } from './annotation-dates.js'
 import { DocumentLimitError, maxPages } from './input.js'
 import { markupLabels } from './markup.js'
@@ -73,6 +74,10 @@ export function readMark(raw, page, pages = maxPages) {
   if (!validMarkDates(raw)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'notebook')) {
+    if (!isNote(mark) || !validRefs(raw.notebook)) return
+    mark.notebook=raw.notebook
+  }
   if (raw.createdAt) mark.createdAt = raw.createdAt
   if (raw.updatedAt) mark.updatedAt = raw.updatedAt
   if (Object.hasOwn(raw,'history') || Object.hasOwn(raw,'replies')) {

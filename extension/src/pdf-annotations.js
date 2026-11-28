@@ -195,7 +195,7 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
       return 'Reply #'+number+target+' · '+(entry.author ?? 'Anonymous')+' · '+entry.at+'\n'+entry.text
     })
     const text = S([(status ? status + ': ' : '') + readable + tagLine,...transcript].join('\n\n'))
-    const {history,...sharedMark} = mark
+    const {history,notebook,...sharedMark} = mark
     const contents = mark.passages?.length > 1 ? doc.context.register(text) : text
     let root
     for (const part of mark.passages ?? [mark]) {

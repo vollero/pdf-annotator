@@ -1,3 +1,4 @@
+import {mergePages} from './notebook-data.js'
 import { mergeDates } from './annotation-dates.js'
 import { checkMarkBudget, compatibleMarkTypes, isNote } from './mark-data.js'
 import { initialSets, mergeSetViews } from './annotation-sets.js'
@@ -142,6 +143,8 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
             if (mark.style === undefined) delete updated.style
             else updated.style = mark.style
           }
+          if (mark.notebook && mark.notebook!==prior.notebook) updated.notebook = JSON.stringify(latest.notebook)===JSON.stringify(prior.notebook) ? mark.notebook : mergePages(latest.notebook,mark.notebook,prior.notebook)
+          else if (!mark.notebook && prior.notebook && JSON.stringify(latest.notebook)===JSON.stringify(prior.notebook)) delete updated.notebook
           applyDiscussionChanges(updated,prior,mark)
           mergeDates(updated,latest,prior,mark)
           merged.set(mark.id,updated)
@@ -273,4 +276,23 @@ export async function clearTimeline(id) {
     tx.oncomplete=resolve
     tx.onabort=()=>reject(tx.error)
   })
+}
+
+// Immutable page bodies are shared by draft, undo, recovery and timeline references.
+export function notebookStore(documentId,privateWindow) {
+  const memory=new Map()
+  const key=rev=>['handwriting',documentId,rev]
+  return {
+    get:rev=>privateWindow ? memory.get(rev) : read('settings',key(rev)),
+    async put(entries) {
+      if (privateWindow) { for (const [rev,blob] of entries) memory.set(rev,blob); return }
+      const db=await database()
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('settings','readwrite')
+        for (const [rev,blob] of entries) tx.objectStore('settings').put(blob,key(rev))
+        tx.oncomplete=resolve
+        tx.onabort=()=>reject(tx.error)
+      })
+    }
+  }
 }

@@ -1,0 +1,38 @@
+plugins {
+    id 'com.android.application' version '8.11.1'
+    id 'org.jetbrains.kotlin.android' version '2.2.20'
+}
+def assetsDir = layout.buildDirectory.dir('generated/margin-assets')
+tasks.register('bundleEditor', Sync) {
+    from('../../dist') { exclude 'background.js', 'manifest.json' }
+    into assetsDir
+    doFirst { if (!file('../../dist/vendor/pdf.min.mjs').exists()) throw new GradleException('Run npm run build at the repository root first.') }
+}
+android {
+    namespace 'io.github.vollero.margin'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'io.github.vollero.margin'
+        minSdk 31
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0-rc.1'
+    }
+    sourceSets.main.assets.srcDir assetsDir
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    kotlinOptions { jvmTarget = '17' }
+    androidResources { noCompress += ['pdf', 'wasm', 'bcmap'] }
+    if (System.getenv('MARGIN_KEYSTORE')) {
+        signingConfigs {
+            pilot {
+                storeFile file(System.getenv('MARGIN_KEYSTORE'))
+                storePassword System.getenv('MARGIN_STORE_PASSWORD')
+                keyAlias System.getenv('MARGIN_KEY_ALIAS')
+                keyPassword System.getenv('MARGIN_KEY_PASSWORD')
+            }
+        }
+        buildTypes.release.signingConfig signingConfigs.pilot
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'bundleEditor' }
+dependencies { implementation 'androidx.webkit:webkit:1.12.1' }

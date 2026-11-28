@@ -267,3 +267,22 @@ body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
 #timeline-dialog label:not(.check-label,.sr-only) { display: block; margin: 8px 0 3px }
 .timeline-steps { display: flex; align-items: center; justify-content: space-between; margin-top: 12px }
 #timeline-text { font: 400 var(--note-size)/1.45 var(--note-font); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 25dvh; overflow: auto; margin: 10px 0 }
+
+#book-dialog { width:98vw; max-width:98vw; max-height:98dvh; padding:10px; overflow:auto; --source-width:35% }
+#book-dialog header,.book-controls { display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px }
+#book-dialog header strong { flex:1;overflow-wrap:anywhere }
+#book-dialog button,#book-dialog select { border:1px solid var(--line);padding:6px;background:var(--sidebar) }
+.book-layout { display:grid;grid-template-columns:var(--source-width) minmax(0,1fr);gap:10px }
+.book-layout aside,.book-scroll { overflow:auto; max-height:72dvh;background:#e0e0db }
+#book-reference,#book-sheet { display:block;width:100% }
+#book-sheet { background:white;touch-action:pan-x pan-y pinch-zoom }
+#book-sheet.finger-ink { touch-action:none }
+#book-index {width:4em}
+#book-thumbs { display:flex; overflow:auto;max-width:100%;gap:4px }
+#book-thumbs button {flex:none;display:grid;width:65px}
+#book-thumbs svg {width:100%;background:white}
+#book-dialog details {margin:4px}
+#book-retry {display:none}
+#book-status.error + #book-retry {display:inline}
+@media(orientation:portrait){.book-layout{grid-template-columns:minmax(0,1fr)}.book-layout aside{display:none}}
+@media(pointer:coarse){.toolbar{overflow-x:auto}.toolbar>*{flex-shrink:0}#book-dialog button{min-height:40px}}

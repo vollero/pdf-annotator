@@ -116,6 +116,10 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     if (focusedResultId === mark.id) focusedResult = body.querySelectorAll('a')[focusedLink] ?? button
     button.title=label
     card.append(head,body,dateLine(mark))
+    if (mark.notebook) {
+      const button=el('button','appearance-link','Open notebook · '+mark.notebook.length+' pages')
+      button.onclick=()=>edit(mark);card.append(button)
+    }
     if (mark.replies?.length) {
       const replies = el('button','appearance-link',mark.replies.length+(mark.replies.length===1 ? ' reply' : ' replies'))
       replies.onclick = ()=>{ edit(mark); document.getElementById('discussion').open = true }

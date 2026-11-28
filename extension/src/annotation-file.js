@@ -1,3 +1,4 @@
+import {mergePages} from './notebook-data.js'
 import { importDates } from './annotation-dates.js'
 import { checkMarkBudget, maxMarkCount, readMark, isNote } from './mark-data.js'
 import { maxNamedSets, setNames, validSetName } from './annotation-sets.js'
@@ -7,9 +8,10 @@ import { importDiscussion } from './discussion.js'
 const format = 'margin-annotations'
 const maxFileBytes = 16 * 1024 * 1024
 const hashPattern = /^[0-9a-f]{64}$/
-const latestVersion = 12
+const latestVersion = 13
 
 function requiredVersion(mark) {
+  if (mark.notebook) return 13
   if (mark.createdAt || mark.updatedAt) return 12
   if (mark.replies || mark.history) return 11
   if (mark.author || mark.tags) return 10
@@ -58,7 +60,7 @@ function checkArchiveList(archived,names) {
       archived.some(name=>!names.includes(name))) throw new Error('Invalid archived annotation set list.')
 }
 
-export async function readAnnotationFile(file, documentSha256, pages) {
+export async function readAnnotationFile(file, documentSha256, pages, withPages=false) {
   if (file.size > maxFileBytes) throw new Error('Annotation files can be up to 16 MiB.')
   let data
   try { data = JSON.parse(await file.text()) }
@@ -75,6 +77,7 @@ export async function readAnnotationFile(file, documentSha256, pages) {
     throw new Error('The PDF fingerprint does not match. Open the exact PDF used for this annotation export.')
   }
   const marks = portableMarks(data.annotations, pages, data.version)
+  if (!withPages && marks.some(mark=>mark.notebook)) throw Error('Choose the complete Margin notebook package.')
   const names = data.version >= 9 ? data.sets : []
   if (!Array.isArray(names) || names.length > maxNamedSets || names.some(name=>!validSetName(name)) ||
       new Set(names).size !== names.length || marks.some(mark=>mark.set && !names.includes(mark.set))) {
@@ -98,6 +101,7 @@ export function mergeAnnotations(current, incoming, preserveLocalSets = false) {
     const local = byId.get(entry.id)
     let mark = preserveLocalSets && local?.set ? {...entry,set:local.set} : entry
     if (local) {
+      if (local.notebook && isNote(mark)) mark={...mark,notebook:mergePages(local.notebook,mark.notebook)}
       if ((local.history || local.replies) && isNote(mark)) mark = importDiscussion(local,mark)
       mark = importDates(readMark(local,local.page),readMark(mark,mark.page))
       if (JSON.stringify(readMark(local, local.page)) === JSON.stringify(readMark(mark,mark.page))) continue
