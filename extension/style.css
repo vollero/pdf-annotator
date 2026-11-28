@@ -133,6 +133,15 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 .pdf-only :is(.topbar, .toolbar, #workspace > aside, .local-status, #shortcuts) { display: none }
 .filters { display: flex; gap: 8px; margin: 0 18px 13px; flex-wrap: wrap }
+#writing-set { align-self: center; font-size: 12px; overflow-wrap: anywhere }
+.card-set { color: var(--muted); font-size: 12px; overflow-wrap: anywhere }
+#sets-dialog { max-height: 90dvh; overflow: auto }
+#sets-dialog select, .set-entry input { width: 100%; min-width: 0; padding: 6px; border: 1px solid var(--line); border-radius: 4px; font: inherit }
+#sets-dialog fieldset { margin: 16px 0; padding: 6px 10px; border: 1px solid var(--line) }
+#sets-dialog legend { font-size: 13px }
+#visible-sets { display: grid }
+#visible-sets .check-label { overflow-wrap: anywhere }
+.set-entry { display: flex; gap: 6px; margin-top: 4px }
 .annotation-search { flex: 1 0 100%; min-width: 0 }
 .annotation-search input { width: 100%; min-height: 34px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; color: var(--ink); background: white }
 .annotation-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }

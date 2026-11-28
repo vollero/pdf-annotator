@@ -1,6 +1,7 @@
 import { icon } from './icons.js'
 import { readableNoteText, renderNoteText } from './note-format.js'
 import { wrapNoteAction } from './note-action.js'
+import { defaultSet } from './annotation-sets.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
 import { isNote, isPageNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
@@ -27,7 +28,7 @@ function searchAnnotations(marks, query, pagePrefix) {
   })
 }
 
-export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,notePreview,recolor,remove,setDone,setStyle}) {
+export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,notePreview,recolor,remove,setDone,setStyle,sets,moveToSet}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
@@ -73,6 +74,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     more.setAttribute('aria-expanded','false')
     more.append(icon('more'))
     head.append(symbol,el('span','card-title',title),more)
+    if (sets.names.length) head.insertBefore(el('span','card-set',mark.set ?? defaultSet),more)
     const content = document.createDocumentFragment()
     renderNoteText(content,mark)
     if (mark.type === 'comment') content.prepend(el('span','card-quote',quotedText(mark)))
@@ -146,6 +148,19 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
         menu.append(label)
       }
       const color=el('button','','Change color')
+      if (sets.names.length) {
+        const label = el('label','','Move to set')
+        const picker = el('select')
+        for (const name of [defaultSet,...sets.names]) picker.add(new Option(name,name))
+        picker.value = mark.set ?? defaultSet
+        picker.onchange = ()=>{
+          moveToSet(mark,picker.value)
+          focusActions()
+          if (!document.activeElement.closest('.card')) document.getElementById('manage-sets').focus()
+        }
+        label.append(picker)
+        menu.append(label)
+      }
       color.prepend(icon('palette'))
       color.setAttribute('aria-haspopup','dialog')
       color.onclick=async()=>{
@@ -165,6 +180,8 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
   }
   if (!visible.length && query) {
     frag.append(el('p','empty','Try another search or change the filters.'))
+  } else if (!marks.length && sets.hidden.length === sets.names.length+1) {
+    frag.append(el('p','empty','All annotation sets are hidden. Open Annotation sets to show one.'))
   } else if (!visible.length) {
     const empty = status === 'all' ? (currentOnly ? 'No annotations on this page.' : 'Choose a tool and mark the page. Your annotations will appear here.')
       : (status === 'todo' ? 'No actions to do' : 'No completed actions') + (currentOnly ? ' on this page.' : '.')

@@ -1,5 +1,6 @@
 import { DocumentLimitError, maxPages } from './input.js'
 import { markupLabels } from './markup.js'
+import { validSetName } from './annotation-sets.js'
 
 export const maxMarkCount = 2000
 
@@ -67,6 +68,10 @@ export function readMark(raw, page, pages = maxPages) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'set')) {
+    if (!validSetName(raw.set)) return
+    mark.set = raw.set
+  }
   if (Object.hasOwn(raw,'textFormat')) {
     if (!isNote(mark) || raw.textFormat !== 'markdown') return
     mark.textFormat = raw.textFormat

@@ -1,9 +1,9 @@
-import { readAnnotations } from './annotation-file.js'
+import { readAnnotationFile } from './annotation-file.js'
 
 self.onmessage = async ({data}) => {
   try {
     if (data.operation === 'read-annotations') {
-      const result = await readAnnotations(data.file, data.documentSha256, data.pages)
+      const result = await readAnnotationFile(data.file, data.documentSha256, data.pages)
       self.postMessage({result})
       return
     }

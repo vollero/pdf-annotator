@@ -71,6 +71,8 @@
     <aside id="annotations-panel" aria-labelledby="annotations-heading">
       <div class="panel-heading"><h2 id="annotations-heading">Annotations</h2><span class="count" id="annotation-count">0</span><button class="appearance-link" type="button" data-note-appearance aria-haspopup="dialog">Note appearance</button></div>
       <div class="filters">
+      <button id="manage-sets" class="appearance-link" type="button" aria-haspopup="dialog" disabled>Annotation sets</button>
+      <span id="writing-set" hidden></span>
       <label class="annotation-search"><span class="sr-only">Search annotations</span>
         <input type="search" id="annotation-search" placeholder="Search annotations" aria-controls="cards" autocomplete="off">
       </label>
@@ -148,6 +150,18 @@
       </div>
       <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" value="apply">Apply color</button></div>
     </form>
+  </dialog>
+  <dialog id="sets-dialog" aria-labelledby="sets-title">
+    <div class="dialog-head"><h2 id="sets-title">Annotation sets</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
+    <label for="active-set">Write new annotations in</label>
+    <select id="active-set" autofocus></select>
+    <fieldset><legend>Visible sets</legend><div id="visible-sets"></div></fieldset>
+    <p class="format-hint">Export PDF includes visible sets. Export annotations includes every set.</p>
+    <form id="create-set">
+      <label for="set-name">New set name</label>
+      <div class="set-entry"><input id="set-name" maxlength="64" required autocomplete="off" placeholder="Review comments"><button class="button" type="submit">Create and use</button></div>
+    </form>
+    <div class="dialog-actions"><button class="button primary" type="button" data-close>Done</button></div>
   </dialog>
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">

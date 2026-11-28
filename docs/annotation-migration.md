@@ -2,10 +2,11 @@
 
 Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
-Margin 0.3.0 supports all eight versions. The table lists the earliest release, including candidates, that can import each format.
+Margin 0.4.0-rc.3 reads versions 1–9. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
+| Named annotation sets, including empty sets | 9 | 0.4.0-rc.3 |
 | Markdown in note text | 8 | 0.3.0-rc.14 |
 | Left or right margin placement | 7 | 0.3.0-rc.13 |
 | Region note | 6 | 0.3.0-rc.10 |
@@ -21,7 +22,7 @@ For example, suppose you marked up `Survey.pdf` on your laptop. Send the JSON to
 
 **What travels.** The file contains all editable Margin text markup, passage comments, freehand drawings, point notes and region notes, across every page. A highlight can include the text you selected. Anyone who receives the JSON can read that text and your comments. The PDF, attachments, other editors’ native annotations, document URL, browser preferences and history stay outside this format. Use **Export PDF** when someone wants a document they can open in an ordinary PDF reader.
 
-**Importing into an existing draft.** Margin matches annotations by ID. A new ID adds a mark. If the same ID has different content, the imported version replaces the local version, even when the imported file is older. Other local marks stay in the draft. Deleting a mark on one computer does not propagate a deletion through a later import. An empty export adds nothing. An invalid entry, a duplicate ID, an unsupported version, or a combined draft over the size limit rejects the whole import.
+**Importing into an existing draft.** Margin matches annotations by ID. A new ID adds a mark. If the same ID has different content, the imported version replaces the local version, even when the imported file is older. Other local marks stay in the draft. Deleting a mark on one computer does not propagate a deletion through a later import. A file with no marks or named sets adds nothing. An invalid entry, a duplicate ID, an unsupported version, or a combined draft over the size limit rejects the whole import.
 
 ## Version 1 file format
 
@@ -105,4 +106,10 @@ Selecting **Format as Markdown** on any note makes the export version 8. Importi
 
 Web links also use version 8. A note such as `[units table](https://example.org/units)` travels in the `text` field with its original label and address. Import it into **0.4.0-rc.2 or later** to follow the link. Earlier versions that support Markdown display the link source and preserve it on export. [Web link example](https://github.com/vollero/pdf-annotator/blob/v0.4.0-rc.2/README.md#open-a-web-link-from-a-note)
 
-All eight versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.
+## Version 9 and annotation sets
+
+An export with a named set adds a top-level list such as `"sets": ["Review comments", "References"]`. A mark belonging to one of those sets carries its exact name, for example `"set": "Review comments"`. Omitting `set` places the mark in **My notes**, the built-in set. Named sets can be empty. Each PDF supports up to 128 distinct named sets. Names are case-sensitive, NFC-normalized, single-line strings of up to 64 UTF-16 code units with no outer whitespace.
+
+Export includes every set, regardless of visibility. Import combines sets by exact name, keeps local-only sets and marks, and updates the membership of matching mark IDs. When importing a version 1–8 file, matching IDs keep their local set and new marks go into **My notes**. Visibility and the current writing set are local preferences. A transfer with no named sets uses the earliest version its marks require.
+
+All versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

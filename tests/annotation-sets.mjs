@@ -1,0 +1,90 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { PDFDocument } from 'pdf-lib'
+import { unpack } from '../dist/src/pdf-annotations.js'
+
+export async function checkAnnotationSets(page,downloadAnnotations,importAnnotations) {
+  const pdf = await PDFDocument.create()
+  pdf.addPage([480,620])
+  const original = Buffer.from(await pdf.save())
+  const old = {id:'personal',type:'note',page:1,point:[.15,.3],marginSide:'left',color:'#225577',text:'Check this before sharing'}
+  const legacy = {format:'margin-annotations',version:7,documentSha256:createHash('sha256').update(original).digest('hex'),annotations:[old]}
+  const file = data=>({name:'Sets.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))})
+  async function open(name,buffer) {
+    await page.locator('#file').setInputFiles({name,mimeType:'application/pdf',buffer})
+    await page.locator('#filename').filter({hasText:name}).waitFor()
+  }
+  const manage = ()=>page.locator('#manage-sets').click()
+  const dialog = page.locator('#sets-dialog')
+  const done = ()=>dialog.getByRole('button',{name:'Done',exact:true}).click()
+  const create = async name=>{
+    await dialog.getByLabel('New set name').fill(name)
+    await dialog.getByRole('button',{name:'Create and use'}).click()
+  }
+  const saved = ()=>page.locator('#save-state').getByText('Saved locally',{exact:true}).waitFor()
+  const snapshot = async()=>JSON.parse((await downloadAnnotations(page)).buffer)
+  const exportPDF = async()=>{
+    const [download] = await Promise.all([page.waitForEvent('download'),page.locator('#export').click()])
+    return readFile(await download.path())
+  }
+  await open('Sets.pdf',original)
+  await importAnnotations(page,file(legacy),'1 added, 0 updated')
+  await manage()
+  await create('Empty')
+  await create('Review')
+  assert.equal(await dialog.getByLabel('Write new annotations in').inputValue(),'Review')
+  await done()
+  await page.locator('button[data-tool="note"]').click()
+  await page.locator('.paper.current[data-ready="true"]').click({position:{x:130,y:100}})
+  await page.locator('#note-text').fill('Reviewer feedback')
+  await page.locator('#note-save').click()
+  const full = await snapshot()
+  const review = full.annotations.find(mark=>mark.text==='Reviewer feedback')
+  assert.equal(review.set,'Review')
+  assert.deepEqual(full.sets,['Empty','Review'])
+  assert.equal(full.version,9)
+  const personal = page.locator('.card').filter({hasText:old.text})
+  await personal.locator('.more').click()
+  await personal.getByRole('button',{name:'Pin preview'}).click()
+  await manage()
+  await dialog.getByRole('checkbox',{name:'My notes',exact:true}).uncheck()
+  await done()
+  assert.equal(await personal.count(),0)
+  assert.ok(await page.locator('#note-preview').isHidden())
+  assert.equal(await page.locator('.paper.current .note-marker[data-id="personal"],.margin-note[data-id="personal"],.thumbnail [data-id="personal"]').count(),0)
+  assert.deepEqual(await snapshot(),full)
+  const shared = await exportPDF()
+  assert.deepEqual((await unpack(shared)).marks,[review])
+  await saved()
+  await page.reload()
+  await page.locator('.card').filter({hasText:'Reviewer feedback'}).waitFor()
+  assert.equal(await personal.count(),0)
+  await manage()
+  assert.equal(await dialog.getByLabel('Write new annotations in').inputValue(),'Review')
+  assert.equal(await dialog.getByRole('checkbox',{name:'My notes',exact:true}).isChecked(),false)
+  await done()
+  const reviewCard = page.locator('.card').filter({hasText:'Reviewer feedback'})
+  await reviewCard.locator('.more').click()
+  await reviewCard.getByLabel('Move to set').selectOption('My notes')
+  assert.equal(await reviewCard.count(),0)
+  await page.locator('#undo').click()
+  await reviewCard.waitFor()
+  assert.deepEqual(await snapshot(),full)
+  await open('Shared.pdf',shared)
+  const sharedState = await snapshot()
+  assert.deepEqual(sharedState.annotations,[review])
+  assert.deepEqual(sharedState.sets,['Review'])
+  await open('Sets.pdf',original)
+  await importAnnotations(page,file({...legacy,annotations:[{...old,text:'Updated personal note'}]}),'0 added, 1 updated')
+  assert.equal(await page.locator('.card').filter({hasText:'Updated personal note'}).count(),0)
+  const extra = {...full,sets:[...full.sets,'References']}
+  await importAnnotations(page,file(extra),'0 added, 1 updated')
+  assert.deepEqual((await snapshot()).sets,extra.sets)
+  await page.locator('#undo').click()
+  assert.deepEqual((await snapshot()).sets,full.sets)
+  await manage()
+  await dialog.getByRole('checkbox',{name:'Review',exact:true}).uncheck()
+  await done()
+  assert.deepEqual((await unpack(await exportPDF())).marks,[])
+}

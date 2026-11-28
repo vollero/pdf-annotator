@@ -1,4 +1,5 @@
 import { checkMarkBudget, compatibleMarkTypes } from './mark-data.js'
+import { initialSets, mergeSetViews } from './annotation-sets.js'
 
 let connection
 function database() {
@@ -33,6 +34,7 @@ export async function remember(file, initialMarks) {
     const tx = db.transaction(['documents','drafts','settings'], 'readwrite')
     const drafts = tx.objectStore('drafts')
     const lookup = drafts.get(file.id)
+    const sets = tx.objectStore('settings').get(['sets',file.id])
     let marks
     lookup.onsuccess = () => {
       marks = lookup.result ?? initialMarks
@@ -42,25 +44,38 @@ export async function remember(file, initialMarks) {
       }
       tx.objectStore('settings').put(file.id, 'last')
     }
-    tx.oncomplete = () => resolve(marks)
+    tx.oncomplete = () => resolve({marks,sets:sets.result ?? initialSets})
     tx.onabort = () => reject(tx.error)
   })
 }
 
 export const readMarks = id => read('drafts', id)
 
+export async function readWorkspace(id) {
+  const db = await database()
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(['drafts','settings'])
+    const marks = tx.objectStore('drafts').get(id)
+    const sets = tx.objectStore('settings').get(['sets',id])
+    tx.oncomplete = ()=>resolve({marks:marks.result,sets:sets.result ?? initialSets})
+    tx.onabort = ()=>reject(tx.error)
+  })
+}
+
 // Merge individual changes in one transaction so separate tabs can add marks safely.
-export async function writeChanges(id, before, after) {
+export async function writeChanges(id, before, after, beforeSets = initialSets, afterSets = initialSets) {
   const old = new Map(before.map(mark => [mark.id, mark]))
   const next = new Map(after.map(mark => [mark.id, mark]))
   const removed = before.filter(mark => !next.has(mark.id))
   const changed = after.filter(mark => old.get(mark.id) !== mark)
   const db = await database()
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('drafts', 'readwrite')
+    const tx = db.transaction(['drafts','settings'], 'readwrite')
     const store = tx.objectStore('drafts')
     const lookup = store.get(id)
-    lookup.onsuccess = () => {
+    const settings = tx.objectStore('settings')
+    const currentSets = settings.get(['sets',id])
+    currentSets.onsuccess = () => {
       const merged = new Map((lookup.result ?? before).map(mark => [mark.id,mark]))
       for (const mark of removed) merged.delete(mark.id)
       for (const mark of changed) {
@@ -90,6 +105,10 @@ export async function writeChanges(id, before, after) {
           if (prior.text !== mark.text && (updated.type !== 'region' || mark.text.trim())) updated.text = mark.text
           if (converted && updated.type === 'region' && !updated.text.trim()) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
+          if (prior.set !== mark.set) {
+            if (mark.set) updated.set = mark.set
+            else delete updated.set
+          }
           if (prior.textFormat !== mark.textFormat) {
             if (mark.textFormat) updated.textFormat = mark.textFormat
             else delete updated.textFormat
@@ -111,7 +130,11 @@ export async function writeChanges(id, before, after) {
       }
       const result = [...merged.values()]
       // Concurrent imports can each fit the limit on their own.
-      try { checkMarkBudget(result) }
+      try {
+        checkMarkBudget(result)
+        const sets = mergeSetViews(currentSets.result ?? beforeSets,beforeSets,afterSets,result)
+        settings.put(sets,['sets',id])
+      }
       catch (error) { tx.abort(); reject(error); return }
       store.put(result, id)
     }

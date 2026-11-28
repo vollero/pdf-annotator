@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { exportAnnotations, readAnnotations, mergeAnnotations } from '../dist/src/annotation-file.js'
+import { exportAnnotations, readAnnotationFile, readAnnotations, mergeAnnotations } from '../dist/src/annotation-file.js'
+import { initialSets, mergeSetViews } from '../dist/src/annotation-sets.js'
 import { convertPageNote } from '../dist/src/mark-data.js'
 
 const pdf = await readFile('extension/assets/reading-the-alps.pdf')
@@ -12,6 +13,32 @@ const drawing = {id:'pencil', page:2, type:'draw', text:'Pencil', color:'#91b9dd
 const entries = [...sample, drawing]
 const file = (...annotations) => exportAnnotations(hash,3,annotations)
 const packageData = JSON.parse(await file(...entries).text())
+
+test('v9 transfers named sets, including empty sets, and validates membership',async()=>{
+  const review = {...drawing,set:'Review'}
+  const json = JSON.parse(await exportAnnotations(hash,3,[review],['Review','Empty']).text())
+  assert.deepEqual(json,{format:'margin-annotations',version:9,documentSha256:hash,sets:['Review','Empty'],annotations:[review]})
+  const read = patch=>readAnnotationFile(new Blob([JSON.stringify({...json,...patch})]),hash,3)
+  assert.deepEqual(await read({}),{version:9,names:json.sets,marks:[review]})
+  for (const patch of [{version:8},{sets:[]},{sets:['Review','Review']},{sets:['Review','My notes']},
+    {sets:['Review',' x']},{sets:['Review','x\ny']},{sets:['A'.repeat(65)]},{sets:null},
+    {sets:Array.from({length:129},(_,i)=>String(i))},{active:'Review'},{annotations:[{...drawing,set:null}]}]) {
+    await assert.rejects(read(patch),/Invalid/)
+  }
+  assert.equal(mergeAnnotations([review],[drawing],true).updated,0)
+  assert.deepEqual(mergeAnnotations([review],[drawing]).marks,[drawing])
+  assert.equal(JSON.parse(await exportAnnotations(hash,3,[],['Empty']).text()).version,9)
+  assert.equal(JSON.parse(await exportAnnotations(hash,3,[]).text()).version,1)
+})
+
+test('concurrent changes preserve memberships, empty sets and independent visibility edits',()=>{
+  const before = {names:['A','B'],active:'A',hidden:[]}
+  const first = {names:['A','B','First'],active:'First',hidden:['A']}
+  const second = {names:['A','B','Second'],active:'A',hidden:['B']}
+  const merged = mergeSetViews(first,before,second,[])
+  assert.deepEqual(merged,{names:['A','B','First','Second'],active:'First',hidden:['A','B']})
+  assert.deepEqual(mergeSetViews(before,before,initialSets,[{set:'A'}]),{names:['A'],active:'My notes',hidden:[]})
+})
 
 test('the guide shipped in the ZIP contains a working import for the bundled sample',async()=>{
   const guide = await readFile('dist/ANNOTATIONS.md','utf8')
@@ -77,7 +104,7 @@ test('conversion uses the displayed footprint and migrates the same annotation i
 
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:9}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:10}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}
