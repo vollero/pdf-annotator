@@ -68,7 +68,7 @@ export async function checkTextMarkup(page, downloadAnnotations, importAnnotatio
   await actions.getByRole('button',{name:'Comment',exact:true}).click()
   const editor = page.getByRole('dialog',{name:'Comment on passage'})
   assert.equal(await editor.locator('blockquote').textContent(),second)
-  await editor.locator('textarea').fill('Use the revised estimate.')
+  await editor.getByRole('textbox',{name:'Comment',exact:true}).fill('Use the revised estimate.')
   await editor.getByLabel('Track as action').check()
   await editor.getByRole('button',{name:'Save comment'}).click()
   assert.equal(await path('dotted-underline').getAttribute('stroke-linecap'),'round')

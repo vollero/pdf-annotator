@@ -52,7 +52,7 @@ export async function checkPassageComments(page, downloadAnnotations, importAnno
   await marker.focus()
   await page.keyboard.press('Enter')
   assert.equal(await editor.locator('blockquote').textContent(),quote)
-  await editor.locator('textarea').fill('Units verified.')
+  await editor.getByRole('textbox',{name:'Comment',exact:true}).fill('Units verified.')
   await editor.getByLabel('Done',{exact:true}).check()
   await editor.getByRole('button',{name:'Save comment'}).click()
   const migration = await downloadAnnotations(page)

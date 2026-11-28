@@ -49,7 +49,7 @@ export async function checkNoteMove(page, downloadAnnotations, importAnnotations
   await page.mouse.move(start.x+2,start.y)
   await page.mouse.up()
   await editor.waitFor()
-  assert.equal(await editor.locator('textarea').inputValue(),note.text)
+  assert.equal(await editor.getByRole('textbox',{name:'Note',exact:true}).inputValue(),note.text)
   await editor.getByRole('button',{name:'Cancel'}).click()
   start = await press()
   await page.mouse.move(start.x+64,start.y+33,{steps:4})
