@@ -2,7 +2,7 @@ import { render } from '../vendor/katex.mjs'
 
 // Recognize math before Markdown can consume TeX backslashes and subscripts.
 // Each alternative consumes an escaped character or a non-delimiter character.
-const inlineDollar = /^\$(?![\s$])((?:\\[^\n]|[^\\$\n])+?)(?<!\s)\$(?![\d$])/u
+const inlineDollar = /^\$(?![\s$])((?:\\[^\n]|[^\\$`\n])+?)(?<!\s)\$(?![\d$])/u
 const displayDollar = /^\$\$((?:\\[\s\S]|[^\\$]|\$(?!\$))+?)\$\$/u
 
 function formula(src, block) {

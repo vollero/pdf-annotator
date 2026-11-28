@@ -30,6 +30,8 @@ test('equations preserve TeX in PDF text, including Markdown punctuation and dis
   assert.equal(readableNoteText(mark),expected)
   assert.equal(noteTextRuns(mark).map(run=>run.text).join(''),expected)
   assert.equal(readableNoteText({text}),text)
+  const prices = {text:'Pay $5 or $10. Example: `$x$`.',textFormat:'markdown'}
+  assert.deepEqual(noteTextRuns(prices).filter(run=>run.code),[{text:'$x$',code:true}])
 })
 
 test('fenced code keeps literal lines, tabs and block boundaries in text and styled runs',()=>{
