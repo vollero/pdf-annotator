@@ -43,6 +43,8 @@ To edit or remove a color, choose it under **Saved colors**. Change its name or 
 
 Margin remembers your palette in this browser profile. Recipients see the colors you used even if they have a different palette. In an Incognito tab, palette changes last until you reload or close that tab.
 
+![The Annotation palette dialog with a new blue color named Needs review, a hex entry field, and the Save and use button.](docs/annotation-palette.png)
+
 ## Mark text with different styles
 
 1. Open the arrow beside **Highlight**. Choose **Solid underline**, **Dashed underline**, **Dotted underline**, **Strikethrough**, or **Outline box**. Choose a color and drag over the words. The tool keeps that style for your next mark. Choose **Highlight** in the same menu to return to a filled highlight.
