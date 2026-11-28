@@ -85,6 +85,8 @@ aside { background: var(--sidebar); display: flex; flex-direction: column; min-h
 #sheets:is([data-tool="draw"],[data-tool="note"]) .ink { pointer-events: auto; touch-action: none }
 #sheets[data-tool="highlight"] { touch-action: none }
 #sheets[data-tool="select"] .note-marker { pointer-events: all; cursor: pointer }
+#sheets[data-tool="select"] .point-note { cursor: grab; touch-action: none; user-select: none }
+#sheets[data-tool="select"] .paper.moving-note, #sheets[data-tool="select"] .moving-note * { cursor: grabbing }
 .textLayer { position:absolute; inset:0; overflow:clip; line-height:1; text-align:initial; transform-origin:0 0; text-size-adjust:none; --min-font-size:1; --text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv:calc(1 / var(--min-font-size)); --scale-round-x:1px; --scale-round-y:1px }
 .textLayer :is(span,br) { color:transparent; position:absolute; white-space:pre; cursor:text; transform-origin:0 0 }
 .textLayer > :not(.markedContent),.textLayer .markedContent span:not(.markedContent) { --font-height:0; --scale-x:1; --rotate:0deg; font-size:calc(var(--text-scale-factor) * var(--font-height)); transform:rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)) }

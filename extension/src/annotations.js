@@ -1,4 +1,4 @@
-import { noteStatus } from './mark-data.js'
+import { fitNotePoint, noteStatus } from './mark-data.js'
 import { markupLabels, markupStrokes } from './markup.js'
 
 export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', comment: 'Passage comment' }
@@ -44,7 +44,10 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       const [left,top,w] = part.rects.at(-1)
       x = Math.max(0,Math.min(width - 18,(left + w)*width + 2))
       y = Math.max(0,Math.min(height - 18,top*height))
-    } else { x = mark.point[0]*width; y = mark.point[1]*height }
+    } else {
+      const [u,v] = fitNotePoint(mark.point,width,height)
+      x = u*width; y = v*height
+    }
     const marker = shape('g',{'data-id':mark.id,transform:'translate('+x+' '+y+')',class:'note-marker'})
     group.append(marker)
     marker.append(shape('path',{d:'M1 1h16v12h-6l-5 4v-4H1z',fill:mark.color,stroke:'#484c43','stroke-width':.8,'stroke-linejoin':'round'}))
@@ -54,6 +57,10 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       if (mark.done) marker.append(shape('path',{d:'m6.5 6.5 1.8 1.8 3.3-3.8',fill:'none',stroke:'#353a32','stroke-width':1.5}))
     } else marker.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
     if (interactive) {
+      if (mark.type === 'note') {
+        marker.classList.add('point-note')
+        marker.setAttribute('aria-description','Click to edit or drag to move on this page.')
+      }
       marker.setAttribute('tabindex','0')
       marker.setAttribute('role','button')
       marker.setAttribute('aria-label',(mark.type === 'comment' ? 'Edit comment' : 'Edit note') + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))

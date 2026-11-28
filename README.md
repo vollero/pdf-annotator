@@ -31,9 +31,16 @@ Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exce
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to edit it or delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Change the color of an existing annotation
+## Move a note marker
 
-[Download the 0.3.0-rc.7 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.7/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.8 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.8/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. Choose **Select** and find a marker you placed with **Note**. Drag it to a new spot on the same page and release. A click opens the note for editing.
+2. Press **Esc** during the drag to cancel. After releasing, use **Undo** to return the marker to its previous spot or **Redo** to move it again.
+
+The note keeps its text, color, and action checkbox. Its new position follows the page when you zoom and travels with **Export PDF** and **Export annotations**. Passage comments stay anchored to their quoted words.
+
+## Change the color of an existing annotation
 
 1. In **Annotations**, find the highlight, drawing, note, or passage comment you want to recolor. Open its **…** menu and choose **Change color**.
 2. Pick one of your **Saved colors**, click the color well, or type a six-digit **Hex color** such as `#176B87`. Click **Apply color**. For a comment spanning several pages, this updates the entire marked passage.
@@ -89,7 +96,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.7/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.8/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.

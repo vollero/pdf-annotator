@@ -1,4 +1,4 @@
-import { readMark, readDraft, maxMarkCount, noteStatus } from './mark-data.js'
+import { readMark, readDraft, maxMarkCount, noteStatus, fitNotePoint } from './mark-data.js'
 import { DocumentLimitError } from './input.js'
 import { markupStrokes } from './markup.js'
 import { PDFDocument, PDFName, PDFDict, PDFHexString, PDFString, PDFRef, PDFArray, PDFStream } from '../vendor/pdf-lib.mjs'
@@ -139,7 +139,7 @@ function appearance(doc, mark, viewport) {
     fields={Subtype:'Ink',InkList:[points.flat()],BS:{W:strokeWidth,S:'S'}}
     pad=strokeWidth/2
   } else {
-    const [x,y]=mark.point
+    const [x,y]=fitNotePoint(mark.point,width,height)
     const pt=(dx,dy)=>pdfPoint(x*width+dx,y*height+dy)
     points.push(pt(0,0),pt(18,18))
     ops+=polygon([pt(1,1),pt(17,1),pt(17,13),pt(11,13),pt(6,17),pt(6,13),pt(1,13)])

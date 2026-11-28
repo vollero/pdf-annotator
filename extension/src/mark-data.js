@@ -7,6 +7,11 @@ const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
 const rect = r => Array.isArray(r) && r.length === 4 && r.every(unit)
 function unit(v) { return Number.isFinite(v) && v >= 0 && v <= 1 }
 
+// The point is the top-left corner of the 18-unit note icon on the displayed page.
+export function fitNotePoint([x,y], width, height) {
+  return [Math.max(0,Math.min(x,1-18/width)),Math.max(0,Math.min(y,1-18/height))]
+}
+
 export function readMark(raw, page, pages = maxPages) {
   if (!raw || typeof raw.id !== 'string' || !raw.id || raw.id.length > 128 ||
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return

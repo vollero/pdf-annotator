@@ -56,7 +56,11 @@ const hideNotePreview = bindNotePreview($('sheets'), $('note-preview'), id => ma
 const cancelGesture=bindGestures({
   viewer,getTool:()=>tool,getColor,getStyle:()=>$('tool-style').value,
   add:added=>{ selected=added[0].id; change([...marks,...added]) },
-  note:openNote,editNote:id=>openNote(marks.find(m=>m.id===id)),notify:toast
+  note:openNote,hideNotePreview,notify:toast,
+  moveNote:(mark,point)=>{
+    selected=mark.id
+    change(marks.map(m=>m.id===mark.id ? {...m,point} : m))
+  }
 })
 function refresh() {
   hideNotePreview()

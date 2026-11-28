@@ -42,6 +42,8 @@ Every annotation carries a unique string ID, a one-based page number, a six-digi
 | `draw` | `points` | Two or more `[x, y]` pairs in stroke order |
 | `highlight` | `rects` | One or more `[x, y, width, height]` rectangles |
 
+Moving a note on its page updates its `point` and preserves its ID. Import the new annotation file on the other computer to move the corresponding marker. Earlier format versions already support these coordinates.
+
 ## Version 2 and action checkboxes
 
 For documents without passage comments or styled marks, when at least one note has **Track as action** selected, Margin exports the whole document’s annotations with `"version": 2`. A note can have one extra field, `done`. Set it to `false` for **To do** or `true` for **Done**. Omitting it makes the note an ordinary comment. For example, change the version in the sample above to 2 and add `"done": false` alongside the note’s `"point"` field to import it as an open action.

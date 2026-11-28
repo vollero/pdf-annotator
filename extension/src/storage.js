@@ -67,9 +67,12 @@ export async function writeChanges(id, before, after) {
         const prior = old.get(mark.id), latest = merged.get(mark.id)
         // Merge field edits independently when tabs change the same annotation before receiving a broadcast.
         if (prior?.type === mark.type && mark.rects === prior.rects && mark.points === prior.points &&
-            mark.point === prior.point && mark.passages === prior.passages && mark.page === prior.page) {
+            mark.passages === prior.passages && mark.page === prior.page) {
           if (latest?.type !== mark.type) continue
           const updated = {...latest}
+          if (mark.type === 'note' && (mark.point[0] !== prior.point[0] || mark.point[1] !== prior.point[1])) {
+            updated.point = mark.point
+          }
           if (prior.text !== mark.text) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color
           if (prior.done !== mark.done) {

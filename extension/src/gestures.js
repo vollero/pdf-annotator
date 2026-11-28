@@ -1,4 +1,5 @@
 import { paintMark } from './annotations.js'
+import { fitNotePoint } from './mark-data.js'
 import { withMarkupStyle } from './markup.js'
 
 const clamp = value => Math.min(1, Math.max(0, value))
@@ -62,7 +63,7 @@ function selectedPassages(viewer, range) {
   return passages
 }
 
-export function bindGestures({viewer, getTool, getColor, getStyle, add, note, editNote, notify}) {
+export function bindGestures({viewer, getTool, getColor, getStyle, add, note, moveNote, hideNotePreview, notify}) {
   const stack = document.getElementById('sheets')
   const actions = document.getElementById('selection-actions')
   let range
@@ -106,15 +107,42 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, ed
   })
   let active = null
   function reset() {
-    active?.preview?.remove()
+    if (!active) return
+    const {sheet,pointer,marker,transform,preview} = active
     active = null
+    preview?.remove()
+    if (marker) {
+      marker.setAttribute('transform',transform)
+      sheet.element.classList.remove('moving-note')
+    }
+    if (sheet.element.hasPointerCapture(pointer)) sheet.element.releasePointerCapture(pointer)
+  }
+
+  function dragNote(event, p) {
+    const {sheet, mark, start, origin, ink} = active
+    if (!active.marker.isConnected) {
+      // Other tabs can edit the wording or color and repaint the SVG during a drag.
+      const current = viewer.marks.find(m=>m.id===mark.id)
+      if (current?.type!=='note' || current.page!==mark.page ||
+          current.point[0]!==mark.point[0] || current.point[1]!==mark.point[1]) return reset()
+      const marker = [...ink.querySelectorAll('.point-note')].find(el=>el.dataset.id===mark.id)
+      if (!marker) return reset()
+      active.marker = marker
+    }
+    if (!active.destination && Math.hypot(event.clientX-active.pressX,event.clientY-active.pressY)<4) return
+    const {width,height} = sheet.base
+    const destination = fitNotePoint([origin[0]+(p[0]-start[0]),origin[1]+(p[1]-start[1])],width,height)
+    active.destination = destination
+    sheet.element.classList.add('moving-note')
+    active.marker.setAttribute('transform','translate('+destination[0]*width+' '+destination[1]*height+')')
   }
 
   function move(event) {
     if (!active || event.pointerId !== active.pointer || active.textSelection) return
     const {sheet, mark, ink} = active
-    if (sheet.ink !== ink || !ink.isConnected) return reset()
+    if (sheet.ink !== ink || !ink.isConnected || !sheet.element.clientWidth) return reset()
     const p = point(event, sheet.element)
+    if (active.marker) return dragNote(event,p)
     const {width, height} = sheet.base
     if (mark.type === 'draw') {
       const last = mark.points.at(-1)
@@ -128,13 +156,23 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, ed
   }
 
   stack.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || !event.isPrimary) return
+    if (event.button !== 0 || !event.isPrimary || active && active.pointer!==event.pointerId) return
     const paper = event.target.closest('.paper[data-ready="true"]')
     if (!paper) return
     const sheet = viewer.sheetFor(paper), type = getTool()
     if (type === 'select') {
       const marker = event.target.closest('.note-marker')
-      if (marker) editNote(marker.dataset.id)
+      if (!marker) return
+      const mark = viewer.marks.find(m=>m.id===marker.dataset.id)
+      if (!mark) return
+      if (mark.type==='comment') { note(mark); return }
+      event.preventDefault()
+      marker.focus({preventScroll:true})
+      hideNotePreview()
+      active = {sheet, ink:sheet.ink, mark, marker, pointer:event.pointerId, transform:marker.getAttribute('transform'),
+        start:point(event,paper), origin:fitNotePoint(mark.point,sheet.base.width,sheet.base.height),
+        pressX:event.clientX, pressY:event.clientY}
+      paper.setPointerCapture(event.pointerId)
       return
     }
     reset()
@@ -161,6 +199,14 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, ed
     const {mark, start, sheet, ink, textSelection} = active
     if (sheet.ink !== ink || !ink.isConnected) return reset()
     if (!textSelection) move(event)
+    if (!active) return
+    if (active.marker) {
+      const {destination,origin} = active
+      reset()
+      if (!destination) note(viewer.marks.find(m=>m.id===mark.id))
+      else if (destination[0]!==origin[0] || destination[1]!==origin[1]) moveNote(mark,destination)
+      return
+    }
     reset()
     const {width, height} = sheet.base
     if (textSelection) {
@@ -169,7 +215,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, ed
         applySelection('highlight',selectedRange())
       })
     } else if (mark.type === 'note') {
-      mark.point = [Math.min(start[0], Math.max(0, 1 - 18 / width)), Math.min(start[1], Math.max(0, 1 - 18 / height))]
+      mark.point = fitNotePoint(start,width,height)
       note(mark)
     } else if (mark.type === 'draw') {
       if (mark.points.length === 1) {
@@ -179,7 +225,17 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, ed
       add([mark])
     } else if (mark.rects[0][2] * width >= 2 && mark.rects[0][3] * height >= 2) add([mark])
   })
-  stack.addEventListener('pointercancel', reset)
+  stack.addEventListener('pointercancel',event=>{ if (event.pointerId===active?.pointer) reset() })
+  stack.addEventListener('lostpointercapture',event=>{
+    if (event.pointerId===active?.pointer && event.target===active.sheet.element) reset()
+  })
+  window.addEventListener('keydown',event=>{
+    if (event.key==='Escape' && active?.marker) {
+      event.preventDefault()
+      event.stopPropagation()
+      reset()
+    }
+  },true)
   window.addEventListener('blur', reset)
   return () => { reset(); range = null; actions.hidden = true }
 }
