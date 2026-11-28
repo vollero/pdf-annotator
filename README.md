@@ -33,11 +33,13 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Organize annotations into sets
 
-Use sets to keep personal notes and review comments on the same PDF. This feature is available from **0.4.0-rc.3**. The standard download installs stable **0.3.0**. To try sets, use the candidate ZIP with the installation or update instructions in this README. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.5/margin-pdf-annotator.zip)
+Use sets to keep personal notes and review comments on the same PDF. This feature is available from **0.4.0-rc.3**. The standard download installs stable **0.3.0**. To try sets, use the candidate ZIP with the installation or update instructions in this README. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.6/margin-pdf-annotator.zip)
 
 1. Open **Annotations → Annotation sets**. Existing marks start in **My notes**. Type a name such as **Review comments**, click **Create and use**, then **Done**. New highlights, drawings, notes and passage comments go into that set. Choose **Write new annotations in** to switch sets.
 2. To organize a mark you already made, open its **…** menu in the sidebar and choose **Move to set**. **Undo** reverses the move.
 3. Under **Visible sets**, uncheck a set to hide its marks on the page, in thumbnails, in the margins and in sidebar search. Check it again to bring them back. You can hide every set. Selecting a set for writing or adding a new mark to it makes it visible.
+
+In **0.4.0-rc.6**, the number beside each set name is its annotation total for the whole PDF. It includes highlights, drawings, notes and passage comments across all pages. A comment spanning two pages counts once. You can check a hidden or archived set’s total without opening it, even while a sidebar filter is active.
 
 **To send a review copy**, show **Review comments**, hide **My notes**, and click **Export PDF**. The downloaded PDF includes the visible Margin marks. Reopening it in Margin restores the set names attached to those marks. This controls Margin annotations only. Content, attachments and annotations supplied by the original PDF can still be present.
 
@@ -74,7 +76,7 @@ Choose **Export PDF** to share the visible review. Choose **Export annotations**
 
 ### Open a web link from a note
 
-Clickable links are available from **0.4.0-rc.2**. Stable **0.3.0** displays link syntax as text. To try links, install or update using the candidate ZIP. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.5/margin-pdf-annotator.zip)
+Clickable links are available from **0.4.0-rc.2**. Stable **0.3.0** displays link syntax as text. To try links, install or update using the candidate ZIP. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.6/margin-pdf-annotator.zip)
 
 1. Open a note, select **Format as Markdown**, and type `Check the [units table](https://example.org/units).` To show the address itself, write `<https://example.org/units>`. Use a full address beginning with `https://` or `http://`.
 2. Open **Preview formatting** and click the underlined link, or focus it with **Tab** and press **Enter**. The website opens in a new tab. Your PDF and any unsaved note stay open in Margin.
@@ -101,7 +103,7 @@ Open **Preview formatting** to see the indented sample in monospace. Spaces, tab
 
 ### Write an equation in a note
 
-Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.5/margin-pdf-annotator.zip)
+Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.6/margin-pdf-annotator.zip)
 
 1. Open a note and select **Format as Markdown**. Enclose an inline formula in single dollar signs, such as `$E=mc^2$`. For an equation on its own line, use a pair of dollar signs at each end.
 2. Paste the example below and open **Preview formatting**. The first formula appears in the sentence. The fraction appears on its own line.

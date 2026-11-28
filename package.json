@@ -1,6 +1,6 @@
 {
   "name": "margin-pdf-annotator",
-  "version": "0.4.0-rc.5",
+  "version": "0.4.0-rc.6",
   "private": true,
   "description": "A local-first PDF annotation workspace for Chromium.",
   "type": "module",

@@ -93,4 +93,8 @@ export async function checkRenameSet(page,downloadAnnotations,importAnnotations)
   assert.deepEqual(older.sets,['Final decisions','References','Comments','Empty'])
   assert.equal(older.annotations.find(mark=>mark.text==='From the second tab').set,'Final decisions')
   assert.equal(older.annotations.find(mark=>mark.id==='n').set,'Comments')
+  await manage()
+  assert.deepEqual(await dialog.locator('#visible-sets .set-count').allTextContents(),
+    ['0 annotations','1 annotation','0 annotations','2 annotations','0 annotations'])
+  await done()
 }

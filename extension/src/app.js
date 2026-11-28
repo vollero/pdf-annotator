@@ -131,7 +131,7 @@ function refresh() {
   viewer.setMarks(visible)
   notePreview.refresh()
   $('undo').disabled=!undo.length; $('redo').disabled=!redo.length
-  renderSets(sets)
+  renderSets(sets,marks)
   $('export').title = sets.hidden.length || sets.archived?.length ? 'Export PDF with visible annotation sets only' : 'Export annotated PDF'
   cards()
 }

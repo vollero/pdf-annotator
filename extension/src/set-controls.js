@@ -6,6 +6,7 @@ export function bindSetControls({create,rename,archive,writeIn,showSet}) {
   const active = byId('active-set'), list = byId('visible-sets'), name = byId('set-name')
   const form = byId('rename-set'), replacement = byId('rename-set-name')
   const archivedList = byId('archived-sets')
+  const countElements = new Map()
   let displayedNames, editing
   function endRename(focus = true) {
     const button = [...list.querySelectorAll('.set-rename')].find(item=>item.value===editing)
@@ -48,7 +49,7 @@ export function bindSetControls({create,rename,archive,writeIn,showSet}) {
   dialog.addEventListener('cancel',event=>{
     if (editing !== undefined) { event.preventDefault(); endRename() }
   })
-  return view=>{
+  return (view,marks)=>{
     trigger.disabled = false
     const status = byId('writing-set')
     status.hidden = !view.names.length && !view.hidden.length
@@ -61,9 +62,17 @@ export function bindSetControls({create,rename,archive,writeIn,showSet}) {
       const boxes = document.createDocumentFragment()
       const archivedRows = document.createDocumentFragment()
       active.replaceChildren()
+      countElements.clear()
       for (const key of [defaultSet,...view.names]) {
         const text = setLabel(view,key)
         const row = document.createElement('div')
+        const summary = document.createElement('div')
+        summary.className = 'set-summary'
+        const count = document.createElement('small')
+        count.className = 'set-count'
+        count.id = 'set-count-'+countElements.size
+        countElements.set(key,count)
+        row.append(summary)
         const archived = view.archived?.includes(key)
         let archiveButton
         if (key!==defaultSet) {
@@ -81,7 +90,9 @@ export function bindSetControls({create,rename,archive,writeIn,showSet}) {
           }
         }
         if (archived) {
-          row.append(text,archiveButton)
+          summary.append(text,count)
+          archiveButton.setAttribute('aria-describedby',count.id)
+          row.append(archiveButton)
           archivedRows.append(row)
           continue
         }
@@ -90,8 +101,9 @@ export function bindSetControls({create,rename,archive,writeIn,showSet}) {
         label.className = 'check-label'
         box.type = 'checkbox'
         box.value = key
+        box.setAttribute('aria-describedby',count.id)
         label.append(box,text)
-        row.append(label)
+        summary.append(label,count)
         if (key!==defaultSet) {
           const button = document.createElement('button')
           button.type = 'button'
@@ -119,6 +131,16 @@ export function bindSetControls({create,rename,archive,writeIn,showSet}) {
         if (view.names.includes(editing) && !view.archived?.includes(editing)) replacement.labels[0].textContent = 'New name for '+setLabel(view,editing)
         else endRename()
       }
+    }
+    const totals = new Map()
+    for (const mark of marks) {
+      const key = mark.set ?? defaultSet
+      totals.set(key,(totals.get(key) ?? 0)+1)
+    }
+    for (const [key,element] of countElements) {
+      const n = totals.get(key) ?? 0
+      const text = n + (n === 1 ? ' annotation' : ' annotations')
+      if (element.textContent !== text) element.textContent = text
     }
     active.value = view.active
     for (const box of list.querySelectorAll('input')) box.checked = !view.hidden.includes(box.value)

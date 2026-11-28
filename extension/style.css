@@ -141,8 +141,8 @@ body.pdf-only { grid-template-rows: minmax(0,1fr) auto }
 #sets-dialog legend { font-size: 13px }
 #visible-sets { display: grid }
 #visible-sets > div, #archived-sets > div { display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere }
-#visible-sets label { margin-right: auto }
-#archived-sets button { margin-left: auto }
+.set-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin-right: auto; min-width: 0 }
+.set-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap }
 #rename-set { margin-block: 12px }
 #visible-sets .check-label { overflow-wrap: anywhere }
 .set-entry { display: flex; gap: 6px; margin-top: 4px }
