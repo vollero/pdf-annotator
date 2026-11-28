@@ -246,3 +246,14 @@ body.dragging #stage { outline: 3px dashed var(--accent); outline-offset: -6px }
   .page-nav { gap: 2px }
   #page-layout { font-size: 11px }
 }
+
+#discussion { margin-block: 12px; border-block: 1px solid var(--line); padding-block: 8px }
+#discussion summary { cursor: pointer; font-weight: 600 }
+#discussion > label, #reply-target, #versions { margin-top: 12px; display: block }
+#discussion > .check-label { display: flex }
+#discussion h3 { margin: 14px 0 4px }
+#discussion article { margin-block: 8px; border-inline-start: 2px solid var(--line); padding-inline-start: 10px; overflow-wrap: anywhere }
+#discussion article p, #reply-text { white-space: pre-wrap; font: 400 var(--note-size)/1.5 var(--note-font) }
+#discussion article p { margin: 3px 0 }
+#contributor { width: 100%; padding: 6px; font: inherit }
+#recovery-dialog { max-width: min(420px,95vw) }

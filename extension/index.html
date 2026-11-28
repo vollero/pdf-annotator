@@ -90,6 +90,7 @@
       <div class="annotation-files" role="group" aria-label="Annotation files">
         <button id="import-annotations" class="button" disabled>Import annotations</button>
         <button id="export-annotations" class="button" disabled>Export annotations</button>
+        <button id="restore-draft" class="button" disabled>Restore previous draft…</button>
         <input id="annotation-file" type="file" accept=".json,application/json" hidden>
       </div>
     </aside>
@@ -171,6 +172,14 @@
     </form>
     <div class="dialog-actions"><button class="button primary" type="button" data-close>Done</button></div>
   </dialog>
+  <dialog id="recovery-dialog" aria-labelledby="recovery-title">
+    <form method="dialog">
+      <h2 id="recovery-title">Restore previous draft?</h2>
+      <p id="recovery-summary"></p>
+      <p>Your current draft will become the recovery copy.</p>
+      <div class="dialog-actions"><button class="button" value="cancel" autofocus>Cancel</button><button class="button primary" type="button" id="confirm-restore">Restore draft</button></div>
+    </form>
+  </dialog>
   <dialog id="note-dialog" aria-labelledby="note-title">
     <form id="note-form">
       <div class="dialog-head"><h2 id="note-title">Add a note</h2><button class="icon-button" type="button" data-close data-icon="close" aria-label="Close"></button></div>
@@ -200,6 +209,20 @@
         <label class="check-label"><input type="checkbox" id="track-note"> Track as action</label>
         <label class="check-label" id="note-done-label" hidden><input type="checkbox" id="note-done"> Done</label>
       </div>
+      <details id="discussion">
+        <summary id="discussion-title">Discussion and version history</summary>
+        <label for="contributor">Your name for this edit or reply</label>
+        <input id="contributor" maxlength="100" placeholder="Anonymous" autocomplete="off">
+        <section aria-label="Discussion"><h3>Replies</h3>
+          <div id="reply-list"></div>
+          <label for="reply-text" id="reply-target">Reply to the original comment</label>
+          <button type="button" class="appearance-link" id="reply-root" hidden>Reply to original instead</button>
+          <textarea id="reply-text" rows="3" maxlength="12000" placeholder="Write a reply…"></textarea>
+        </section>
+        <label class="check-label"><input type="checkbox" id="track-history"> Keep a version history for this note</label>
+        <small>Save records text and formatting changes while tracking is on. Annotation JSON includes saved versions.</small>
+        <details id="versions"><summary id="versions-title">Saved versions</summary><div id="version-list"></div></details>
+      </details>
       <div class="dialog-actions"><button class="button" type="button" data-close>Cancel</button><button id="note-save" class="button primary" type="submit">Save note</button></div>
     </form>
   </dialog>

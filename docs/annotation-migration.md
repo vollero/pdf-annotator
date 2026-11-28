@@ -2,10 +2,11 @@
 
 Choose **Export annotations** in the **Annotations** panel to download a `.margin-annotations.json` file. Open the same PDF and choose **Import annotations**. The import reports how many marks it added and updated. You can reverse the entire import with **Undo**. In Incognito, export any annotations you want to keep before closing or reloading the tab.
 
-Margin 0.4.0-rc.5 reads versions 1–10. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
+Margin 0.4.0-rc.7 reads versions 1–11. Stable 0.3.0 reads versions 1–8. The table lists the earliest release, including candidates, that can import each format.
 
 | Feature in the export | JSON version | Earliest compatible Margin release |
 | --- | --- | --- |
+| Threaded replies or retained note history | 11 | 0.4.0-rc.7 |
 | Comment author, tags or archived sets | 10 | 0.4.0-rc.5 |
 | Named annotation sets, including empty sets | 9 | 0.4.0-rc.3 |
 | Markdown in note text | 8 | 0.3.0-rc.14 |
@@ -21,9 +22,9 @@ For example, suppose you marked up `Survey.pdf` on your laptop. Send the JSON to
 
 **Choosing the right PDF.** Keep the exact source file with your annotation export. Editing the PDF in another program, changing its metadata, or exporting a marked-up PDF can change its bytes even if its pages look identical. If you reopened a marked-up PDF before exporting its annotations, use that specific marked-up PDF for the import. A fingerprint mismatch stops the import before it changes the draft.
 
-**What travels.** The file contains all editable Margin text markup, passage comments, freehand drawings, point notes and region notes, across every page. A highlight can include the text you selected. Anyone who receives the JSON can read that text and your comments. The PDF, attachments, other editors’ native annotations, document URL, browser preferences and history stay outside this format. Use **Export PDF** when someone wants a document they can open in an ordinary PDF reader.
+**What travels.** The file contains all editable Margin text markup, passage comments, freehand drawings, point notes and region notes, across every page. A highlight can include the text you selected. Anyone who receives the JSON can read that text and your comments. The PDF, attachments, other editors’ native annotations, document URL, browser preferences, browsing history and the per-PDF recovery copy stay outside this format. Use **Export PDF** when someone wants a document they can open in an ordinary PDF reader.
 
-**Importing into an existing draft.** Margin matches annotations by ID. A new ID adds a mark. If the same ID has different content, the imported version replaces the local version, even when the imported file is older. Other local marks stay in the draft. Deleting a mark on one computer does not propagate a deletion through a later import. A file with no marks or named sets adds nothing. An invalid entry, a duplicate ID, an unsupported version, or a combined draft over the size limit rejects the whole import.
+**Importing into an existing draft.** Margin matches annotations by ID. A new ID adds a mark. If the same ID has different content, the imported version replaces the local version, even when the imported file is older. For a matching note, replies and saved text versions from both drafts are combined by entry ID. Other local marks stay in the draft. Deleting a mark on one computer does not propagate a deletion through a later import. A file with no marks or named sets adds nothing. An invalid entry, a duplicate ID, an unsupported version, or a combined draft over the size limit rejects the whole import.
 
 ## Version 1 file format
 
@@ -122,5 +123,26 @@ Point notes, region notes and passage comments can carry `"author": "Ana García
 Names and tags are NFC-normalized, single-line text with no outer whitespace. An author can have up to 100 UTF-16 code units. A comment can have up to 16 distinct tags of up to 40 code units each. The editor accepts an optional leading `#` and comma-separated input. The JSON stores tag labels without the leading marker or commas and compares duplicates case-insensitively.
 
 Version 10 includes a `sets` array, which can be empty. An optional top-level `"archivedSets": ["First review"]` lists archived names from that array. The JSON includes their marks and can carry an empty archived set. Import archives the listed sets and preserves any sets already archived on the receiving computer. To reopen one, choose **Restore** there. A document without author names, tags or archived sets exports in the earliest format its remaining features require.
+
+## Version 11 and review discussions
+
+A note or passage comment can include either or both of the following fields. This fragment shows a reply to a reply and the saved version of a comment by Jon.
+
+```json
+{
+  "replies": [
+    {"id":"r1","at":"2026-06-18T09:00:00.000Z","author":"Lea","text":"Which source?"},
+    {"id":"r2","parent":"r1","at":"2026-06-18T10:00:00.000Z","author":"Jon","text":"Table 2."}
+  ],
+  "history": {
+    "enabled":true,
+    "versions":[{"id":"v1","at":"2026-06-18T10:00:00.000Z","author":"Jon","text":"See Table 2."}]
+  }
+}
+```
+
+A reply without a `parent` belongs to the original note. Each parent must precede its children in the same note. Each list contains 1–200 entries with distinct IDs. IDs use up to 128 ASCII letters, digits, underscores or hyphens. Times use UTC with millisecond precision. The optional `author` identifies the contributor who supplied the edit, reply or snapshot. A reply contains up to 12,000 UTF-16 code units of plain text. A version keeps its original text and optional `"textFormat":"markdown"`. A `"baseline":true` version records when someone captured existing wording. A paused history has `"enabled":false` and retains its entries.
+
+When two reviewers import each other’s JSON, the imported note supplies the current wording. Matching entries are combined once by ID. Conflicting contents for a shared entry ID reject the import. Importing an older note without discussion fields keeps its local thread and history. Annotation JSON includes earlier text even after tracking is paused. An exported PDF includes a readable reply transcript and editable reply relationships, and omits version history. The previous local recovery draft stays on the device.
 
 All versions accept only the documented fields for the envelope and mark type. Imports accept files up to 16 MiB. The resulting draft must fit Margin’s existing limits of 2,000 marks, 100,000 geometry entries and 2,000,000 UTF-16 code units of annotation text. The editor also checks its encoded annotation size limits of 8 MiB per mark and 32 MiB per document.

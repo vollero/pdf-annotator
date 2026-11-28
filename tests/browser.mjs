@@ -25,6 +25,7 @@ import { checkMathNotes } from './math-notes.mjs'
 import { checkNoteLinks } from './note-links.mjs'
 import { checkAnnotationSets } from './annotation-sets.mjs'
 import { checkRenameSet } from './rename-set.mjs'
+import { checkDiscussion } from './discussion.mjs'
 import { checkCommentDetails } from './comment-details.mjs'
 import { checkArchiveSet } from './archive-set.mjs'
 
@@ -194,6 +195,7 @@ try {
   await checkRenameSet(page,downloadAnnotations,importAnnotations)
   await checkCommentDetails(page,downloadAnnotations,importAnnotations)
   await checkArchiveSet(page,downloadAnnotations,importAnnotations)
+  await checkDiscussion(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])
@@ -254,6 +256,7 @@ try {
   ])
   await privatePage.locator('#save-state').filter({hasText:'Private session'}).waitFor()
   assert.equal(await privatePage.evaluate(()=>chrome.extension.inIncognitoContext),true)
+  assert.equal(await privatePage.locator('#restore-draft').isHidden(),true)
   await privatePage.getByRole('button',{name:'Edit palette'}).click()
   const privatePalette = privatePage.getByRole('dialog',{name:'Annotation palette'})
   await privatePalette.getByLabel('Saved colors').selectOption('')

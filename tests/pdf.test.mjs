@@ -172,3 +172,26 @@ test('a passage spanning two PDF pages is one editable comment with native highl
   assert.deepEqual((await unpack(outlined)).marks,styled)
   await Promise.all([pdf.destroy(),reopened.destroy()])
 })
+
+test('the sharing PDF carries the readable discussion and editable reply ancestry without superseded versions',async()=>{
+  const source = await PDFDocument.create()
+  source.addPage([300,450])
+  const bytes = await source.save()
+  const pdf = await getDocument({...opts,data:bytes.slice()}).promise
+  try {
+    const viewport = (await pdf.getPage(1)).getViewport({scale:1})
+    const at = '2026-01-01T00:00:00.000Z'
+    const shared = {id:'root',type:'note',page:1,point:[.2,.3],color:'#aaccee',text:'Approved',author:'Lea',
+      replies:[{id:'r1',text:'Is it checked?',author:'Mia',at},{id:'r2',parent:'r1',text:'Yes',author:'Jon',at}]}
+    const history = {enabled:true,versions:[{id:'v1',text:'Withdrawn draft',at}]}
+    const first = await exportDocument(bytes,[{...shared,history}],()=>viewport)
+    const native = (await PDFDocument.load(first)).getPage(0).node.Annots().lookup(0)
+    assert.match(native.lookup(PDFName.of('Contents')).decodeText(),/Reply #2 to #1 · Jon/)
+    assert.doesNotMatch(native.lookup(PDFName.of('MarginData')).decodeText(),/Withdrawn draft|history/)
+    const clean = await unpack(first)
+    assert.deepEqual(clean.marks,[shared])
+    const second = await exportDocument(clean.bytes,clean.marks,()=>viewport)
+    assert.equal((await PDFDocument.load(second)).getPage(0).node.Annots().size(),1)
+    assert.deepEqual((await unpack(second)).marks,[shared])
+  } finally { await pdf.destroy() }
+})

@@ -1,5 +1,6 @@
-import { checkMarkBudget, compatibleMarkTypes } from './mark-data.js'
+import { checkMarkBudget, compatibleMarkTypes, isNote } from './mark-data.js'
 import { initialSets, mergeSetViews } from './annotation-sets.js'
+import { applyDiscussionChanges, importDiscussion } from './discussion.js'
 import { mergeTags } from './comment-details.js'
 
 let connection
@@ -76,8 +77,11 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
     const lookup = store.get(id)
     const settings = tx.objectStore('settings')
     const currentSets = settings.get(['sets',id])
-    let savedSets
+    let savedSets, concurrent
     currentSets.onsuccess = () => {
+      try { save() } catch (error) { tx.abort(); reject(error) }
+    }
+    function save() {
       const merged = new Map((lookup.result ?? before).map(mark => [mark.id,mark]))
       for (const mark of removed) merged.delete(mark.id)
       for (const mark of changed) {
@@ -136,20 +140,67 @@ export async function writeChanges(id, before, after, beforeSets = initialSets, 
             if (mark.style === undefined) delete updated.style
             else updated.style = mark.style
           }
+          applyDiscussionChanges(updated,prior,mark)
           merged.set(mark.id,updated)
+        } else if (latest && isNote(mark) && (latest.history || latest.replies)) {
+          if (prior) {
+            const updated = {...mark}
+            delete updated.history
+            delete updated.replies
+            if (latest.replies) updated.replies = latest.replies
+            if (latest.history) updated.history = latest.history
+            applyDiscussionChanges(updated,prior,mark)
+            merged.set(mark.id,updated)
+          } else merged.set(mark.id,importDiscussion(latest,mark))
         } else merged.set(mark.id,mark)
       }
       const result = [...merged.values()]
       // Concurrent imports can each fit the limit on their own.
-      try {
-        checkMarkBudget(result)
-        savedSets = mergeSetViews(currentSets.result ?? beforeSets,beforeSets,afterSets,result)
-        settings.put(savedSets,['sets',id])
+      checkMarkBudget(result)
+      const previousMarks = lookup.result ?? before, previousSets = currentSets.result ?? beforeSets
+      savedSets = mergeSetViews(previousSets,beforeSets,afterSets,result)
+      const serialized = JSON.stringify(result)
+      concurrent = serialized !== JSON.stringify(after) || JSON.stringify(savedSets) !== JSON.stringify(afterSets)
+      if (serialized !== JSON.stringify(previousMarks) || ['names','labels','archived'].some(
+        key=>JSON.stringify(savedSets[key]) !== JSON.stringify(previousSets[key]))) {
+        putRecovery(settings,id,previousMarks,previousSets)
       }
-      catch (error) { tx.abort(); reject(error); return }
-      store.put(result, id)
+      settings.put(savedSets,['sets',id])
+      store.put(result,id)
     }
-    tx.oncomplete = ()=>resolve(savedSets)
+    tx.oncomplete = ()=>resolve({savedSets,concurrent})
     tx.onabort = () => reject(tx.error)
+  })
+}
+
+function putRecovery(settings,id,marks,sets) {
+  settings.put({token:crypto.randomUUID(),at:new Date().toISOString(),marks,sets},['previous-draft',id])
+}
+
+export async function recoverySummary(id) {
+  const copy = await read('settings',['previous-draft',id])
+  return copy && {token:copy.token,at:copy.at,count:copy.marks.length}
+}
+
+// Check the preview token and swap both complete drafts under the same write lock.
+export async function restorePrevious(id,token) {
+  const db = await database()
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(['drafts','settings'],'readwrite')
+    const drafts = tx.objectStore('drafts'), settings = tx.objectStore('settings')
+    const current = drafts.get(id), sets = settings.get(['sets',id])
+    const backup = settings.get(['previous-draft',id])
+    backup.onsuccess = ()=>{
+      if (!backup.result || backup.result.token !== token) {
+        tx.abort()
+        reject(new Error('The recovery copy changed. Open Restore previous draft again to review it.'))
+        return
+      }
+      putRecovery(settings,id,current.result,sets.result ?? initialSets)
+      drafts.put(backup.result.marks,id)
+      settings.put(backup.result.sets,['sets',id])
+    }
+    tx.oncomplete = ()=>resolve()
+    tx.onabort = ()=>reject(tx.error)
   })
 }

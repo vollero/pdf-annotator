@@ -3,6 +3,8 @@ import { markupLabels } from './markup.js'
 import { validSetName } from './annotation-sets.js'
 import { validAuthor, validTags } from './comment-details.js'
 
+import { checkDiscussion } from './discussion.js'
+
 export const maxMarkCount = 2000
 
 const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
@@ -69,6 +71,12 @@ export function readMark(raw, page, pages = maxPages) {
       typeof raw.text !== 'string' || typeof raw.color !== 'string' || !/^#[a-f0-9]{6}$/i.test(raw.color)) return
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
+  if (Object.hasOwn(raw,'history') || Object.hasOwn(raw,'replies')) {
+    if (!isNote(mark)) return
+    try { checkDiscussion(raw) } catch { return }
+    if (raw.history) mark.history = raw.history
+    if (raw.replies) mark.replies = raw.replies
+  }
   if (Object.hasOwn(raw,'author')) {
     if (!isNote(mark) || !validAuthor(raw.author)) return
     mark.author = raw.author
@@ -151,8 +159,12 @@ export function checkMarkBudget(marks) {
     characters += mark.author?.length ?? 0
     if (mark.tags?.length>16) throw new DocumentLimitError('A comment can have up to 16 tags.')
     for (const tag of mark.tags ?? []) characters += tag.length
+    for (const entries of [mark.history?.versions,mark.replies]) {
+      for (const entry of entries ?? []) characters += entry.text.length + (entry.author?.length ?? 0)
+    }
     let size = encodedSizes.get(mark)
     if (size === undefined) {
+      checkDiscussion(mark)
       size = JSON.stringify(mark).length * 4 + 6
       encodedSizes.set(mark,size)
     }

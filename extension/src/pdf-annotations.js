@@ -1,3 +1,4 @@
+import { threadRows } from './discussion.js'
 import { readMark, readDraft, maxMarkCount, noteStatus, fitNotePoint, noteDimensions } from './mark-data.js'
 import { noteTextMask } from './note-text-mask.js'
 import { noteTextRuns, readableNoteText } from './note-format.js'
@@ -189,7 +190,12 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
     const status = noteStatus(mark)
     const readable = readableNoteText(mark)
     const tagLine = mark.tags ? '\n\nTags: '+mark.tags.join(', ') : ''
-    const text = S((status ? status + ': ' : '') + readable + tagLine)
+    const transcript = threadRows(mark.replies).map(({entry,number,parentNumber})=>{
+      const target = parentNumber ? ' to #'+parentNumber : ''
+      return 'Reply #'+number+target+' · '+(entry.author ?? 'Anonymous')+' · '+entry.at+'\n'+entry.text
+    })
+    const text = S([(status ? status + ': ' : '') + readable + tagLine,...transcript].join('\n\n'))
+    const {history,...sharedMark} = mark
     const contents = mark.passages?.length > 1 ? doc.context.register(text) : text
     let root
     for (const part of mark.passages ?? [mark]) {
@@ -200,7 +206,7 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
       if (mark.type === 'region') painted = {type:'highlight',color:mark.color,style:'outline-box',rects:[[...mark.point,...mark.size]]}
       const annotation=doc.context.obj({
         Type:'Annot',P:page.ref,F:4,T:S(mark.author ?? 'Margin'),NM:S(mark.id),Contents:contents,
-        ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page),noteFont)
+        ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(sharedMark))}),...appearance(doc,painted,views.get(part.page),noteFont)
       })
       const ref = doc.context.register(annotation)
       page.node.addAnnot(ref)

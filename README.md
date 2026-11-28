@@ -11,6 +11,8 @@ Mark a passage, draw on a scan, or leave a note on a PDF. Margin works in **desk
 
 For pictures of the **Load unpacked** button and pin menu, see [Chrome’s illustrated instructions](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
 
+**Want threaded replies and note history?** Download candidate **0.4.0-rc.7** and follow the same installation steps. If you already use Margin, follow **Update Margin** below to keep your local drafts. [Download the candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.7/margin-pdf-annotator.zip) · [Update Margin](#update-margin)
+
 ## Try it on the sample
 
 On your first launch from a new tab, Margin opens *Reading the Alps*. It already contains a few example marks.
@@ -33,7 +35,7 @@ Click an entry in **Annotations** to jump to its mark. Open the entry’s **…*
 
 ## Organize annotations into sets
 
-Use sets to keep personal notes and review comments on the same PDF. This feature is available from **0.4.0-rc.3**. The standard download installs stable **0.3.0**. To try sets, use the candidate ZIP with the installation or update instructions in this README. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.6/margin-pdf-annotator.zip)
+Use sets to keep personal notes and review comments on the same PDF. This feature is available from **0.4.0-rc.3**. The standard download installs stable **0.3.0**. To try sets, use the candidate ZIP with the installation or update instructions in this README. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.7/margin-pdf-annotator.zip)
 
 1. Open **Annotations → Annotation sets**. Existing marks start in **My notes**. Type a name such as **Review comments**, click **Create and use**, then **Done**. New highlights, drawings, notes and passage comments go into that set. Choose **Write new annotations in** to switch sets.
 2. To organize a mark you already made, open its **…** menu in the sidebar and choose **Move to set**. **Undo** reverses the move.
@@ -76,7 +78,7 @@ Choose **Export PDF** to share the visible review. Choose **Export annotations**
 
 ### Open a web link from a note
 
-Clickable links are available from **0.4.0-rc.2**. Stable **0.3.0** displays link syntax as text. To try links, install or update using the candidate ZIP. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.6/margin-pdf-annotator.zip)
+Clickable links are available from **0.4.0-rc.2**. Stable **0.3.0** displays link syntax as text. To try links, install or update using the candidate ZIP. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.7/margin-pdf-annotator.zip)
 
 1. Open a note, select **Format as Markdown**, and type `Check the [units table](https://example.org/units).` To show the address itself, write `<https://example.org/units>`. Use a full address beginning with `https://` or `http://`.
 2. Open **Preview formatting** and click the underlined link, or focus it with **Tab** and press **Enter**. The website opens in a new tab. Your PDF and any unsaved note stay open in Margin.
@@ -103,7 +105,7 @@ Open **Preview formatting** to see the indented sample in monospace. Spaces, tab
 
 ### Write an equation in a note
 
-Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.6/margin-pdf-annotator.zip)
+Equation rendering is available from **0.4.0-rc.1**. To try it, download the current candidate ZIP and follow the same installation or update steps. [Download the candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.4.0-rc.7/margin-pdf-annotator.zip)
 
 1. Open a note and select **Format as Markdown**. Enclose an inline formula in single dollar signs, such as `$E=mc^2$`. For an equation on its own line, use a pair of dollar signs at each end.
 2. Paste the example below and open **Preview formatting**. The first formula appears in the sentence. The fraction appears on its own line.
@@ -213,6 +215,21 @@ Choose **Use this author for future comments** before saving to prefill new comm
 
 Use **Filter by author** and **Filter by tag** together to find one reviewer’s comments on a topic. You can also type a name or `#Methods` in **Search annotations**. **Export PDF** writes the native PDF author and includes tags in the comment text. **Export annotations** preserves both fields for editing on another computer.
 
+## Review a note with other people
+
+Open a point note, region note or passage comment and expand **Discussion and version history**. Enter your display name in **Your name for this edit or reply**. This lets Jon revise a comment by Lea while leaving Lea in the comment’s **Author** field. A blank contributor appears as **Anonymous**. Names are entered by reviewers and anyone can choose a name.
+
+- **Keep versions.** Check **Keep a version history for this note** and save. On an existing note, Margin captures the text you started with. Each subsequent saved change to the text or its Markdown setting records the contributor, time and resulting text. Tags, action checkboxes and placement changes leave the version list alone.
+- **Read or reuse earlier wording.** Open **Saved versions**. **Use version** puts the earlier wording and formatting into the editor. Save to apply it or cancel to discard it. Clearing the tracking checkbox and saving pauses recording and keeps the versions already collected. Resuming captures the current wording if it changed during the pause.
+- **Reply.** Type in **Reply to the original comment** and save. To continue a branch, click the reply count on the annotation card, choose **Reply to #…** beneath the relevant message, type your response and save. You can reply to a reply at any depth within the limit of 200 replies per note. Each reply shows its author, time and parent. Search can find reply text and contributor names.
+- **Exchange reviews.** Send **Export annotations** and have the other reviewer import the JSON onto the exact same PDF using **0.4.0-rc.7 or later**. It includes the full discussion and retained versions, including earlier wording. When you import their JSON back, replies and versions from both copies are kept by ID. The imported note supplies the current wording. **Export PDF** shares the current note and a readable reply transcript. Reopening that PDF in Margin restores the reply tree. Previous versions stay in your draft and annotation JSON.
+
+## Restore a previous local draft
+
+After an accidental edit, deletion or import, open **Annotations → Restore previous draft…**. Check the time and annotation count, then choose **Restore draft**. Margin restores all marks, threads, saved versions and annotation sets to their state immediately before the last saved annotation change. The displaced draft becomes the recovery copy, so you can switch back by restoring again.
+
+Margin keeps one recovery copy per PDF in the regular browser profile. It survives reopening the exact PDF, including under a new filename, and can retain recently deleted text. Hiding a set or switching the active set leaves the recovery point in place. Incognito keeps edits in memory. For a copy you can keep longer or move elsewhere, use **Export annotations**.
+
 ## Search annotations
 
 In the **Annotations** panel, type in **Search annotations** to find words in notes and highlighted passages. Results update as you type. Click a result, or focus it and press **Enter**, to jump to its mark.
@@ -242,7 +259,7 @@ Margin starts with 18 px sans serif text and a Comfortable box. It remembers you
 ## Move annotations to another copy of the same PDF
 
 1. Open the PDF you annotated. In the **Annotations** panel, click **Export annotations**. Margin downloads a file such as `Field notes.margin-annotations.json` with your highlights, drawings, notes, and the PDF’s SHA-256 fingerprint. All pages are included, even when the list is filtered. If the panel is hidden, click **Show workspace** or **Toggle annotations** to bring it back.
-2. On the other computer, or in a later session, open the **exact same PDF**. Use **0.4.0-rc.5 or later** for authors, tags and archives (version 10), or **0.4.0-rc.3 or later** for named sets in version 9. Stable **0.3.0** imports versions 1–8. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
+2. On the other computer, or in a later session, open the **exact same PDF**. Use **0.4.0-rc.7 or later** for replies or version history (format 11), **0.4.0-rc.5 or later** for authors, tags and archives (version 10), or **0.4.0-rc.3 or later** for named sets in version 9. Stable **0.3.0** imports versions 1–8. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
 3. Click **Import annotations** and select the JSON file. Margin checks the fingerprint before applying changes. It adds new marks, updates matching marks, and keeps other local annotations. Importing an identical file twice adds no duplicates. **Undo** reverses the import in one step.
 
 If Margin reports a fingerprint mismatch, locate the copy that was open when you exported the annotations. A matching filename or page count is insufficient. The JSON contains readable note text and selected highlight text. [Annotation file format and worked example](docs/annotation-migration.md)

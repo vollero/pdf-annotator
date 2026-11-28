@@ -1,12 +1,15 @@
-import { checkMarkBudget, maxMarkCount, readMark } from './mark-data.js'
+import { checkMarkBudget, maxMarkCount, readMark, isNote } from './mark-data.js'
 import { maxNamedSets, setNames, validSetName } from './annotation-sets.js'
+
+import { importDiscussion } from './discussion.js'
 
 const format = 'margin-annotations'
 const maxFileBytes = 16 * 1024 * 1024
 const hashPattern = /^[0-9a-f]{64}$/
-const latestVersion = 10
+const latestVersion = 11
 
 function requiredVersion(mark) {
+  if (mark.replies || mark.history) return 11
   if (mark.author || mark.tags) return 10
   if (mark.set) return 9
   if (mark.textFormat) return 8
@@ -91,8 +94,9 @@ export function mergeAnnotations(current, incoming, preserveLocalSets = false) {
   let added = 0, updated = 0
   for (const entry of incoming) {
     const local = byId.get(entry.id)
-    const mark = preserveLocalSets && local?.set ? {...entry,set:local.set} : entry
+    let mark = preserveLocalSets && local?.set ? {...entry,set:local.set} : entry
     if (local) {
+      if ((local.history || local.replies) && isNote(mark)) mark = importDiscussion(local,mark)
       if (JSON.stringify(readMark(local, local.page)) === JSON.stringify(readMark(mark,mark.page))) continue
       updated++
     } else added++

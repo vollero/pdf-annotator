@@ -9,9 +9,10 @@ import { markupLabels, withMarkupStyle } from './markup.js'
 import { Viewer,readPDF } from './viewer.js'
 import { bindGestures } from './gestures.js'
 import { bindNotePreview } from './note-preview.js'
+import { openDiscussion } from './discussion-editor.js'
 import { renderNoteText } from './note-format.js'
 import { renderCards,closeCardMenus } from './sidebar.js'
-import { lastDocument,remember,readWorkspace,writeChanges } from './storage.js'
+import { lastDocument,remember,readWorkspace,writeChanges,recoverySummary,restorePrevious } from './storage.js'
 import { addNamedSet, archiveSet, assignSet, defaultSet, exportSetMarks, importNamedSets, initialSets, renameSet, setLabel, setNames, setView, visibleMarks } from './annotation-sets.js'
 import { bindSetControls } from './set-controls.js'
 import { mergeTags, parseTags, validAuthor } from './comment-details.js'
@@ -145,12 +146,12 @@ function persist(next,nextSets) {
         await remember(doc.file,doc.saved)
         doc.remembered=true
       }
-      const savedSets = await writeChanges(doc.file.id,doc.saved,next,doc.savedSets,nextSets)
+      const {savedSets,concurrent} = await writeChanges(doc.file.id,doc.saved,next,doc.savedSets,nextSets)
       doc.saved=next;doc.savedSets=nextSets
       channel.postMessage(doc.file.id)
       if(doc===session && number===editNumber) {
         state('Saved locally')
-        if (JSON.stringify(savedSets)!==JSON.stringify(nextSets)) {
+        if (concurrent) {
           await syncStored(doc,number)
           if (doc===session && number===editNumber && nextSets.names.some(key=>setLabel(savedSets,key)!==setLabel(nextSets,key))) {
             toast('Another tab changed the annotation sets. The saved names are now shown.')
@@ -202,7 +203,7 @@ async function syncStored(doc,number) {
     if (doc!==session || number!==editNumber || !stored.marks) return
     const merged=readDraft(stored.marks,doc.pages)
     const mergedSets=setView(setNames(stored.sets.names,merged),stored.sets)
-    const documentChanged = JSON.stringify(merged)!==JSON.stringify(marks) || JSON.stringify(mergedSets.names)!==JSON.stringify(sets.names) ||
+    const documentChanged = JSON.stringify(merged)!==JSON.stringify(readDraft(marks,doc.pages)) || JSON.stringify(mergedSets.names)!==JSON.stringify(sets.names) ||
       JSON.stringify(mergedSets.labels)!==JSON.stringify(sets.labels) || JSON.stringify(mergedSets.archived)!==JSON.stringify(sets.archived)
     if (documentChanged || JSON.stringify(mergedSets)!==JSON.stringify(sets)) {
       if (documentChanged) { undo=[];redo=[];doc.saved=marks=merged }
@@ -216,6 +217,39 @@ channel.onmessage=async event=>{
   if(privateWindow || !doc || event.data!==doc.file.id) return
   await writes
   await syncStored(doc,editNumber)
+}
+
+let recovery
+$('restore-draft').onclick=async()=>{
+  const doc=session
+  if (!doc || privateWindow) return
+  await writes
+  try {
+    const copy = await recoverySummary(doc.file.id)
+    if (doc!==session) return
+    if (!copy) { toast('A recovery copy will be available after your first saved change.'); return }
+    recovery={doc,token:copy.token}
+    $('recovery-summary').textContent = 'Restore the draft with '+copy.count+(copy.count===1 ? ' annotation' : ' annotations')+
+      ' replaced on '+new Date(copy.at).toLocaleString()+'? Its annotation sets will also be restored.'
+    $('recovery-dialog').showModal()
+  } catch { toast('Could not read the local recovery copy.') }
+}
+$('confirm-restore').onclick=()=>{
+  if (!recovery || recovery.doc!==session) return
+  const {doc,token}=recovery
+  recovery=null
+  const button=$('confirm-restore')
+  button.disabled=true
+  writes=writes.then(async()=>{
+    try {
+      if (doc!==session) return
+      await restorePrevious(doc.file.id,token)
+      channel.postMessage(doc.file.id)
+      await syncStored(doc,editNumber)
+      if (doc===session) { state('Saved locally'); toast('Previous draft restored.') }
+    } catch (error) { toast(error?.message || 'Could not restore the previous draft.') }
+    finally { button.disabled=false; $('recovery-dialog').close() }
+  })
 }
 
 function selectTool(value) {
@@ -266,6 +300,7 @@ function openNote(mark, marginSheet) {
   $('note-save').textContent = comment ? 'Save comment' : 'Save note'
   $('note-text').value=mark.text
   $('note-author').value = existing ? mark.author ?? '' : privateWindow ? privateAuthor : preference('comment-author','')
+  noteDraft.applyDiscussion = openDiscussion(mark,privateWindow ? privateAuthor : preference('comment-author',''),previewDraft)
   $('note-tags').value = (mark.tags ?? []).join(', ')
   $('note-author').setCustomValidity('')
   $('note-tags').setCustomValidity('')
@@ -353,8 +388,11 @@ $('note-form').addEventListener('submit',e=>{
         if (done === undefined) delete mark.done
         else mark.done = done
       }
+      try {
+        if (!noteDraft.applyDiscussion(mark,current)) return
+      } catch (error) { toast(error.message); return }
       selected = mark.id
-      if (!current || ['text','textFormat','done','marginSide','tags','author'].some(field=>current[field]!==mark[field])) {
+      if (!current || ['text','textFormat','done','marginSide','tags','author','replies','history'].some(field=>current[field]!==mark[field])) {
         const next = current ? marks.map(m=>m.id===mark.id ? mark : m) : [...marks,mark]
         if (!change(next,message => {
           const input = $('note-text')
@@ -424,6 +462,9 @@ async function load(file,initial=[],ticket=beginImport()) {
     savedSets=setView(setNames(savedSets.names,saved),savedSets)
     notePreview.clear()
     $('sets-dialog').close()
+    $('recovery-dialog').close()
+    $('restore-draft').disabled=privateWindow
+    $('restore-draft').hidden=privateWindow
     selected=null;undo=[];redo=[];marks=saved
     sets=savedSets
     session={file,base,saved,savedSets,remembered,pages:pdf.numPages}

@@ -24,7 +24,8 @@ function searchAnnotations(marks, query, pagePrefix) {
     if (!words.length || (barePage !== null && partOnPage(mark,barePage))) return true
     const noteText = readableNoteText(mark)
     const content = mark.type === 'comment' ? noteText + '\n' + quotedText(mark) : noteText
-    const text = (content+'\n'+commentByline(mark)).normalize('NFC').toLowerCase()
+    const replies = (mark.replies ?? []).map(entry=>[entry.author,entry.text].join(' ')).join('\n')
+    const text = (content+'\n'+commentByline(mark)+'\n'+replies).normalize('NFC').toLowerCase()
     return words.every(word => text.includes(word))
   })
 }
@@ -114,6 +115,11 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     if (focusedResultId === mark.id) focusedResult = body.querySelectorAll('a')[focusedLink] ?? button
     button.title=label
     card.append(head,body)
+    if (mark.replies?.length) {
+      const replies = el('button','appearance-link',mark.replies.length+(mark.replies.length===1 ? ' reply' : ' replies'))
+      replies.onclick = ()=>{ edit(mark); document.getElementById('discussion').open = true }
+      card.append(replies)
+    }
     const byline = commentByline(mark)
     if (byline) card.append(el('p','comment-byline',byline))
     if (mark.done !== undefined) {
