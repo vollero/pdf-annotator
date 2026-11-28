@@ -125,9 +125,9 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     if (!active.marker.isConnected) {
       // Other tabs can edit the wording or color and repaint the SVG during a drag.
       const current = viewer.marks.find(m=>m.id===mark.id)
-      if (current?.type!=='note' || current.page!==mark.page ||
+      if (current?.type!==mark.type || current.page!==mark.page ||
           current.point[0]!==mark.point[0] || current.point[1]!==mark.point[1] || !sameSize(current.size,mark.size)) return reset()
-      const marker = [...ink.querySelectorAll('.point-note')].find(el=>el.dataset.id===mark.id)
+      const marker = [...ink.querySelectorAll('.movable-note')].find(el=>el.dataset.id===mark.id)
       if (!marker) return reset()
       active.marker = marker
       active.mark = current
@@ -137,7 +137,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     const dx = p[0]-start[0], dy = p[1]-start[1]
     if (active.resizing) {
       active.destination = origin
-      active.size = resizeNote(mark.size,origin,width,height,dx*width,dy*height)
+      active.size = resizeNote(mark,origin,width,height,dx*width,dy*height)
       active.preview?.remove()
       active.preview = paintMark({...active.mark,point:origin,size:active.size},width,height)
       active.marker.setAttribute('visibility','hidden')
@@ -145,7 +145,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
       ink.append(active.preview)
       return
     }
-    const destination = fitNotePoint([origin[0]+dx,origin[1]+dy],width,height,mark.size)
+    const destination = fitNotePoint([origin[0]+dx,origin[1]+dy],width,height,mark)
     active.destination = destination
     sheet.element.classList.add('moving-note')
     active.marker.setAttribute('transform','translate('+destination[0]*width+' '+destination[1]*height+')')
@@ -162,6 +162,12 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
       const last = mark.points.at(-1)
       if (Math.hypot((p[0] - last[0]) * width, (p[1] - last[1]) * height) < .5) return
       mark.points.push(p)
+    } else if (mark.type === 'region') {
+      if (!active.regionDragged && Math.hypot(event.clientX-active.pressX,event.clientY-active.pressY)<4) return
+      active.regionDragged = true
+      const [x,y,w,h] = area(active.start,p)
+      mark.point = [x,y]
+      mark.size = [w,h]
     } else if (mark.type === 'highlight') mark.rects = [area(active.start, p)]
     else return
     active.preview?.remove()
@@ -184,7 +190,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
       marker.focus({preventScroll:true})
       hideNotePreview()
       active = {sheet, ink:sheet.ink, mark, marker, pointer:event.pointerId, transform:marker.getAttribute('transform'),
-        start:point(event,paper), origin:fitNotePoint(mark.point,sheet.base.width,sheet.base.height,mark.size),
+        start:point(event,paper), origin:fitNotePoint(mark.point,sheet.base.width,sheet.base.height,mark),
         resizing:!!event.target.closest('.note-resize-handle'),
         pressX:event.clientX, pressY:event.clientY}
       paper.setPointerCapture(event.pointerId)
@@ -193,7 +199,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     reset()
     const start = point(event, paper)
     const mark = {id: crypto.randomUUID(), page: sheet.number, type, color: getColor(), text: ''}
-    active = {start, mark, pointer: event.pointerId, sheet, ink: sheet.ink}
+    active = {start, mark, pointer: event.pointerId, sheet, ink: sheet.ink, pressX:event.clientX, pressY:event.clientY}
     window.getSelection().removeAllRanges()
     if (type === 'highlight' && event.target.closest('.textLayer span:not(.markedContent)')) {
       active.textSelection = true
@@ -224,6 +230,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
       else if (destination[0]!==origin[0] || destination[1]!==origin[1]) setNoteBox(mark.id,destination,mark.size)
       return
     }
+    const {regionDragged} = active
     reset()
     const {width, height} = sheet.base
     if (textSelection) {
@@ -231,8 +238,14 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
         if (ink !== sheet.ink || !ink.isConnected) return
         applySelection('highlight',selectedRange())
       })
+    } else if (mark.type === 'region') {
+      if (!regionDragged) {
+        mark.size = [Math.min(1,96/width),Math.min(1,64/height)]
+        mark.point = fitNotePoint(start,width,height,mark)
+      } else if (mark.size[0]*width<2 || mark.size[1]*height<2) return
+      note(mark)
     } else if (mark.type === 'note') {
-      mark.point = fitNotePoint(start,width,height)
+      mark.point = fitNotePoint(start,width,height,mark)
       note(mark)
     } else if (mark.type === 'draw') {
       if (mark.points.length === 1) {
@@ -245,17 +258,17 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
   stack.addEventListener('pointercancel',event=>{ if (event.pointerId===active?.pointer) reset() })
   stack.addEventListener('keydown',event=>{
     const steps = {ArrowRight:[12,0],ArrowLeft:[-12,0],ArrowDown:[0,12],ArrowUp:[0,-12]}
-    const marker = event.target.closest('.point-note')
+    const marker = event.target.closest('.movable-note')
     if (active || !marker || getTool()!=='select' || !event.shiftKey || !Object.hasOwn(steps,event.key)) return
     event.preventDefault()
     event.stopPropagation()
     const mark = viewer.marks.find(m=>m.id===marker.dataset.id)
     const paper = marker.closest('.paper'), {width,height} = viewer.sheetFor(paper).base
-    const origin = fitNotePoint(mark.point,width,height,mark.size)
-    const size = resizeNote(mark.size,origin,width,height,...steps[event.key])
+    const origin = fitNotePoint(mark.point,width,height,mark)
+    const size = resizeNote(mark,origin,width,height,...steps[event.key])
     if (sameSize(size,mark.size)) return
     setNoteBox(mark.id,origin,size)
-    for (const next of paper.querySelectorAll('.point-note')) {
+    for (const next of paper.querySelectorAll('.movable-note')) {
       if (next.dataset.id===mark.id) { next.focus({preventScroll:true}); break }
     }
   })
@@ -263,7 +276,7 @@ export function bindGestures({viewer, getTool, getColor, getStyle, add, note, se
     if (event.pointerId===active?.pointer && event.target===active.sheet.element) reset()
   })
   window.addEventListener('keydown',event=>{
-    if (event.key==='Escape' && active?.marker) {
+    if (event.key==='Escape' && (active?.marker || active?.mark.type==='region')) {
       event.preventDefault()
       event.stopPropagation()
       reset()

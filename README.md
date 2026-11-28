@@ -25,15 +25,23 @@ On your first launch from a new tab, Margin opens *Reading the Alps*. It already
 
 - **From your computer.** Click **Open PDF** in the editor or drag a PDF onto the page.
 - **From a website.** While viewing a PDF whose address path ends in `.pdf`, click Margin in the browser toolbar or Extensions menu. It opens that document in a new editor tab. Margin requests the clicked address without cookies. If the site requires a login, redirects to a download, or uses its own viewer, download the PDF there and use **Open PDF**.
-- **On a scanned page,** use **Draw** for freehand marks, or choose **Highlight** and drag from a blank spot to mark a rectangular area.
+- **On a scanned page,** use **Region** to attach a note to an area, **Draw** for freehand marks, or choose **Highlight** and drag from a blank spot to mark a rectangular area.
 
 Margin accepts PDFs up to **64 MiB** and **3,000 pages**. If a scanned page exceeds the image limit (32 megapixels), open a lower-resolution copy.
 
 Click an entry in **Annotations** to jump to its mark. Open the entry’s **…** menu to edit it or delete it. **Undo** and **Redo** apply to the current editing session.
 
-## Resize a note on the page
+## Attach a note to a region
 
-[Download the 0.3.0-rc.9 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.9/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+[Download the 0.3.0-rc.10 candidate ZIP](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.10/margin-pdf-annotator.zip) and follow the [installation](#install-margin) or [update instructions](#update-margin).
+
+1. Choose **Region** (or press **R**) and drag from one corner of a diagram, table, or scanned passage to the opposite corner. You can also click once to start with a small rectangle.
+2. Write your note and choose **Save note**. Select **Track as action** if you want a checkbox for the task. The note appears under **Annotations** as a **Region note**.
+3. Switch to **Select**. Click the outline to edit the note, drag an edge to move it, or drag its lower-right grip to resize it. The middle stays clear for reading and selecting text. With the outline focused, **Shift + an arrow key** resizes it. **Esc** cancels a drag and **Undo** reverses a saved change.
+
+**Export PDF** includes the outline and its comment so someone can review them in a PDF reader. To send only the annotations, choose **Export annotations**. The recipient can import them with the same PDF in Margin **0.3.0-rc.10 or later**.
+
+## Resize a note on the page
 
 1. Choose **Select**. Find a marker you placed with **Note** and drag its striped lower-right corner down and to the right. Your note’s text appears inside the box as you drag.
 2. Release when you can see the lines you need. The top-left corner stays in place. To make room near a page edge, drag the body of the note toward the middle first. Click the body to open the full text.
@@ -84,7 +92,7 @@ Margin remembers your palette in this browser profile. Recipients see the colors
 2. Read the quotation above the editor, write your comment, and click **Save comment**. Select **Track as action** if you want a checkbox. For a passage that crosses a page break, use **Continuous scrolling** and select across both pages.
 3. The **Annotations** panel shows a quotation preview and your comment on one card. Click the card to return to the passage. To read the full quote or edit your comment, click the note marker beside the passage or choose **… → Edit comment**. Search matches both the full quote and your words.
 
-**Export PDF** places your comment and its text markup on each selected page. Reopening it in Margin restores one editable comment. **Export annotations** also keeps the quotation, page positions, comment, and action status together. For a scanned page without selectable text, use **Note** to place a comment at a point.
+**Export PDF** places your comment and its text markup on each selected page. Reopening it in Margin restores one editable comment. **Export annotations** also keeps the quotation, page positions, comment, and action status together. For a scanned page without selectable text, use **Region** to outline an area or **Note** to comment at a point.
 
 ## Search annotations
 
@@ -104,7 +112,7 @@ In the **Annotations** panel, type in **Search annotations** to find words in no
 
 ## Make notes easier to read
 
-These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.9/margin-pdf-annotator.zip).
+These controls are included in the [0.3.0 release candidate](https://github.com/vollero/pdf-annotator/releases/download/v0.3.0-rc.10/margin-pdf-annotator.zip).
 
 1. Choose **Note appearance** at the top of the **Annotations** panel or inside an open note. You can adjust the settings while writing a draft.
 2. Choose a **Font** (sans serif, serif or monospace), **Text size** (14–32 px) and **Box size** (Compact, Comfortable or Spacious). The preview shows how your text will look. Box size changes the panel width, the writing area and the space available for long comments.
@@ -117,7 +125,7 @@ Margin starts with 18 px sans serif text and a Comfortable box. It remembers you
 ## Move annotations to another copy of the same PDF
 
 1. Open the PDF you annotated. In the **Annotations** panel, click **Export annotations**. Margin downloads a file such as `Field notes.margin-annotations.json` with your highlights, drawings, notes, and the PDF’s SHA-256 fingerprint. All pages are included, even when the list is filtered. If the panel is hidden, click **Show workspace** or **Toggle annotations** to bring it back.
-2. On the other computer, or in a later session, open the **exact same PDF**. Use Margin **0.3.0-rc.9 or later** for files with resized notes. Other files work in earlier releases depending on their contents. Styled markup requires **0.3.0-rc.5**, passage comments require **0.3.0-rc.4**, and action checkboxes require **0.3.0-rc.2**. Files containing only compact ordinary notes, drawings and filled highlights work with **0.2.0 or later**. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
+2. On the other computer, or in a later session, open the **exact same PDF**. Files with region notes require **0.3.0-rc.10 or later**. Files with resized point notes require at least **0.3.0-rc.9**. Other files work in earlier releases depending on their contents. Styled markup requires **0.3.0-rc.5**, passage comments require **0.3.0-rc.4**, and action checkboxes require **0.3.0-rc.2**. Files containing only compact ordinary notes, drawings and filled highlights work with **0.2.0 or later**. Send the original PDF separately if the recipient needs it. A renamed copy works. Re-saving the PDF or using **Export PDF** produces a different file when its bytes change.
 3. Click **Import annotations** and select the JSON file. Margin checks the fingerprint before applying changes. It adds new marks, updates matching marks, and keeps other local annotations. Importing an identical file twice adds no duplicates. **Undo** reverses the import in one step.
 
 If Margin reports a fingerprint mismatch, locate the copy that was open when you exported the annotations. A matching filename or page count is insufficient. The JSON contains readable note text and selected highlight text. [Annotation file format and worked example](docs/annotation-migration.md)

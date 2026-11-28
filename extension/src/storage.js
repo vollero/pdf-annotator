@@ -70,12 +70,16 @@ export async function writeChanges(id, before, after) {
             mark.passages === prior.passages && mark.page === prior.page) {
           if (latest?.type !== mark.type) continue
           const updated = {...latest}
-          if (mark.type === 'note' && (mark.point[0] !== prior.point[0] || mark.point[1] !== prior.point[1])) {
+          if (mark.point && (mark.point[0] !== prior.point[0] || mark.point[1] !== prior.point[1])) {
             updated.point = mark.point
           }
           if (mark.size?.[0] !== prior.size?.[0] || mark.size?.[1] !== prior.size?.[1]) {
             if (mark.size) updated.size = mark.size
             else delete updated.size
+          }
+          // A move and a resize in separate tabs can each fit, but cross the page edge together.
+          if (updated.type === 'region') {
+            updated.point = updated.point.map((v,i)=>Math.min(v,1-updated.size[i]))
           }
           if (prior.text !== mark.text) updated.text = mark.text
           if (prior.color !== mark.color) updated.color = mark.color

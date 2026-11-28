@@ -140,8 +140,8 @@ function appearance(doc, mark, viewport, noteFont) {
     fields={Subtype:'Ink',InkList:[points.flat()],BS:{W:strokeWidth,S:'S'}}
     pad=strokeWidth/2
   } else if (mark.size) {
-    const [w,h] = noteDimensions(mark.size,width,height)
-    const [x,y] = fitNotePoint(mark.point,width,height,mark.size)
+    const [w,h] = noteDimensions(mark,width,height)
+    const [x,y] = fitNotePoint(mark.point,width,height,mark)
     const pt = (dx,dy)=>pdfPoint(x*width+dx,y*height+dy)
     const corners = [pt(0,0),pt(w,0),pt(w,h),pt(0,h)]
     points.push(...corners)
@@ -156,7 +156,7 @@ function appearance(doc, mark, viewport, noteFont) {
       '\n.16 .17 .16 rg\n'+matrix.map(num).join(' ')+' cm /TextMask Do'
     fields = {Subtype:'FreeText',DA:PDFString.of('/Helv '+num(noteFont.fontSize/viewport.userUnit)+' Tf 0 g')}
   } else {
-    const [x,y]=fitNotePoint(mark.point,width,height)
+    const [x,y]=fitNotePoint(mark.point,width,height,mark)
     const pt=(dx,dy)=>pdfPoint(x*width+dx,y*height+dy)
     points.push(pt(0,0),pt(18,18))
     ops+=polygon([pt(1,1),pt(17,1),pt(17,13),pt(11,13),pt(6,17),pt(6,13),pt(1,13)])
@@ -192,7 +192,9 @@ export async function exportDocument(bytes, marks, getViewport, noteFont = {font
     for (const part of mark.passages ?? [mark]) {
       if (!views.has(part.page)) views.set(part.page,await getViewport(part.page))
       const page=pages[part.page-1]
-      const painted = mark.type === 'comment' ? {type:'highlight',color:mark.color,style:mark.style,rects:part.rects} : mark
+      let painted = mark
+      if (mark.type === 'comment') painted = {type:'highlight',color:mark.color,style:mark.style,rects:part.rects}
+      if (mark.type === 'region') painted = {type:'highlight',color:mark.color,style:'outline-box',rects:[[...mark.point,...mark.size]]}
       const annotation=doc.context.obj({
         Type:'Annot',P:page.ref,F:4,T:S('Margin'),NM:S(mark.id),Contents:contents,
         ...(root ? {MarginCommentRoot:root} : {MarginData:S(JSON.stringify(mark))}),...appearance(doc,painted,views.get(part.page),noteFont)

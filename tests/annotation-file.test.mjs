@@ -32,9 +32,26 @@ test('the migration file contains only versioned annotation data and the exact P
   await assert.rejects(readAnnotations(file(...entries),different,3),/fingerprint does not match/)
 })
 
+test('region notes require v6, a comment, and a positive rectangle inside the page', async () => {
+  const region = {id:'map',page:2,type:'region',point:[.65,.40],size:[.2,.12],text:'Verify the scale.',color:'#35768c',done:false}
+  const transfer = JSON.parse(await file(...entries,region).text())
+  assert.equal(transfer.version,6)
+  const decode = (version,marks)=>readAnnotations(new Blob([JSON.stringify({...transfer,version,annotations:marks})]),hash,3)
+  assert.deepEqual(await decode(6,transfer.annotations),[...entries,region])
+  const [moved] = await decode(6,[{...region,point:[.1,.25],done:true}])
+  const merge = mergeAnnotations([region],[moved])
+  assert.equal(merge.updated,1)
+  assert.deepEqual(merge.marks,[moved])
+  for (const version of [1,2,3,4,5]) await assert.rejects(decode(version,[region]),/Invalid/)
+  for (const patch of [{size:undefined},{point:undefined},{text:' '},{done:1},{size:[0,.3]},
+    {size:[.5,.4]},{point:[.3,.99]},{style:'outline-box'},{rects:[[.1,.2,.3,.4]]}]) {
+    await assert.rejects(decode(6,[drawing,{...region,...patch}]),/Invalid/)
+  }
+})
+
 test('invalid or oversized packages are rejected as a whole', async () => {
   for (const patch of [
-    {format:'workspace'}, {version:6}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
+    {format:'workspace'}, {version:7}, {documentSha256:'unknown'}, {pdfBytes:[]}, {annotations:{}},
     {annotations:[drawing,drawing]}, {annotations:[drawing,{...sample[0],page:4}]},
     {annotations:[{...drawing,points:[[1.1,1],[0,0]]}]}, {annotations:[{...drawing,attachment:'x'}]},
     {annotations:Array(2001).fill(drawing)}

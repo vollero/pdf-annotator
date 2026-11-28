@@ -16,6 +16,7 @@ import { checkPalette } from './palette.mjs'
 import { checkRecolor } from './recolor.mjs'
 import { checkNoteMove } from './move-note.mjs'
 import { checkNoteResize } from './resize-note.mjs'
+import { checkRegionNotes } from './region-notes.mjs'
 
 async function downloadAnnotations(page, directory) {
   const [download] = await Promise.all([
@@ -172,6 +173,7 @@ try {
   await checkRecolor(page,downloadAnnotations,importAnnotations)
   await checkNoteMove(page,downloadAnnotations,importAnnotations)
   await checkNoteResize(page,downloadAnnotations,importAnnotations)
+  await checkRegionNotes(page,downloadAnnotations,importAnnotations)
   // Exercise the toolbar's temporary host grant on a real PDF response with no CORS headers.
   const remote=await PDFDocument.create()
   remote.addPage([360,480])

@@ -7,22 +7,29 @@ const point = p => Array.isArray(p) && p.length === 2 && p.every(unit)
 const rect = r => Array.isArray(r) && r.length === 4 && r.every(unit)
 function unit(v) { return Number.isFinite(v) && v >= 0 && v <= 1 }
 
-export function noteDimensions(size, width, height) {
+export function isNote(mark) {
+  return mark.type === 'note' || mark.type === 'region' || mark.type === 'comment'
+}
+
+export function noteDimensions(mark, width, height) {
+  const {size} = mark
+  if (mark.type === 'region') return [size[0]*width,size[1]*height]
   return [Math.min(width,Math.max(18,(size?.[0] ?? 0)*width)),
     Math.min(height,Math.max(18,(size?.[1] ?? 0)*height))]
 }
 
 // Store positions and sizes relative to the displayed, rotated crop box.
-export function fitNotePoint([x,y], width, height, size) {
-  const [w,h] = noteDimensions(size,width,height)
+export function fitNotePoint([x,y], width, height, mark) {
+  const [w,h] = noteDimensions(mark,width,height)
   return [Math.max(0,Math.min(x,1-w/width)),Math.max(0,Math.min(y,1-h/height))]
 }
 
-export function resizeNote(size, origin, width, height, dx, dy) {
-  const [w,h] = noteDimensions(size,width,height)
-  const nextW = Math.min((1-origin[0])*width,Math.max(18,w+dx))
-  const nextH = Math.min((1-origin[1])*height,Math.max(18,h+dy))
-  if (nextW <= 18.00001 && nextH <= 18.00001) return
+export function resizeNote(mark, origin, width, height, dx, dy) {
+  const [w,h] = noteDimensions(mark,width,height)
+  const region = mark.type === 'region'
+  const nextW = Math.min((1-origin[0])*width,Math.max(region ? Math.min(6,w) : 18,w+dx))
+  const nextH = Math.min((1-origin[1])*height,Math.max(region ? Math.min(6,h) : 18,h+dy))
+  if (!region && nextW <= 18.00001 && nextH <= 18.00001) return
   return [nextW/width,nextH/height]
 }
 
@@ -32,7 +39,7 @@ export function readMark(raw, page, pages = maxPages) {
   const {id, type, text, color} = raw
   const mark = {id, type, text, color, page}
   if (Object.hasOwn(raw,'size')) {
-    if (type !== 'note' || !point(raw.size) || raw.size.some(n=>n===0)) return
+    if ((type !== 'note' && type !== 'region') || !point(raw.size) || raw.size.some(n=>n===0)) return
     mark.size = raw.size
   }
   if (Object.hasOwn(raw,'style')) {
@@ -40,10 +47,12 @@ export function readMark(raw, page, pages = maxPages) {
         raw.style === 'highlight' || !Object.hasOwn(markupLabels,raw.style)) return
     mark.style = raw.style
   }
-  if (type === 'note' || type === 'comment') {
+  if (isNote(mark)) {
     if (Object.hasOwn(raw,'done') && typeof raw.done !== 'boolean') return
-    if (type === 'note') {
+    if (type !== 'comment') {
       if (!point(raw.point)) return
+      if (type === 'region' && (!mark.size || !text.trim() ||
+          raw.point.some((value,i)=>value+mark.size[i]>1+Number.EPSILON))) return
       mark.point = raw.point
     } else {
       if (!text.trim() || !Array.isArray(raw.passages) || raw.passages.length > pages || raw.passages[0]?.page !== page) return

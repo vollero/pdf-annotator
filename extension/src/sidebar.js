@@ -1,7 +1,7 @@
 import { icon } from './icons.js'
 import { titles, populateMarkupPicker } from './annotations.js'
 import { markupLabels } from './markup.js'
-import { noteStatus, partOnPage, quotedText } from './mark-data.js'
+import { isNote, noteStatus, partOnPage, quotedText } from './mark-data.js'
 
 function el(tag,cls,text) {
   const e=document.createElement(tag)
@@ -96,7 +96,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,recolor,r
         const body = [...container.querySelectorAll('.card-body')].find(b=>b.dataset.id===mark.id)
         body?.closest('.card')?.querySelector('.more')?.focus({preventScroll:true})
       }
-      if(mark.type==='note' || mark.type==='comment') {
+      if(isNote(mark)) {
         const change=el('button','',mark.type==='comment' ? 'Edit comment' : 'Edit note')
         change.prepend(icon('draw'))
         change.onclick=()=>{closeCardMenus();edit(mark)}

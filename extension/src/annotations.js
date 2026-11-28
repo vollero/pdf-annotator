@@ -1,7 +1,7 @@
-import { fitNotePoint, noteDimensions, noteStatus } from './mark-data.js'
-import { markupLabels, markupStrokes } from './markup.js'
+import { fitNotePoint, isNote, noteDimensions, noteStatus } from './mark-data.js'
+import { markupLabels, markupStrokes, markupThickness } from './markup.js'
 
-export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', comment: 'Passage comment' }
+export const titles = { highlight: 'Highlight', draw: 'Drawing', note: 'Note', region: 'Region note', comment: 'Passage comment' }
 export const NS = 'http://www.w3.org/2000/svg'
 export function populateMarkupPicker(select, style = 'highlight') {
   for (const [value,label] of Object.entries(markupLabels)) select.add(new Option(label,value))
@@ -38,21 +38,27 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       fill:'none',stroke:mark.color,'stroke-width':2.4,'stroke-linejoin':'round','stroke-linecap':'round'
     }))
   }
-  if (mark.type === 'note' || mark.type === 'comment') {
+  if (isNote(mark)) {
     let x, y
     if (mark.type === 'comment') {
       const [left,top,w] = part.rects.at(-1)
       x = Math.max(0,Math.min(width - 18,(left + w)*width + 2))
       y = Math.max(0,Math.min(height - 18,top*height))
     } else {
-      const [u,v] = fitNotePoint(mark.point,width,height,mark.size)
+      const [u,v] = fitNotePoint(mark.point,width,height,mark)
       x = u*width; y = v*height
     }
     const marker = shape('g',{'data-id':mark.id,transform:'translate('+x+' '+y+')',class:'note-marker'})
     group.append(marker)
     const status = noteStatus(mark)
-    const [w,h] = noteDimensions(mark.size,width,height)
-    if (mark.size) {
+    const [w,h] = noteDimensions(mark,width,height)
+    if (mark.type === 'region') {
+      marker.classList.add('region-note')
+      const stroke = markupThickness(w,h)
+      const bounds = {x:stroke/2,y:stroke/2,width:w-stroke,height:h-stroke,fill:'none'}
+      marker.append(shape('rect',{...bounds,stroke:mark.color,'stroke-width':stroke}))
+      if (interactive) marker.append(shape('rect',{...bounds,class:'region-edge',stroke:'transparent','stroke-width':Math.min(8,w/3,h/3)}))
+    } else if (mark.size) {
       marker.classList.add('expanded-note')
       marker.append(shape('rect',{x:1,y:1,width:Math.max(0,w-2),height:Math.max(0,h-2),rx:2,fill:'#fffdf5',stroke:mark.color,'stroke-width':2}))
       const body = shape('foreignObject',{x:5,y:4,width:Math.max(0,w-10),height:Math.max(0,h-8)})
@@ -69,11 +75,13 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       } else marker.append(shape('path',{d:'M4 5h10M4 8h7',fill:'none',stroke:'#484c43','stroke-width':1}))
     }
     if (interactive) {
-      if (mark.type === 'note') {
-        marker.classList.add('point-note')
+      if (mark.type !== 'comment') {
+        marker.classList.add('movable-note')
+        if (mark.type === 'note') marker.classList.add('point-note')
         marker.setAttribute('aria-description','Click to edit, drag to move, or use Shift and the arrow keys to resize.')
         const handle = shape('g',{class:'note-resize-handle',transform:'translate('+w+' '+h+')'})
-        const hitArea = mark.size ? shape('rect',{x:-10,y:-10,width:10,height:10,fill:'transparent'}) :
+        const grip = Math.min(10,w/2,h/2)
+        const hitArea = mark.size ? shape('rect',{x:-grip,y:-grip,width:grip,height:grip,fill:'transparent'}) :
           shape('path',{d:'M-8 0 0 -8V0Z',fill:'transparent'})
         handle.append(hitArea,
           shape('path',{d:'m-7 -1 6 -6 m-3 6 3 -3',fill:'none',stroke:'#484c43','stroke-width':1.2}))
@@ -83,7 +91,8 @@ export function paintMark(mark, width, height, interactive = false, part = mark)
       }
       marker.setAttribute('tabindex','0')
       marker.setAttribute('role','button')
-      marker.setAttribute('aria-label',(mark.type === 'comment' ? 'Edit comment' : 'Edit note') + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))
+      const label = mark.type === 'region' ? 'Edit region note' : mark.type === 'comment' ? 'Edit comment' : 'Edit note'
+      marker.setAttribute('aria-label',label + ' on page ' + part.page + (status ? ' (' + status + ')' : ''))
       marker.setAttribute('aria-haspopup','dialog')
     }
   }

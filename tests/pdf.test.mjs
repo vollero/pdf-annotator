@@ -59,6 +59,42 @@ test('bundled sample exports as a three-page annotated PDF',async()=>{
   await pdf.destroy()
 })
 
+test('region comments export as hollow squares aligned to rotated crops and reopen as editable regions',async()=>{
+  const doc = await PDFDocument.create()
+  const rotations = [0,90,180,270]
+  const marks = rotations.map((angle,i)=>{
+    const page = doc.addPage([350,500])
+    page.setCropBox(17,41,280,420)
+    page.setRotation(degrees(angle))
+    page.node.set(PDFName.of('UserUnit'),PDFNumber.of(2))
+    return {id:'box-'+angle,type:'region',page:i+1,point:[.15,.3],size:[.22,.18],color:'#804231',text:'Caffè — 図',done:true}
+  })
+  const original = await doc.save()
+  const pdf = await getDocument({...opts,data:original.slice()}).promise
+  try {
+    const views = await Promise.all(marks.map(async mark=>(await pdf.getPage(mark.page)).getViewport({scale:1})))
+    const bytes = await exportDocument(original,marks,n=>views[n-1])
+    const native = await PDFDocument.load(bytes)
+    const key = PDFName.of
+    for (const [i,view] of views.entries()) {
+      const dict = native.getPage(i).node.Annots().lookup(0)
+      assert.equal(dict.lookup(key('Subtype')).decodeText(),'Square')
+      assert.equal(dict.lookup(key('Contents')).decodeText(),'Done: Caffè — 図')
+      const [a,b] = view.convertToPdfPoint(.15*view.width,.3*view.height)
+      const [c,d] = view.convertToPdfPoint(.37*view.width,.48*view.height)
+      const expected = [Math.min(a,c),Math.min(b,d),Math.max(a,c),Math.max(b,d)]
+      dict.lookup(key('Rect')).asArray().forEach((val,j)=>assert.ok(Math.abs(val.asNumber()-expected[j])<.0001))
+      const ops = inflateSync(dict.lookup(key('AP')).lookup(key('N')).getContents()).toString()
+      assert.match(ops,/h S/)
+      assert.doesNotMatch(ops,/\bf\b/)
+    }
+    const restored = await unpack(bytes)
+    assert.deepEqual(restored.marks,marks)
+    const clean = await PDFDocument.load(restored.bytes)
+    assert.ok(clean.getPages().every(p=>p.node.Annots().size()===0))
+  } finally { await pdf.destroy() }
+})
+
 test('text markup exports native appearances aligned to cropped and rotated pages', async () => {
   const doc = await PDFDocument.create()
   const page = doc.addPage([400,600])

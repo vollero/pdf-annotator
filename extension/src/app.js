@@ -1,5 +1,5 @@
 import { checkFileSize, DocumentLimitError, readResponse } from './input.js'
-import { checkMarkBudget, readDraft, quotedText } from './mark-data.js'
+import { checkMarkBudget, isNote, readDraft, quotedText } from './mark-data.js'
 import { exportAnnotations, mergeAnnotations } from './annotation-file.js'
 import { runPdfJob } from './pdf-job.js'
 import { decorate } from './icons.js'
@@ -169,7 +169,8 @@ function openNote(mark) {
   const existing=marks.some(m=>m.id===mark.id)
   noteDraft={mark,session,existing}
   const comment = mark.type === 'comment'
-  $('note-title').textContent = comment ? 'Comment on passage' : existing ? 'Edit note' : 'Add a note'
+  const noteTitle = mark.type === 'region' ? 'region note' : 'note'
+  $('note-title').textContent = comment ? 'Comment on passage' : existing ? 'Edit '+noteTitle : 'Add a '+noteTitle
   $('passage-quote').textContent = comment ? quotedText(mark) : ''
   $('passage-quote').hidden = !comment
   $('note-label').textContent = comment ? 'Comment' : 'Note'
@@ -425,8 +426,7 @@ window.addEventListener('storage', event => {
 for (const button of document.querySelectorAll('[data-note-appearance]')) {
   button.onclick = () => {
     hideNotePreview()
-    const note = marks.find(mark => (mark.type === 'note' || mark.type === 'comment') && mark.id === selected) ??
-      marks.find(mark => mark.type === 'note' || mark.type === 'comment')
+    const note = marks.find(mark => isNote(mark) && mark.id === selected) ?? marks.find(isNote)
     $('appearance-example').textContent = ($('note-dialog').open ? $('note-text').value : note?.text) || 'Your note will appear at this size.'
     $('appearance-dialog').showModal()
   }
@@ -457,7 +457,7 @@ $('page-layout').onchange = () => {
 }
 
 const mod=navigator.platform.includes('Mac')?'⌘':'Ctrl'
-for(const [action,key] of [['Select','V'],['Comment on selected text','C'],['Highlight','H'],['Draw','D'],['Note','N'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
+for(const [action,key] of [['Select','V'],['Comment on selected text','C'],['Highlight','H'],['Draw','D'],['Note','N'],['Region','R'],['Show / hide workspace','W'],['Zoom in / out','+ / −'],['Fit to width','0'],['Previous / next page','← / →'],['Undo',mod+' + Z'],['Redo',mod+' + Shift + Z'],['Open PDF',mod+' + O'],['Export PDF',mod+' + S']]) {
   const dt=document.createElement('dt'), dd=document.createElement('dd')
   dt.textContent=action;dd.textContent=key;$('key-list').append(dt,dd)
 }
@@ -484,7 +484,7 @@ document.addEventListener('keydown',e=>{
     viewer.changeZoom(key === '0' ? 0 : key === '-' ? -1 : 1)
     return
   }
-  const toolKeys={v:'select',h:'highlight',d:'draw',n:'note'}
+  const toolKeys={v:'select',h:'highlight',d:'draw',n:'note',r:'region'}
   if(toolKeys[key]) selectTool(toolKeys[key])
   if(key==='arrowleft' || key==='arrowright') {e.preventDefault();viewer.go(viewer.page+(key==='arrowright'?1:-1))}
   if(key==='escape') {closeCardMenus();selectTool('select')}
