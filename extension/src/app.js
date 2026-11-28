@@ -242,7 +242,7 @@ $('note-dialog').onclose=()=>{
   const draft = noteDraft
   noteDraft = null
   // Saving can rebuild the margin button that opened the editor.
-  if (draft?.marginSheet && draft.session === session && document.activeElement === document.body) {
+  if (draft?.marginSheet && draft.session === session) {
     const row = draft.marginSheet.row
     const matching = selector => [...row.querySelectorAll(selector)].find(el => el.dataset.id === draft.mark.id)
     const target = matching('.margin-note') ?? matching('.note-marker') ?? $('scroller')
