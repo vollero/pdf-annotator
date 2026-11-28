@@ -54,14 +54,15 @@ export async function checkNoteConversion(page, downloadAnnotations, importAnnot
   await card.getByText('Region note',{exact:true}).waitFor()
   const withRegion = await exportPdf('Square')
   await open('Scale sheet with region.pdf',withRegion)
-  assert.deepEqual((await snapshot()).annotations,[region,highlight])
+  // Native PDF annotations are read back in page order.
+  assert.deepEqual((await snapshot()).annotations,[highlight,region])
   await open('Scale sheet.pdf',source)
   await convert('point note')
   const point = {...original,point:region.point}
   assert.deepEqual(await snapshot(),{...data,annotations:[point,highlight]})
   const withPoint = await exportPdf('Text')
   await open('Scale sheet with point.pdf',withPoint)
-  assert.deepEqual((await snapshot()).annotations,[point,highlight])
+  assert.deepEqual((await snapshot()).annotations,[highlight,point])
   await open('Scale sheet.pdf',source)
   await importAnnotations(page,transfer,'0 added, 1 updated')
   assert.deepEqual((await snapshot()).annotations,[region,highlight])
