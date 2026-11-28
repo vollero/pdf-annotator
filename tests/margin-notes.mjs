@@ -41,9 +41,14 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   await saveSide('left')
   const task = button('Left','To do · '+point.text)
   const figure = button('Left',region.text)
-  const a = await task.boundingBox(), b = await figure.boundingBox()
-  assert.ok(a.x + a.width <= (await paper(1).boundingBox()).x)
-  assert.ok(b.y >= a.y+a.height,'Notes with the same anchor stack without overlapping')
+  await page.waitForFunction(() => {
+    const row = document.querySelector('.page-row[data-page="1"]')
+    const notes = row.querySelectorAll('.margin-rail.left button')
+    if (notes.length !== 2) return false
+    const [first,second] = [...notes].map(el=>el.getBoundingClientRect())
+    return first.right <= row.querySelector('.paper').getBoundingClientRect().left && second.top >= first.bottom
+  })
+  assert.ok(await figure.isVisible())
   await page.locator('#zoom-in').click()
   await aligned(1)
   await page.locator('#page-layout').selectOption('continuous')

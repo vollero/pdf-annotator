@@ -71,6 +71,7 @@ export function showMargins(sheet, sides, edit) {
       return {button,y}
     })
     sheet.row.append(rail)
+    positionCards(rail, entries)
     const observer = new ResizeObserver(() => positionCards(rail, entries))
     observer.observe(rail)
     for (const {button} of entries) observer.observe(button)
