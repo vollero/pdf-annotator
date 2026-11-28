@@ -21,7 +21,7 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   const rail = (side,number=1) => page.getByRole('group',{name:side+' margin on page '+number,exact:true})
   const button = (side,label,number=1) => rail(side,number).getByRole('button',{name:label})
   const saveSide = async side => {
-    await page.getByLabel('Show note text').selectOption(side)
+    await page.getByLabel('Margin placement').selectOption(side)
     await page.locator('#note-save').click()
   }
   const aligned = async number => {
@@ -37,7 +37,7 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   await importAnnotations(page,{name:'Margin placement.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))},'3 added, 0 updated')
   await aligned(1)
   await paper(1).getByRole('button',{name:'Edit note on page 1 (To do)',exact:true}).click()
-  assert.equal(await page.getByLabel('Show note text').inputValue(),'')
+  assert.equal(await page.getByLabel('Margin placement').inputValue(),'')
   await saveSide('left')
   const task = button('Left','To do · '+point.text)
   const figure = button('Left',region.text)
@@ -54,6 +54,7 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   assert.equal(await page.locator('#passage-quote').textContent(),'Total\nTotal')
   await saveSide('left')
   await button('Left',comment.text,2).waitFor()
+  await page.waitForFunction(id=>document.activeElement.matches('.margin-note') && document.activeElement.dataset.id===id,comment.id)
   assert.equal(await rail('Right',2).count(),0)
   await page.locator('#workspace-toggle').click()
   await page.locator('#undo').click()
@@ -75,7 +76,7 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   await aligned(1)
   assert.ok(await page.locator('#scroller').evaluate(el=>el.scrollWidth>el.clientWidth))
   await button('Right',comment.text).click()
-  assert.equal(await page.getByLabel('Show note text').inputValue(),'right')
+  assert.equal(await page.getByLabel('Margin placement').inputValue(),'right')
   await page.keyboard.press('Escape')
   await page.setViewportSize({width:1360,height:920})
   await page.locator('#workspace-toggle').click()
@@ -86,4 +87,12 @@ export async function checkMarginNotes(page, downloadAnnotations, importAnnotati
   await task.waitFor()
   await aligned(1)
   await page.locator('#page-layout').selectOption('single')
+  const crowded = Array.from({length:30},(_,i)=>({...point,id:'extra-'+i,page:2,point:[.25,.95],marginSide:'left',text:'Review item '+(i+1)}))
+  const transfer = {...data,documentSha256:createHash('sha256').update(annotated).digest('hex'),annotations:crowded}
+  await importAnnotations(page,{name:'More notes.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(transfer))},'30 added, 0 updated')
+  await page.locator('#next').click()
+  await button('Left','To do · Review item 30',2).click()
+  assert.equal(await page.locator('#note-text').inputValue(),'Review item 30')
+  await page.keyboard.press('Escape')
+  assert.ok(await rail('Left',2).evaluate(el=>el.scrollTop>0),'The final card in a crowded margin can be reached')
 }

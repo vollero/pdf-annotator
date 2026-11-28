@@ -181,11 +181,11 @@ async function jumpTo(mark,part=mark) {
   if(dy<15 || dy>sr.height-75) scroller.scrollTop+=dy-sr.height*.4
   if(dx<0 || dx>sr.width-25) scroller.scrollLeft+=dx-sr.width*.5
 }
-function openNote(mark) {
+function openNote(mark, marginSheet) {
   if(!mark || !session) return
   notePreview.hideHover()
   const existing=marks.some(m=>m.id===mark.id)
-  noteDraft={mark,session,existing}
+  noteDraft={mark,session,existing,marginSheet}
   const comment = mark.type === 'comment'
   const noteTitle = mark.type === 'region' ? 'region note' : 'note'
   $('note-title').textContent = comment ? 'Comment on passage' : existing ? 'Edit '+noteTitle : 'Add a '+noteTitle
@@ -238,7 +238,17 @@ $('note-form').addEventListener('submit',e=>{
   }
   $('note-dialog').close()
 })
-$('note-dialog').onclose=()=>{noteDraft=null}
+$('note-dialog').onclose=()=>{
+  const draft = noteDraft
+  noteDraft = null
+  // Saving can rebuild the margin button that opened the editor.
+  if (draft?.marginSheet && draft.session === session && document.activeElement === document.body) {
+    const row = draft.marginSheet.row
+    const matching = selector => [...row.querySelectorAll(selector)].find(el => el.dataset.id === draft.mark.id)
+    const target = matching('.margin-note') ?? matching('.note-marker') ?? $('scroller')
+    target.focus()
+  }
+}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close())
 document.addEventListener('click',e=>{ if(!e.target.closest('.more,.card-menu')) closeCardMenus() })
 

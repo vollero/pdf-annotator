@@ -58,6 +58,7 @@ export function showMargins(sheet, sides, edit) {
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'margin-note'
+      button.dataset.id = mark.id
       button.style.setProperty('--tone',mark.color)
       button.setAttribute('aria-haspopup','dialog')
       button.title = 'Edit margin note'
@@ -65,7 +66,7 @@ export function showMargins(sheet, sides, edit) {
       const status = noteStatus(mark)
       content.textContent = status ? status + ' · ' + mark.text : mark.text
       button.append(content)
-      button.onclick = () => edit(mark)
+      button.onclick = () => edit(mark, sheet)
       rail.append(button)
       return {button,y}
     })
