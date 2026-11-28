@@ -88,7 +88,8 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
       if(!currentBook || !base) throw Error('Notebook changed before this page was saved.')
       const rev=await store(page),ref=nextRef(base,rev)
       const latest=live()
-      if(!latest || latest.notebook.find(r=>r.id===id)?.rev!==base.rev) throw Error('This page changed in another window. Export the unsaved page before reopening.')
+      const stored=latest?.notebook?.find(r=>r.id===id)
+      if(!stored || (stored.rev!==base.rev && stored.rev!==rev)) throw Error('This page changed in another window. Export the unsaved page before reopening.')
       await publish(latest.notebook.map(r=>r.id===id?ref:r))
       failure=null;$('status').classList.remove('error');$('status').textContent=doc.privateWindow?'In memory':'Page saved';nav()
     }).catch(e=>{failure=e;$('status').classList.add('error');$('status').textContent=e.message+' Use Retry or Save page PDF.'})
@@ -163,7 +164,11 @@ export function bindNotebook({current,commit,flush,saveFile,editDetails,jump,not
     if(active?.pointer!==e.pointerId) return
     const a=active;active=null;a.preview?.remove()
     try {
-      if(a.stroke) replace({...data,strokes:[...data.strokes,a.stroke]})
+      if(a.stroke) {
+        const end=point(e),last=a.path.at(-1)
+        if(a.path.length<20000 && Math.hypot((end[0]-last[0])*W,(end[1]-last[1])*H)>=.4)a.path.push([end[0],end[1],last[2]])
+        replace({...data,strokes:[...data.strokes,a.stroke]})
+      }
       else if(a.tool==='eraser' && a.erase.size) replace({...data,strokes:data.strokes.filter(s=>!a.erase.has(s.id))})
       else if(a.moving) {
         const end=point(e), moved=translate(data.strokes.filter(s=>selected.has(s.id)),end[0]-a.start[0],end[1]-a.start[1],false)

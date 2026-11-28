@@ -58,7 +58,7 @@ function cards() {
   if ($('timeline-dialog').open) return
   renderCards({marks:viewer.marks,sets,page:viewer.page,currentOnly:$('filter').value==='current',selected,
     moveToSet:(mark,name)=>change(marks.map(item=>item.id===mark.id ? assignSet(item,name) : item)),
-    jump:jumpTo,edit:openNote,convert:convertNote,notePreview,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
+    jump:jumpTo,openNotebook:mark=>openBook(mark),edit:mark=>openNote(mark,null,true),convert:convertNote,notePreview,recolor,remove:mark=>change(marks.filter(m=>m.id!==mark.id)),
     setDone:(mark, done)=>change(marks.map(m=>m.id===mark.id ? {...m,done} : m)),
     setStyle:(mark, style)=>change(marks.map(m=>m.id===mark.id ? withMarkupStyle(m,style) : m))})
 }

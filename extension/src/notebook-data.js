@@ -41,13 +41,21 @@ export function mergePages(local=[],incoming=[],base=[]) {
     else if (other.past.includes(r.rev)) result.set(r.id,other)
     else {
       result.set(r.id,other)
-      const copyId=r.id.split('.')[0]+'.'+r.rev.slice(0,32)
-      extra.push({...r,id:copyId,conflict:true})
+      extra.push(r)
     }
   }
   const removed=new Map(base.map(r=>[r.id,r.rev]))
   for (const r of local) if (!result.has(r.id) && removed.get(r.id)!==r.rev) result.set(r.id,r)
-  for (const r of extra) if (!result.has(r.id)) result.set(r.id,r)
+  for (const r of extra) {
+    const prefix=r.id.slice(0,72)+'.'+r.rev.slice(0,32)
+    let copyId=prefix, suffix=1
+    while(result.has(copyId)) {
+      const copy=result.get(copyId)
+      if(copy.conflict && (copy.rev===r.rev || copy.past.includes(r.rev)))break
+      copyId=prefix+'.'+suffix++
+    }
+    if(!result.has(copyId))result.set(copyId,{...r,id:copyId,conflict:true})
+  }
   const refs=[...result.values()]
   if (!validRefs(refs)) throw Error('A notebook supports up to 256 pages.')
   return refs

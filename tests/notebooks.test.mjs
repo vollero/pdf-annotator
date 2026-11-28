@@ -35,6 +35,14 @@ test('a divergent revision gets a labeled, idempotent conflict copy',()=>{
   assert.deepEqual(result.map(r=>r.rev),[a.rev,b.rev]);assert.equal(result[1].conflict,true)
   assert.deepEqual(mergePages(result,[b]),result)
   assert.deepEqual(mergePages([a],[base]),[a])
+  const edited=nextRef(result[1],'4'.repeat(64))
+  assert.deepEqual(mergePages([a,edited],[b]),[a,edited])
+  const long='n'.repeat(128), longResult=mergePages([{...a,id:long}],[{...b,id:long}])
+  assert.equal(longResult.length,2)
+  const occupied={...base,id:result[1].id}
+  const collision=mergePages([a,occupied],[b])
+  assert.deepEqual(collision.map(r=>r.rev),[a.rev,base.rev,b.rev])
+  assert.deepEqual(mergePages(collision,[b]),collision)
 })
 test('pressure affects vector geometry, including a handwritten dot',()=>{
   const s={width:.005,tool:'pen',points:[[.4,.4,.2]]}

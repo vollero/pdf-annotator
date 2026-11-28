@@ -45,7 +45,7 @@ function fillFilter(select,values) {
   select.parentElement.hidden = !labels.size
 }
 
-export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,notePreview,recolor,remove,setDone,setStyle,sets,moveToSet}) {
+export function renderCards({marks,page,currentOnly,selected,jump,openNotebook,edit,convert,notePreview,recolor,remove,setDone,setStyle,sets,moveToSet}) {
   const container=document.getElementById('cards'), frag=document.createDocumentFragment()
   document.getElementById('annotation-count').textContent=marks.length
   const actionFilter = document.getElementById('action-filter')
@@ -118,7 +118,7 @@ export function renderCards({marks,page,currentOnly,selected,jump,edit,convert,n
     card.append(head,body,dateLine(mark))
     if (mark.notebook) {
       const button=el('button','appearance-link','Open notebook · '+mark.notebook.length+(mark.notebook.length===1?' page':' pages'))
-      button.onclick=()=>edit(mark);card.append(button)
+      button.onclick=()=>openNotebook(mark);card.append(button)
     }
     if (mark.replies?.length) {
       const replies = el('button','appearance-link',mark.replies.length+(mark.replies.length===1 ? ' reply' : ' replies'))

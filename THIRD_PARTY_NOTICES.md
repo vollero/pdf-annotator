@@ -43,3 +43,7 @@ The standard-font data includes Adobe's Core 14 font metrics, converted to compr
 The pdf-lib source credits three Stack Overflow answers for its numeric helpers. The decimal conversion adapts Krisztián Balla’s answer, the byte conversion credits Gregory Pakosz’s algorithm, and the seeded number generator credits Antti Kissaniemi’s answer. [Decimal conversion](https://stackoverflow.com/a/46545519) · [Seeded generator](https://stackoverflow.com/a/19303725) · [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) · [Byte conversion](https://stackoverflow.com/a/1936865) · [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
 
 Component versions for the prebuilt bundle come from pdf-lib’s release sources. Development and test tools run outside the extension. [pdf-lib release source](https://github.com/Hopding/pdf-lib/tree/v1.17.1) · [Upstream dependency lock](https://github.com/Hopding/pdf-lib/blob/v1.17.1/yarn.lock)
+
+## Android application
+
+The APK includes AndroidX WebKit and its AndroidX dependencies from the Android Open Source Project, and the Kotlin standard library from JetBrains and contributors. These components use the Apache License, Version 2.0. The APK includes the license in its editor assets. Its embedded PDF editor uses the same third-party materials listed above. [AndroidX license](https://github.com/androidx/androidx/blob/androidx-main/LICENSE.txt) · [Kotlin license](https://github.com/JetBrains/kotlin/blob/v2.2.20/license/LICENSE.txt)
